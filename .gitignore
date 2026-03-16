@@ -1,0 +1,30 @@
+node_modules/
+
+# Java
+target/
+*.jar
+*.war
+*.ear
+
+# Node / frontend build output
+dist/
+.next/
+.turbo/
+.pnpm-store/
+*.tsbuildinfo
+*.crx
+*.pem
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Environment and local settings
+.env
+.env.*
+.DS_Store
+
+# IDE
+.idea/
+.vscode/

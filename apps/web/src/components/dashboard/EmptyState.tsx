@@ -1,0 +1,185 @@
+"use client";
+
+import * as React from "react";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import { toast } from "sonner";
+import { cn } from "@cortex/ui";
+import { useDashboardStore } from "@/store/dashboard";
+
+// ─── Component ────────────────────────────────────────────────────────────────
+interface EmptyStateProps {
+  icon?:   React.ReactNode;
+  title?:  string;
+  body?:   string;
+  action?: { label: string; href: string };
+}
+
+export function EmptyState({ icon, title, body, action }: EmptyStateProps) {
+  const populateDemoData  = useDashboardStore((s) => s.populateDemoData);
+  const [populated, setPopulated] = React.useState(false);
+
+  function handlePopulate() {
+    populateDemoData();
+    setPopulated(true);
+    toast.success("Demo data added — explore your highlights!");
+  }
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0  }}
+      transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+      className="flex flex-col items-center justify-center py-32 px-6 text-center"
+    >
+      {/* Glowing brain icon */}
+      <div className="relative mb-8">
+        {/* Outer glow ring */}
+        <div
+          className="absolute inset-0 rounded-2xl"
+          style={{
+            background: "radial-gradient(circle, rgba(108,99,255,0.18) 0%, transparent 70%)",
+            transform:  "scale(1.8)",
+            filter:     "blur(16px)",
+          }}
+        />
+        <div
+          className={cn(
+            "relative w-20 h-20 rounded-2xl",
+            "bg-gradient-to-b from-white/[0.06] to-white/[0.02]",
+            "border border-white/[0.09]",
+            "flex items-center justify-center",
+            "shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_8px_32px_rgba(0,0,0,0.35)]",
+          )}
+        >
+          {icon || <BrainIcon />}
+        </div>
+      </div>
+
+      {/* Copy */}
+      <h2 className="text-xl font-semibold tracking-tight text-white/80 mb-3">
+        {title || "Your indexed brain awaits."}
+      </h2>
+      <p className="text-sm text-white/40 max-w-xs leading-relaxed mb-8">
+        {body || "You haven't saved any highlights yet. Install the Chrome extension and start capturing knowledge as you browse."}
+      </p>
+
+      {/* If custom action is provided, show a simple link instead of the full default CTA block */}
+      {action ? (
+        <Link
+          href={action.href}
+          className={cn(
+            "inline-flex items-center gap-2 h-10 px-5 rounded-xl",
+            "text-sm font-medium text-white/60",
+            "border border-white/[0.09] hover:border-white/[0.16]",
+            "hover:text-white/80 hover:bg-white/[0.04]",
+            "active:scale-[0.97] transition-all duration-150 transform-gpu",
+          )}
+        >
+          {action.label}
+        </Link>
+      ) : (
+        <>
+      {/* Primary CTA */}
+      <div className="flex flex-col sm:flex-row items-center gap-3 mb-8">
+        <Link
+          href="https://chromewebstore.google.com"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={cn(
+            "inline-flex items-center gap-2 h-10 px-5 rounded-xl",
+            "text-sm font-semibold text-white",
+            "bg-accent hover:bg-accent/90",
+            "shadow-glow-sm active:scale-[0.97]",
+            "transition-all duration-150 transform-gpu",
+          )}
+        >
+          <ChromeIcon />
+          Install the Chrome Extension
+        </Link>
+        <Link
+          href="/welcome"
+          className={cn(
+            "inline-flex items-center gap-2 h-10 px-5 rounded-xl",
+            "text-sm font-medium text-white/60",
+            "border border-white/[0.09] hover:border-white/[0.16]",
+            "hover:text-white/80 hover:bg-white/[0.04]",
+            "active:scale-[0.97] transition-all duration-150 transform-gpu",
+          )}
+        >
+          Read the Quick Start Guide
+        </Link>
+      </div>
+
+      {/* Demo data divider */}
+      <div className="flex items-center gap-3 w-full max-w-xs mb-4">
+        <div className="flex-1 h-px bg-white/[0.06]" />
+        <span className="text-[11px] text-white/25 uppercase tracking-widest">or</span>
+        <div className="flex-1 h-px bg-white/[0.06]" />
+      </div>
+
+      {/* Populate demo data */}
+      <button
+        onClick={handlePopulate}
+        disabled={populated}
+        className={cn(
+          "inline-flex items-center gap-2 h-9 px-4 rounded-xl",
+          "text-[12px] font-medium",
+          "border border-white/[0.08] text-white/40",
+          "hover:border-white/[0.14] hover:text-white/65 hover:bg-white/[0.03]",
+          "active:scale-[0.97] transition-all duration-150 transform-gpu",
+          "disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100",
+        )}
+      >
+        <SparkleIcon />
+        {populated ? "Demo data added!" : "Populate with Demo Data"}
+      </button>
+      </>
+      )}
+    </motion.div>
+  );
+}
+
+// ─── Icons ────────────────────────────────────────────────────────────────────
+function BrainIcon() {
+  return (
+    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
+      <path
+        d="M14 4C9.58 4 6 7.58 6 12c0 2.4 1.06 4.55 2.75 6.02V21h10.5v-2.98A7.96 7.96 0 0022 12c0-4.42-3.58-8-8-8z"
+        stroke="rgba(108,99,255,0.85)"
+        strokeWidth="1.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M10.5 21v2.5a1 1 0 002 0V21M14 4V2"
+        stroke="rgba(108,99,255,0.60)"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+      />
+      <path
+        d="M10 14c0-2.21 1.79-4 4-4"
+        stroke="rgba(108,99,255,0.40)"
+        strokeWidth="1.4"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function ChromeIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+      <circle cx="7" cy="7" r="2.5" stroke="white" strokeWidth="1.4" />
+      <path d="M7 4.5h5.5M4.08 5.75L1.33 1M9.92 5.75L12.67 1M4.5 9.5L2 13.5M9.5 9.5L12 13.5M4.5 9.5h5" stroke="white" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}
+
+function SparkleIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+      <path d="M6 1v2M6 9v2M1 6h2M9 6h2M2.93 2.93l1.41 1.41M7.66 7.66l1.41 1.41M2.93 9.07l1.41-1.41M7.66 4.34l1.41-1.41" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
+    </svg>
+  );
+}

@@ -1,0 +1,340 @@
+package com.cortex.api.controller;
+
+import com.cortex.api.entity.AccessLevel;
+import com.cortex.api.entity.Folder;
+import com.cortex.api.entity.Highlight;
+import com.cortex.api.entity.HighlightTag;
+import com.cortex.api.entity.LinkAccess;
+import com.cortex.api.entity.ResourceType;
+import com.cortex.api.entity.Tag;
+import com.cortex.api.entity.User;
+import com.cortex.api.repository.FolderRepository;
+import com.cortex.api.repository.HighlightRepository;
+import com.cortex.api.repository.HighlightTagRepository;
+import com.cortex.api.repository.TagRepository;
+import com.cortex.api.repository.UserRepository;
+import com.cortex.api.service.WebSocketService;
+import jakarta.transaction.Transactional;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/api/v1/highlights")
+public class HighlightController {
+
+    private final HighlightRepository highlightRepo;
+    private final UserRepository userRepo;
+    private final TagRepository tagRepo;
+    private final HighlightTagRepository highlightTagRepo;
+    private final FolderRepository folderRepo;
+    private final WebSocketService webSocketService;
+
+    public HighlightController(HighlightRepository highlightRepo, UserRepository userRepo,
+                               TagRepository tagRepo, HighlightTagRepository highlightTagRepo,
+                               FolderRepository folderRepo,
+                               WebSocketService webSocketService) {
+        this.highlightRepo = highlightRepo;
+        this.userRepo = userRepo;
+        this.tagRepo = tagRepo;
+        this.highlightTagRepo = highlightTagRepo;
+        this.folderRepo = folderRepo;
+        this.webSocketService = webSocketService;
+    }
+
+    @Transactional
+    @GetMapping
+    public List<HighlightDTO> list(Authentication auth) {
+        Long userId = Long.parseLong(auth.getName());
+        return highlightRepo.findByUserIdOrderByCreatedAtDesc(userId)
+                .stream().map(this::toDTO).toList();
+    }
+
+    @Transactional
+    @PostMapping
+    public ResponseEntity<HighlightDTO> create(Authentication auth,
+                                                @RequestBody HighlightDTO dto) {
+        User user = resolveUser(auth);
+        Highlight h = fromDTO(dto, user);
+        h.setId(null); // Always use IDENTITY auto-increment for new highlights; ignore any client id
+        applyTags(h, dto.tags, user);
+        highlightRepo.save(h);
+        HighlightDTO saved = toDTO(h);
+        // Notify the owning user's connected clients (extension, other tabs)
+        webSocketService.sendToUser(auth.getName(), "/topic/highlights", saved);
+        return ResponseEntity.status(HttpStatus.CREATED).body(saved);
+    }
+
+    @Transactional
+    @PutMapping("/{id}")
+    @PreAuthorize("@securityService.hasHighlightAccess(#id, 'EDITOR')")
+    public HighlightDTO update(Authentication auth,
+                               @PathVariable Long id,
+                               @RequestBody HighlightDTO dto) {
+        Long userId = Long.parseLong(auth.getName());
+        User user = resolveUser(auth);
+        Highlight h = highlightRepo.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        applyDTO(h, dto);
+        applyTags(h, dto.tags, user);
+        highlightRepo.save(h);
+        HighlightDTO updated = toDTO(h);
+        webSocketService.sendToUser(auth.getName(), "/topic/highlights/updated", updated);
+        return updated;
+    }
+
+    @Transactional
+    @PatchMapping("/{id}")
+    @PreAuthorize("@securityService.hasHighlightAccess(#id, 'EDITOR')")
+    public HighlightDTO patch(Authentication auth,
+                              @PathVariable Long id,
+                              @RequestBody HighlightDTO dto) {
+        Long userId = Long.parseLong(auth.getName());
+        User user = resolveUser(auth);
+        Highlight h = highlightRepo.findByIdAndUserId(id, userId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        applyDTO(h, dto);
+        applyTags(h, dto.tags, user);
+        highlightRepo.save(h);
+        HighlightDTO patched = toDTO(h);
+        webSocketService.sendToUser(auth.getName(), "/topic/highlights/updated", patched);
+        return patched;
+    }
+
+    @DeleteMapping("/{id}")
+    @Transactional
+    @PreAuthorize("@securityService.hasHighlightAccess(#id, 'OWNER')")
+    public ResponseEntity<Map<String, Boolean>> delete(Authentication auth,
+                                                        @PathVariable Long id) {
+        Long userId = Long.parseLong(auth.getName());
+        // Soft delete: mark as deleted rather than removing from database
+        highlightRepo.softDeleteByIdAndUserId(id, userId, userId, java.time.Instant.now());
+        // Notify connected clients to remove this highlight
+        webSocketService.sendToUser(auth.getName(), "/topic/highlights/deleted", id);
+        return ResponseEntity.ok(Map.of("ok", true));
+    }
+
+    // Batch sync: accept full array, reconcile with DB
+    @PutMapping("/sync")
+    @Transactional
+    public List<HighlightDTO> sync(Authentication auth,
+                                   @RequestBody List<HighlightDTO> dtos) {
+        User user = resolveUser(auth);
+        Long userId = user.getId();
+
+        // Get all highlights (including deleted) for initial state
+        Map<Long, Highlight> existing = new java.util.HashMap<>();
+        highlightRepo.findAllByUserIdInclandDeleted(userId)
+                .forEach(h -> existing.put(h.getId(), h));
+
+        java.util.Set<Long> incomingIds = new java.util.HashSet<>();
+
+        for (HighlightDTO dto : dtos) {
+            incomingIds.add(dto.id);
+            Highlight h = existing.get(dto.id);
+            if (h == null) {
+                // New highlight from client
+                h = fromDTO(dto, user);
+                applyTags(h, dto.tags, user);
+                highlightRepo.save(h);
+            } else {
+                // Update existing (including soft delete status)
+                applyDTO(h, dto);
+                applyTags(h, dto.tags, user);
+                highlightRepo.save(h);
+            }
+        }
+
+        // Upsert only — do NOT delete server highlights missing from the payload.
+        // The client may send a partial set (e.g. offline-created items only).
+
+        // Return all highlights (including soft-deleted ones) so client can sync its full state
+        return highlightRepo.findAllByUserIdInclandDeleted(userId)
+                .stream().map(this::toDTO).toList();
+    }
+
+    // ── Helpers ──
+
+    private User resolveUser(Authentication auth) {
+        return userRepo.findById(Long.parseLong(auth.getName()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+    }
+
+    private HighlightDTO toDTO(Highlight h) {
+        HighlightDTO dto = new HighlightDTO();
+        dto.id = h.getId();
+        dto.text = h.getText();
+        dto.source = h.getSource();
+        dto.url = h.getUrl();
+        dto.topic = h.getTopic();
+        dto.topicColor = h.getTopicColor();
+        dto.savedAt = h.getSavedAt();
+        // Look up folder name directly from DB using folderId — avoids the stale
+        // lazy @ManyToOne proxy that remains set to the OLD folder after setFolderId().
+        dto.folderId = h.getFolderId();
+        if (h.getFolderId() != null) {
+            dto.folder = folderRepo.findById(h.getFolderId())
+                    .map(Folder::getName)
+                    .orElse(null);
+        } else {
+            dto.folder = null;
+        }
+        dto.note = h.getNote();
+        // Extract tag IDs from the junction table
+        dto.tags = h.getHighlightTags().stream()
+                .map(ht -> String.valueOf(ht.getTag().getId()))
+                .toList();
+        dto.isCode = h.isCode();
+        dto.isFavorite = h.isFavorite();
+        dto.isArchived = h.isArchived();
+        dto.isPinned = h.isPinned();
+        dto.highlightColor = h.getHighlightColor();
+        dto.isAI = h.isAI();
+        dto.chatName = h.getChatName();
+        dto.chatUrl = h.getChatUrl();
+        dto.resourceType = h.getResourceType() != null ? h.getResourceType().name() : "TEXT";
+        dto.videoTimestamp = h.getVideoTimestamp();
+        dto.linkAccess = h.getLinkAccess() != null ? h.getLinkAccess().name() : "RESTRICTED";
+        dto.defaultLinkRole = h.getDefaultLinkRole() != null ? h.getDefaultLinkRole().name() : "VIEWER";
+        dto.isDeleted = h.isDeleted();
+        return dto;
+    }
+
+    private Highlight fromDTO(HighlightDTO dto, User user) {
+        Highlight h = new Highlight();
+        if (dto.id != null) h.setId(dto.id);
+        h.setUser(user);
+        applyDTO(h, dto);
+        return h;
+    }
+
+    private void applyDTO(Highlight h, HighlightDTO dto) {
+        if (dto.text != null) h.setText(dto.text);
+        if (dto.source != null) h.setSource(dto.source);
+        if (dto.url != null) h.setUrl(dto.url);
+        if (dto.topic != null) h.setTopic(dto.topic);
+        if (dto.topicColor != null) h.setTopicColor(dto.topicColor);
+        if (dto.savedAt != null) h.setSavedAt(dto.savedAt);
+        
+        // folderId: null = not provided (don't touch), <=0 = clear/temp-id (treat as null),
+        // >0 = only set if the folder actually exists (silently ignore stale/temp refs).
+        if (dto.folderId != null) {
+            if (dto.folderId <= 0L) {
+                h.setFolderId(null);
+            } else {
+                h.setFolderId(folderRepo.existsById(dto.folderId) ? dto.folderId : null);
+            }
+        }
+        
+        if (dto.note != null) h.setNote(dto.note);
+        if (dto.highlightColor != null) h.setHighlightColor(dto.highlightColor);
+        // Boolean wrapper fields: null means "not provided" → keep existing value
+        if (dto.isCode != null) h.setCode(dto.isCode);
+        if (dto.isFavorite != null) h.setFavorite(dto.isFavorite);
+        if (dto.isArchived != null) h.setArchived(dto.isArchived);
+        if (dto.isPinned != null) h.setPinned(dto.isPinned);
+        if (dto.isAI != null) h.setAI(dto.isAI);
+        if (dto.chatName != null) h.setChatName(dto.chatName);
+        if (dto.chatUrl != null) h.setChatUrl(dto.chatUrl);
+        if (dto.resourceType != null) {
+            try {
+                h.setResourceType(ResourceType.valueOf(dto.resourceType));
+            } catch (IllegalArgumentException e) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "Invalid resourceType: " + dto.resourceType);
+            }
+        }
+        if (dto.videoTimestamp != null) h.setVideoTimestamp(dto.videoTimestamp);
+        // Handle link sharing settings
+        if (dto.linkAccess != null) {
+            try {
+                h.setLinkAccess(LinkAccess.valueOf(dto.linkAccess));
+            } catch (IllegalArgumentException e) {
+                h.setLinkAccess(LinkAccess.RESTRICTED);
+            }
+        }
+        if (dto.defaultLinkRole != null) {
+            try {
+                h.setDefaultLinkRole(AccessLevel.valueOf(dto.defaultLinkRole));
+            } catch (IllegalArgumentException e) {
+                h.setDefaultLinkRole(AccessLevel.VIEWER);
+            }
+        }
+        // Handle soft deletion — only update if explicitly provided
+        if (dto.isDeleted != null) h.setDeleted(dto.isDeleted);
+    }
+
+    /**
+     * Associates tags with a highlight.
+     * If a tag ID doesn't exist for the user, creates it automatically.
+     * Maintains data integrity by only linking user's own tags.
+     */
+    private void applyTags(Highlight h, List<String> tagIds, User user) {
+        // null = field not provided in the request → don't touch existing tags
+        // (critical for moveHighlight which only sends folderId)
+        if (tagIds == null) return;
+
+        // Delete existing tag associations from the database
+        if (!h.getHighlightTags().isEmpty()) {
+            highlightTagRepo.deleteAll(h.getHighlightTags());
+            h.getHighlightTags().clear();
+        }
+
+        if (tagIds.isEmpty()) return;
+
+        for (String tagIdStr : tagIds) {
+            Long tagId;
+            try {
+                tagId = Long.parseLong(tagIdStr);
+            } catch (NumberFormatException e) {
+                // Skip non-numeric tag IDs (e.g. stale client UUIDs before migration)
+                continue;
+            }
+            // Try to find existing tag belonging to this user
+            Tag tag = tagRepo.findByIdAndUserId(tagId, user.getId())
+                    .orElse(null);
+            if (tag == null) continue; // Don't auto-create unknown tags
+            // Link tag to highlight via junction table
+            h.getHighlightTags().add(new HighlightTag(h, tag));
+        }
+    }
+
+    public static class HighlightDTO {
+        public Long id;
+        public String text;
+        public String source;
+        public String url;
+        public String topic;
+        public String topicColor;
+        public String savedAt;
+        public String folder;
+        public Long folderId;
+        public String note;
+        public List<String> tags;
+        // Use Boolean wrappers (not primitives) so Jackson deserializes missing
+        // fields as null — preventing false-overwrite on partial updates (e.g.
+        // moveHighlight only sends folderId, so all booleans should stay untouched).
+        public Boolean isCode;
+        public Boolean isFavorite;
+        public Boolean isArchived;
+        public Boolean isPinned;
+        public String highlightColor;
+        public Boolean isAI;
+        public String chatName;
+        public String chatUrl;
+        public String resourceType;
+        public Integer videoTimestamp;
+        public String linkAccess;      // RESTRICTED, PUBLIC
+        public String defaultLinkRole; // VIEWER, COMMENTER, EDITOR
+        // Soft deletion support
+        public Boolean isDeleted;     // Whether the highlight is soft-deleted
+    }
+}

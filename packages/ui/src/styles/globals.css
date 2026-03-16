@@ -1,0 +1,105 @@
+/**
+ * Cortex Global Stylesheet
+ * ─────────────────────────────────────────────────────────────────────────────
+ * This file is injected by apps/web via layout.tsx.
+ * DO NOT import Tailwind here — each app handles that.
+ */
+
+/* ─── Custom scrollbar (WebKit) ─────────────────────────────────────────── */
+:root {
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+*::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.10);
+  border-radius: 999px;
+}
+
+*::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* ─── Selection colour ──────────────────────────────────────────────────── */
+::selection {
+  background: rgba(108, 99, 255, 0.40);
+  color: #fff;
+}
+
+/* ─── Focus ring reset ──────────────────────────────────────────────────── */
+:focus:not(:focus-visible) {
+  outline: none;
+}
+
+/* ─── Smooth system font fallback ──────────────────────────────────────── */
+html {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+/* ─── Noise texture overlay (injected in layout.tsx, referenced here) ─── */
+.noise-overlay {
+  pointer-events: none;
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  opacity: 0.032;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+  background-repeat: repeat;
+  background-size: 200px 200px;
+}
+
+/* ─── Lenis smooth-scroll ───────────────────────────────────────────────── */
+html.lenis {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-scrolling iframe {
+  pointer-events: none;
+}
+
+/* ─── Staggered animation CSS variable ─────────────────────────────────── */
+[data-stagger] {
+  animation-delay: var(--stagger, 0ms);
+}
+
+/* ─── Page transition shimmer ───────────────────────────────────────────── */
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+/* ─── cmdk scrollbar overrides ──────────────────────────────────────────── */
+[cmdk-list]::-webkit-scrollbar       { width: 4px; }
+[cmdk-list]::-webkit-scrollbar-track { background: transparent; }
+[cmdk-list]::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.08);
+  border-radius: 999px;
+}

@@ -1,0 +1,42 @@
+{
+  "name": "@cortex/extension",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "dev": "vite build --watch",
+    "build": "rm -rf dist && VITE_EXT_TARGET=popup vite build && VITE_EXT_TARGET=background vite build && VITE_EXT_TARGET=content vite build && VITE_EXT_TARGET=youtube vite build && node scripts/post-build.mjs",
+    "build:firefox": "rm -rf dist-firefox && VITE_EXT_TARGET=popup VITE_EXT_OUTDIR=dist-firefox vite build && VITE_EXT_TARGET=background VITE_EXT_OUTDIR=dist-firefox vite build && VITE_EXT_TARGET=content VITE_EXT_OUTDIR=dist-firefox vite build && VITE_FIREFOX=1 node scripts/post-build.mjs",
+    "test": "vitest run",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist dist-firefox .turbo"
+  },
+  "dependencies": {
+    "@cortex/ui": "workspace:*",
+    "clsx": "^2.1.1",
+    "crypto-js": "^4.2.0",
+    "framer-motion": "^12.0.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "@stomp/stompjs": "^7.0.0",
+    "tailwind-merge": "^2.6.0",
+    "webextension-polyfill": "^0.12.0",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@cortex/config-tailwind": "workspace:*",
+    "@types/chrome": "^0.0.303",
+    "@types/crypto-js": "^4.2.2",
+    "@types/react": "^19.0.7",
+    "@types/react-dom": "^19.0.3",
+    "@types/stompjs": "^2.3.9",
+    "@types/webextension-polyfill": "^0.12.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "postcss": "^8.5.1",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.7.2",
+    "vite": "^6.0.7",
+    "vite-plugin-web-extension": "^4.1.1",
+    "vitest": "^2.0.0"
+  }
+}

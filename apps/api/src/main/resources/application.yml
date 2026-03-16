@@ -1,0 +1,61 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    url: jdbc:postgresql://aws-1-eu-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true
+    driver-class-name: org.postgresql.Driver
+    username: postgres.gppcofxrfuxnmgvlpend
+    password: ItzMeYugi@0809
+    hikari:
+      minimum-idle: 1          
+      maximum-pool-size: 2    
+      idle-timeout: 30000      
+      max-lifetime: 600000    
+      connection-timeout: 10000 
+      keepalive-time: 60000
+      connection-test-query: SELECT 1
+      data-source-properties:
+        prepareThreshold: 0               # disable server-side prepared stmts (PgBouncer transaction mode)
+        preparedStatementCacheQueries: 0
+        preparedStatementCacheSqlLimit: 0
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+        jdbc:
+          batch_size: 0
+          fetch_size: 0
+        generate_statistics: false
+        statement_batch_size: 0
+  task:
+    scheduling:
+      pool:
+        size: 2   # isolated cron thread pool; separate from @Async mail threads
+    execution:
+      pool:
+        core-size: 4
+        max-size: 8
+        queue-capacity: 100
+
+cortex:
+  jwt:
+    secret: WJZRwc+sIiYM1SIoHe1ETsLNakMJwurxkoUx9Tvs0EY=
+    expiration-ms: 604800000        # 7 days
+    extension-expiration-ms: 2592000000  # 30 days
+  encryption:
+    key: Kclxcd4KRneZx+7tVEkvp0gVRzxwz0/3Ml2KOA3zxmk=
+
+cors:
+  allowed-origins: http://localhost:3000,http://localhost:3001,https://localhost:3000,http://127.0.0.1:3000
+
+logging:
+  level:
+    root: INFO
+    com.cortex.api.service.AuthService: DEBUG
+    org.springframework.security: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n"

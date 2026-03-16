@@ -1,0 +1,296 @@
+"use client";
+
+import * as React from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import { toast } from "sonner";
+import { cn } from "@cortex/ui";
+import { useDashboardStore } from "@/store/dashboard";
+
+// ─── Component ────────────────────────────────────────────────────────────────
+export function BulkActionBar() {
+  const selectedIds         = useDashboardStore((s) => s.selectedHighlightIds);
+  const clearSelection      = useDashboardStore((s) => s.clearHighlightSelection);
+  const deleteHighlight     = useDashboardStore((s) => s.deleteHighlight);
+  const restoreHighlight    = useDashboardStore((s) => s.restoreHighlight);
+  const moveHighlight       = useDashboardStore((s) => s.moveHighlight);
+  const toggleFavorite      = useDashboardStore((s) => s.toggleFavorite);
+  const toggleArchive       = useDashboardStore((s) => s.toggleArchive);
+  const togglePinHighlight  = useDashboardStore((s) => s.togglePinHighlight);
+  const folders             = useDashboardStore((s) => s.folders);
+  const highlights          = useDashboardStore((s) => s.highlights);
+  const count               = selectedIds.length;
+
+  // Deduplicate by string id — safety net against any sync path inserting duplicates
+  const uniqueFolders = React.useMemo(() => {
+    const seen = new Set<string>();
+    return folders.filter((f) => { const sid = String(f.id); if (seen.has(sid)) return false; seen.add(sid); return true; });
+  }, [folders]);
+
+  const handleBulkDelete = React.useCallback(() => {
+    const ids = [...selectedIds];
+    ids.forEach((id) => deleteHighlight(id));
+    clearSelection();
+    toast(`${ids.length} highlight${ids.length > 1 ? "s" : ""} deleted`, {
+      action: {
+        label: "Undo",
+        onClick: () => ids.forEach((id) => restoreHighlight(id)),
+      },
+      duration: 5000,
+    });
+  }, [selectedIds, deleteHighlight, restoreHighlight, clearSelection]);
+
+  const handleBulkMove = React.useCallback((folderId: string, folderName: string) => {
+    const ids = [...selectedIds];
+    ids.forEach((id) => moveHighlight(id, folderId, folderName));
+    clearSelection();
+    toast(`Moved ${ids.length} highlight${ids.length > 1 ? "s" : ""} to ${folderName}`);
+  }, [selectedIds, moveHighlight, clearSelection]);
+
+  const handleBulkFavorite = React.useCallback(() => {
+    const ids = [...selectedIds];
+    ids.forEach((id) => toggleFavorite(id));
+    toast(`Toggled favorite on ${ids.length} highlight${ids.length > 1 ? "s" : ""}`);
+  }, [selectedIds, toggleFavorite]);
+
+  const handleBulkArchive = React.useCallback(() => {
+    const ids = [...selectedIds];
+    ids.forEach((id) => toggleArchive(id));
+    clearSelection();
+    toast(`Archived ${ids.length} highlight${ids.length > 1 ? "s" : ""}`);
+  }, [selectedIds, toggleArchive, clearSelection]);
+
+  const handleBulkPin = React.useCallback(() => {
+    const ids = [...selectedIds];
+    ids.forEach((id) => togglePinHighlight(id));
+    toast(`Toggled pin on ${ids.length} highlight${ids.length > 1 ? "s" : ""}`);
+  }, [selectedIds, togglePinHighlight]);
+
+  const handleExport = React.useCallback(() => {
+    const selected = highlights.filter((h) => selectedIds.includes(h.id));
+    const json = JSON.stringify(selected, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `cortex-highlights-${Date.now()}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    clearSelection();
+    toast.success(`Exported ${selected.length} highlight${selected.length > 1 ? "s" : ""}`);
+  }, [selectedIds, highlights, clearSelection]);
+
+  return (
+    <AnimatePresence>
+      {count > 0 && (
+        <motion.div
+          key="bulk-bar"
+          initial={{ opacity: 0, y: 24, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0,  scale: 1    }}
+          exit={{    opacity: 0, y: 16, scale: 0.96 }}
+          transition={{ type: "spring", stiffness: 500, damping: 32, mass: 0.6 }}
+          className={cn(
+            "fixed bottom-8 left-1/2 -translate-x-1/2 z-50",
+            "bg-[#1a1a1a]/90 backdrop-blur-xl",
+            "border border-white/10 rounded-full shadow-2xl",
+            "px-4 py-2 flex items-center gap-4",
+          )}
+        >
+          {/* Selection count */}
+          <span className="text-[13px] font-medium text-white/80 whitespace-nowrap">
+            {count} selected
+          </span>
+
+          <div className="w-px h-4 bg-white/10 shrink-0" />
+
+          {/* Move to Folder (dropdown) */}
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild>
+              <button
+                className={cn(
+                  "inline-flex items-center gap-1.5 text-[12px] font-medium",
+                  "px-2.5 py-1 rounded-full transition-all duration-150",
+                  "text-white/65 hover:text-white/90 hover:bg-white/[0.07]",
+                )}
+              >
+                <FolderMoveIcon />
+                Move
+              </button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Portal>
+              <DropdownMenu.Content
+                sideOffset={8}
+                align="center"
+                side="top"
+                className={cn(
+                  "z-50 min-w-[160px] max-h-[240px] overflow-y-auto rounded-xl",
+                  "bg-[#1c1c1c] border border-white/[0.09]",
+                  "shadow-[0_8px_32px_rgba(0,0,0,0.5)]",
+                  "p-1",
+                  "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+                )}
+              >
+                {uniqueFolders.map((f) => (
+                  <DropdownMenu.Item
+                    key={f.id}
+                    className={cn(
+                      "flex items-center gap-2 px-2.5 py-1.5 rounded-lg",
+                      "text-[12px] text-white/70 hover:text-white",
+                      "hover:bg-white/[0.06] cursor-pointer outline-none transition-colors duration-100",
+                    )}
+                    onSelect={() => handleBulkMove(f.id, f.name)}
+                  >
+                    <span className="text-sm leading-none shrink-0">{f.emoji}</span>
+                    <span className="truncate">{f.name}</span>
+                  </DropdownMenu.Item>
+                ))}
+                {uniqueFolders.length === 0 && (
+                  <div className="px-3 py-2 text-[11px] text-white/30">No folders</div>
+                )}
+              </DropdownMenu.Content>
+            </DropdownMenu.Portal>
+          </DropdownMenu.Root>
+
+          {/* Pin */}
+          <BulkButton onClick={handleBulkPin}>
+            <BulkPinIcon />
+            Pin
+          </BulkButton>
+
+          {/* Favorite */}
+          <BulkButton onClick={handleBulkFavorite}>
+            <BulkStarIcon />
+            Favorite
+          </BulkButton>
+
+          {/* Archive */}
+          <BulkButton onClick={handleBulkArchive}>
+            <BulkArchiveIcon />
+            Archive
+          </BulkButton>
+
+          {/* Export */}
+          <BulkButton onClick={handleExport}>
+            <ExportIcon />
+            Export
+          </BulkButton>
+
+          <div className="w-px h-4 bg-white/10 shrink-0" />
+
+          {/* Delete */}
+          <BulkButton variant="danger" onClick={handleBulkDelete}>
+            <TrashIcon />
+          </BulkButton>
+
+          {/* Clear selection */}
+          <button
+            onClick={clearSelection}
+            className={cn(
+              "w-6 h-6 rounded-full flex items-center justify-center",
+              "text-white/40 hover:text-white/80",
+              "hover:bg-white/[0.08] transition-all duration-150",
+            )}
+            aria-label="Clear selection"
+          >
+            <CloseIcon />
+          </button>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+// ─── BulkButton ───────────────────────────────────────────────────────────────
+function BulkButton({
+  children,
+  onClick,
+  variant = "default",
+}: {
+  children: React.ReactNode;
+  onClick:  () => void;
+  variant?: "default" | "danger";
+}) {
+  return (
+    <button
+      onClick={onClick}
+      className={cn(
+        "inline-flex items-center gap-1.5 text-[12px] font-medium",
+        "px-2.5 py-1 rounded-full transition-all duration-150",
+        variant === "danger"
+          ? "text-red-400 hover:text-red-300 hover:bg-red-500/10"
+          : "text-white/65 hover:text-white/90 hover:bg-white/[0.07]",
+      )}
+    >
+      {children}
+    </button>
+  );
+}
+
+// ─── Icons ────────────────────────────────────────────────────────────────────
+function FolderMoveIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M1 3.5A1.5 1.5 0 012.5 2h2l1.5 1.5H10A1.5 1.5 0 0111 5v4a1.5 1.5 0 01-1.5 1.5h-7A1.5 1.5 0 011 9V3.5z" />
+    </svg>
+  );
+}
+
+function TagIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M1.5 1.5h3.88l5.12 5.12a1 1 0 010 1.42L8.04 10.5a1 1 0 01-1.42 0L1.5 5.38V1.5z" />
+      <circle cx="4" cy="4" r="0.7" fill="currentColor" />
+    </svg>
+  );
+}
+
+function TrashIcon() {
+  return (
+    <svg width="13" height="13" viewBox="0 0 13 13" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M2.5 3.5h8M5 3.5V2.5h3v1M5.5 6v3.5M7.5 6v3.5M3.5 3.5l.5 7.5h5l.5-7.5" />
+    </svg>
+  );
+}
+
+function ExportIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M6 2v6M3.5 4.5L6 2l2.5 2.5M2 8.5v1a1 1 0 001 1h6a1 1 0 001-1v-1" />
+    </svg>
+  );
+}
+
+function CloseIcon() {
+  return (
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
+      <path d="M2 2l6 6M8 2L2 8" />
+    </svg>
+  );
+}
+
+function BulkPinIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M9.5 2.5L13.5 6.5L10 10L9 13L3 7L6 6L9.5 2.5Z" />
+      <path d="M3 13L6 10" />
+    </svg>
+  );
+}
+
+function BulkStarIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M6 1l1.3 2.6 2.9.4-2.1 2.1.5 2.9L6 7.6 3.4 9l.5-2.9L1.8 4l2.9-.4z" />
+    </svg>
+  );
+}
+
+function BulkArchiveIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="1" y="1.5" width="10" height="3" rx="0.5" />
+      <path d="M2 4.5v5.5a1 1 0 001 1h6a1 1 0 001-1V4.5" />
+      <path d="M4.5 7h3" />
+    </svg>
+  );
+}

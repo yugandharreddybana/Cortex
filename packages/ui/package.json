@@ -1,0 +1,46 @@
+{
+  "name": "@cortex/ui",
+  "version": "0.0.1",
+  "private": true,
+  "exports": {
+    ".": "./src/index.ts",
+    "./button": "./src/components/Button/index.tsx",
+    "./command-palette": "./src/components/CommandPalette/index.tsx",
+    "./skeleton": "./src/components/Skeleton/index.tsx",
+    "./card": "./src/components/Card/index.tsx",
+    "./badge": "./src/components/Badge/index.tsx",
+    "./tooltip": "./src/components/Tooltip/index.tsx",
+    "./avatar": "./src/components/Avatar/index.tsx",
+    "./styles": "./src/styles/globals.css"
+  },
+  "scripts": {
+    "lint": "tsc --noEmit",
+    "type-check": "tsc --noEmit",
+    "clean": "rm -rf dist .turbo"
+  },
+  "dependencies": {
+    "@radix-ui/react-dialog":      "^1.1.4",
+    "@radix-ui/react-tooltip":     "^1.1.6",
+    "@radix-ui/react-avatar":      "^1.1.2",
+    "@radix-ui/react-scroll-area": "^1.2.2",
+    "@radix-ui/react-separator":   "^1.1.1",
+    "@radix-ui/react-slot":        "^1.1.1",
+    "framer-motion":               "^12.0.0",
+    "clsx":                        "^2.1.1",
+    "tailwind-merge":              "^2.6.0",
+    "cmdk":                        "^1.0.4"
+  },
+  "devDependencies": {
+    "@cortex/config-tailwind": "workspace:*",
+    "tailwindcss":             "^3.4.17",
+    "typescript":              "^5.7.2",
+    "@types/react":            "^19.0.7",
+    "@types/react-dom":        "^19.0.3",
+    "react":                   "^19.0.0",
+    "react-dom":               "^19.0.0"
+  },
+  "peerDependencies": {
+    "react":     "^18.0.0 || ^19.0.0",
+    "react-dom": "^18.0.0 || ^19.0.0"
+  }
+}
