@@ -48,6 +48,9 @@ cortex:
     extension-expiration-ms: 2592000000  # 30 days
   encryption:
     key: Kclxcd4KRneZx+7tVEkvp0gVRzxwz0/3Ml2KOA3zxmk=
+  stripe:
+    api-key: ${STRIPE_API_KEY:sk_test_123}
+    webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_123}
 
 cors:
   allowed-origins: http://localhost:3000,http://localhost:3001,https://localhost:3000,http://127.0.0.1:3000

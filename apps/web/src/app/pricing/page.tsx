@@ -6,6 +6,8 @@ import { motion } from "framer-motion";
 import * as Switch from "@radix-ui/react-switch";
 import { cn } from "@cortex/ui";
 import { Nav } from "@/components/layout/Nav";
+import { useAuthStore } from "@/store/authStore";
+import { useToastStore } from "@/store/useToastStore";
 
 // ─── Pricing data ─────────────────────────────────────────────────────────────
 const PLANS = [
@@ -235,19 +237,7 @@ function PricingCard({ plan, annual, index }: PricingCardProps) {
       </div>
 
       {/* CTA */}
-      <Link
-        href={plan.href}
-        className={cn(
-          "mb-7 w-full inline-flex items-center justify-center",
-          "h-9 px-4 rounded-xl text-sm font-medium",
-          "transition-all duration-200 ease-snappy",
-          plan.featured
-            ? "bg-accent hover:bg-accent/90 text-white shadow-[0_0_20px_rgba(108,99,255,0.35)]"
-            : "bg-white/[0.07] hover:bg-white/[0.12] text-white/80 border border-white/[0.08]",
-        )}
-      >
-        {plan.cta}
-      </Link>
+      <PricingCTA plan={plan} annual={annual} />
 
       {/* Divider */}
       <div className="border-t border-white/[0.06] mb-6" />
@@ -262,6 +252,84 @@ function PricingCard({ plan, annual, index }: PricingCardProps) {
         ))}
       </ul>
     </motion.div>
+  );
+}
+
+// ─── CTA Component ────────────────────────────────────────────────────────────
+function PricingCTA({ plan, annual }: { plan: typeof PLANS[number], annual: boolean }) {
+  const { user } = useAuthStore();
+  const { addToast } = useToastStore();
+  const [loading, setLoading] = React.useState(false);
+
+  const handleCheckout = async () => {
+    if (!user) {
+      window.location.href = `/login?returnTo=/pricing`;
+      return;
+    }
+
+    if (plan.id === "starter") {
+      window.location.href = "/dashboard";
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // In a real implementation, you would look up the exact price ID from Stripe
+      // based on plan.id and annual boolean. Using a dummy for now.
+      const priceId = annual ? `price_${plan.id}_annual` : `price_${plan.id}_monthly`;
+
+      const res = await fetch("/api/stripe/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          priceId,
+          successUrl: `${window.location.origin}/dashboard?success=true`,
+          cancelUrl: `${window.location.origin}/pricing?canceled=true`
+        })
+      });
+
+      if (!res.ok) throw new Error("Failed to create checkout session");
+      const { url } = await res.json();
+      window.location.href = url;
+    } catch (err: any) {
+      addToast({ title: "Error", description: err.message || "An error occurred" });
+      setLoading(false);
+    }
+  };
+
+  const isCurrentPlan = user?.tier === plan.id || (plan.id === "pro" && user?.tier === "premium");
+
+  if (isCurrentPlan) {
+    return (
+      <button
+        disabled
+        className={cn(
+          "mb-7 w-full inline-flex items-center justify-center",
+          "h-9 px-4 rounded-xl text-sm font-medium",
+          "bg-white/[0.05] text-white/40 border border-white/[0.05] cursor-not-allowed"
+        )}
+      >
+        Current Plan
+      </button>
+    );
+  }
+
+  return (
+    <button
+      onClick={handleCheckout}
+      disabled={loading}
+      className={cn(
+        "mb-7 w-full inline-flex items-center justify-center",
+        "h-9 px-4 rounded-xl text-sm font-medium",
+        "transition-all duration-200 ease-snappy",
+        loading && "opacity-70 cursor-wait",
+        plan.featured
+          ? "bg-accent hover:bg-accent/90 text-white shadow-[0_0_20px_rgba(108,99,255,0.35)]"
+          : "bg-white/[0.07] hover:bg-white/[0.12] text-white/80 border border-white/[0.08]",
+      )}
+    >
+      {loading ? "Please wait..." : plan.cta}
+    </button>
   );
 }
 
