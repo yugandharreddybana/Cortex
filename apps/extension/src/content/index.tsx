@@ -433,6 +433,12 @@ if (document.readyState === "loading") {
 
 // ─── Toast notification (context-menu feedback) ──────────────────────────────
 
+declare global {
+  interface Window {
+    showToast: (message: string) => void;
+  }
+}
+
 function showToast(message: string) {
   try {
     const existing = document.getElementById("cortex-toast");
@@ -480,4 +486,4 @@ function showToast(message: string) {
 }
 
 // Attach to window for SidebarCapture
-(window as any).showToast = showToast;
+window.showToast = showToast;
