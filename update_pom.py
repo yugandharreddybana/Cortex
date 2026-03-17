@@ -1,0 +1,3 @@
+import xml.etree.ElementTree as ET
+
+# Wait, instead of manually parsing the POM, I can just use maven to add it, but since I have full access to bash, I can modify the pom directly or use xmlstarlet or a simple sed. Actually, since I have python available...
