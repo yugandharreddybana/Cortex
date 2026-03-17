@@ -3,10 +3,10 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://aws-1-eu-west-1.pooler.supabase.com:6543/postgres?pgbouncer=true
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/postgres}
     driver-class-name: org.postgresql.Driver
-    username: postgres.gppcofxrfuxnmgvlpend
-    password: ItzMeYugi@0809
+    username: ${SPRING_DATASOURCE_USERNAME:postgres}
+    password: ${SPRING_DATASOURCE_PASSWORD:postgres}
     hikari:
       minimum-idle: 1          
       maximum-pool-size: 2    
@@ -43,17 +43,29 @@ spring:
 
 cortex:
   jwt:
-    secret: WJZRwc+sIiYM1SIoHe1ETsLNakMJwurxkoUx9Tvs0EY=
+    secret: ${CORTEX_JWT_SECRET:your-256-bit-secret}
     expiration-ms: 604800000        # 7 days
     extension-expiration-ms: 2592000000  # 30 days
   encryption:
-    key: Kclxcd4KRneZx+7tVEkvp0gVRzxwz0/3Ml2KOA3zxmk=
+    key: ${CORTEX_ENCRYPTION_KEY:your-256-bit-secret}
   stripe:
     api-key: ${STRIPE_API_KEY:sk_test_123}
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_123}
 
 cors:
   allowed-origins: http://localhost:3000,http://localhost:3001,https://localhost:3000,http://127.0.0.1:3000
+
+spring.mail:
+  host: ${SMTP_HOST:smtp.gmail.com}
+  port: ${SMTP_PORT:587}
+  username: ${SMTP_USERNAME:}
+  password: ${SMTP_PASSWORD:}
+  properties:
+    mail:
+      smtp:
+        auth: true
+        starttls:
+          enable: true
 
 logging:
   level:

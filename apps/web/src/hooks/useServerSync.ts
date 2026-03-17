@@ -115,7 +115,7 @@ async function applyResponses(hRes: Response, fRes: Response, tRes: Response) {
   }
 
   if (Object.keys(patch).length > 0) {
-    useDashboardStore.setState(patch);
+    useDashboardStore.setState(patch as unknown as Parameters<typeof useDashboardStore.setState>[0]);
   }
 }
 
