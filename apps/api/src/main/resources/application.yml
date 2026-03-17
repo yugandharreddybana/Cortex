@@ -43,11 +43,11 @@ spring:
 
 cortex:
   jwt:
-    secret: WJZRwc+sIiYM1SIoHe1ETsLNakMJwurxkoUx9Tvs0EY=
+    secret: ${CORTEX_JWT_SECRET}
     expiration-ms: 604800000        # 7 days
     extension-expiration-ms: 2592000000  # 30 days
   encryption:
-    key: Kclxcd4KRneZx+7tVEkvp0gVRzxwz0/3Ml2KOA3zxmk=
+    key: ${CORTEX_ENCRYPTION_KEY}
 
 cors:
   allowed-origins: http://localhost:3000,http://localhost:3001,https://localhost:3000,http://127.0.0.1:3000
