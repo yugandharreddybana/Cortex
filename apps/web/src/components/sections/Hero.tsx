@@ -239,7 +239,13 @@ function DashboardPlaceholder() {
     { icon: "▣", label: "Archive", count: "", active: false },
   ];
 
-  const folders: any[] = [];
+  interface FolderItem {
+    name: string;
+    emoji: string;
+    count: string | number;
+  }
+
+  const folders: FolderItem[] = [];
 
   const cards = [
     { topic: "Technology", topicColor: "bg-blue-500/20 text-blue-300", text: "The best way to predict the future is to invent it. Personal computing was a direct result of this philosophy…", source: "The Dream Machine", time: "2h ago" },
