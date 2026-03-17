@@ -243,8 +243,12 @@ public class FolderService {
         }
 
         // Remove all permission records for descendants (cleanup shared access)
-        for (Folder descendant : allDescendants) {
-            permissionRepository.deleteByResourceIdAndResourceType(descendant.getId(), SharedLink.ResourceType.FOLDER);
+        List<Long> descendantIds = allDescendants.stream()
+                .map(Folder::getId)
+                .collect(java.util.stream.Collectors.toList());
+
+        if (!descendantIds.isEmpty()) {
+            permissionRepository.deleteByResourceIdInAndResourceType(descendantIds, SharedLink.ResourceType.FOLDER);
         }
 
         // Hard-delete all descendants (including root folder)
