@@ -132,4 +132,8 @@ public class SecurityService {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         return Long.parseLong(auth.getName());
     }
+
+    public Long getCurrentUserId() {
+        return currentUserId();
+    }
 }
