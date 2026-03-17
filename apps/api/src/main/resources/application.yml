@@ -47,6 +47,10 @@ cortex:
     expiration-ms: 604800000        # 7 days
     extension-expiration-ms: 2592000000  # 30 days
   encryption:
+    key: Kclxcd4KRneZx+7tVEkvp0gVRzxwz0/3Ml2KOA3zxmk=
+  stripe:
+    api-key: ${STRIPE_API_KEY:sk_test_123}
+    webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_123}
     key: ${CORTEX_ENCRYPTION_KEY:your-256-bit-secret}
 
 cors:

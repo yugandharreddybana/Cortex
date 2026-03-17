@@ -20,12 +20,32 @@ export default function BillingPage() {
   const user = useAuthStore((s) => s.user);
   const [cancelOpen,    setCancelOpen]    = React.useState(false);
   const [teamsOpen,     setTeamsOpen]     = React.useState(false);
+  const [loadingPortal, setLoadingPortal] = React.useState(false);
 
   const tier = user?.tier ?? "starter";
   const config = TIER_CONFIG[tier] ?? TIER_CONFIG.starter;
   const memberSince = user?.createdAt
     ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
     : "—";
+
+  const handleManageBilling = async () => {
+    setLoadingPortal(true);
+    try {
+      const res = await fetch("/api/stripe/portal", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+           returnUrl: `${window.location.origin}/dashboard/settings/billing`
+        })
+      });
+      if (!res.ok) throw new Error("Failed to open billing portal");
+      const { url } = await res.json();
+      window.location.href = url;
+    } catch (err: any) {
+      toast.error(err.message || "Failed to open billing portal");
+      setLoadingPortal(false);
+    }
+  };
 
   return (
     <div className="p-6 lg:p-8 max-w-2xl">
@@ -55,9 +75,25 @@ export default function BillingPage() {
       >
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-sm font-medium text-white/70">Current Plan</h2>
-          <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-accent/15 text-accent border border-accent/25">
-            Active
-          </span>
+          <div className="flex gap-2">
+            {tier !== "starter" && (
+              <button
+                onClick={handleManageBilling}
+                disabled={loadingPortal}
+                className={cn(
+                  "text-xs font-semibold px-2.5 py-1 rounded-full",
+                  "bg-white/[0.05] text-white/70 border border-white/10",
+                  "hover:bg-white/10 transition-colors",
+                  loadingPortal && "opacity-50 cursor-wait"
+                )}
+              >
+                {loadingPortal ? "Loading..." : "Manage Billing"}
+              </button>
+            )}
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-accent/15 text-accent border border-accent/25">
+              Active
+            </span>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 gap-x-6 gap-y-4">
@@ -103,7 +139,7 @@ export default function BillingPage() {
           )}
           {tier === "starter" && (
             <button
-              onClick={() => toast.info("Stripe checkout coming soon")}
+              onClick={() => { window.location.href = '/pricing'; }}
               className={cn(
                 "h-9 px-5 rounded-xl text-sm",
                 "border border-white/[0.12] text-white/60",
@@ -144,15 +180,17 @@ export default function BillingPage() {
         </p>
 
         <button
-          onClick={() => setCancelOpen(true)}
+          onClick={handleManageBilling}
+          disabled={loadingPortal}
           className={cn(
             "h-9 px-5 rounded-xl text-sm",
             "border border-red-500/20 text-red-400",
             "hover:bg-red-500/10 hover:border-red-500/40",
             "transition-colors duration-150 active:scale-95",
+            loadingPortal && "opacity-50 cursor-wait"
           )}
         >
-          Cancel Subscription
+          {loadingPortal ? "Redirecting..." : "Manage Subscription via Stripe"}
         </button>
       </motion.div>
       )}
