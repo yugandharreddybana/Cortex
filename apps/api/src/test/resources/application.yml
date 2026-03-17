@@ -26,3 +26,6 @@ cortex:
   stripe:
     api-key: sk_test_123
     webhook-secret: whsec_123
+  sql:
+    init:
+      mode: never
