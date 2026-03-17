@@ -76,7 +76,7 @@ async function applyResponses(hRes: Response, fRes: Response, tRes: Response) {
     tRes.ok ? tRes.json() : null,
   ]);
 
-  const patch: Record<string, unknown> = {};
+  const patch: Partial<ReturnType<typeof useDashboardStore.getState>> = {};
 
   if (rawHighlights !== null) {
     patch.highlights = dedupById(
