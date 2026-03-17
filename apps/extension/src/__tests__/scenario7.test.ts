@@ -129,7 +129,7 @@ describe("Scenario 7 — Deep-Nest Offline Race Condition", () => {
   let tempIdMap: Map<string, string>;
   let postFolderToApi: ReturnType<typeof vi.fn>;
   let postTagToApi:    ReturnType<typeof vi.fn>;
-  let resolveTempIds: ReturnType<ReturnType<typeof buildResolver>>;
+  let resolveTempIds: ReturnType<typeof buildResolver>;
 
   beforeEach(() => {
     storedFolders = [
