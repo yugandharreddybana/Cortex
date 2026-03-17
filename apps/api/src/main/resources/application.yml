@@ -51,7 +51,6 @@ cortex:
   stripe:
     api-key: ${STRIPE_API_KEY:sk_test_123}
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_123}
-    key: ${CORTEX_ENCRYPTION_KEY:your-256-bit-secret}
 
 cors:
   allowed-origins: http://localhost:3000,http://localhost:3001,https://localhost:3000,http://127.0.0.1:3000
