@@ -1,149 +1,142 @@
+-- V1 Initial Schema generated from existing JPA entities
+
 CREATE TABLE IF NOT EXISTS users (
-    id UUID PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     created_at TIMESTAMP(6) WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP(6) WITH TIME ZONE,
     email VARCHAR(255) NOT NULL UNIQUE,
     full_name VARCHAR(255),
     avatar_url VARCHAR(255),
     password_hash VARCHAR(255) NOT NULL,
     tier VARCHAR(255) NOT NULL DEFAULT 'starter',
-    email_hash VARCHAR(64) NOT NULL UNIQUE,
-    encrypted_email VARCHAR(255) NOT NULL UNIQUE,
-    stripe_customer_id VARCHAR(255)
+    email_hash VARCHAR(255) NOT NULL UNIQUE,
+    encrypted_email VARCHAR(255) NOT NULL UNIQUE
 );
 
 CREATE TABLE IF NOT EXISTS folder (
-    id UUID PRIMARY KEY,
-    created_at TIMESTAMP(6) WITH TIME ZONE NOT NULL,
+    id BIGSERIAL PRIMARY KEY,
+    created_at TIMESTAMP(6) WITH TIME ZONE,
     updated_at TIMESTAMP(6) WITH TIME ZONE,
     name VARCHAR(255) NOT NULL,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    parent_id UUID REFERENCES folder(id) ON DELETE SET NULL,
-    color VARCHAR(255) DEFAULT 'gray'
+    emoji VARCHAR(255) NOT NULL DEFAULT '📁',
+    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+    parent_folder_id BIGINT REFERENCES folder(id) ON DELETE SET NULL,
+    is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
+    link_access SMALLINT NOT NULL DEFAULT 0,
+    default_link_role SMALLINT NOT NULL DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS tag (
-    id UUID PRIMARY KEY,
-    created_at TIMESTAMP(6) WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP(6) WITH TIME ZONE,
+    id BIGSERIAL PRIMARY KEY,
     name VARCHAR(255) NOT NULL,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    color VARCHAR(255) DEFAULT 'gray'
+    color VARCHAR(255) NOT NULL,
+    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS shared_link (
-    id UUID PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     created_at TIMESTAMP(6) WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP(6) WITH TIME ZONE,
-    resource_id UUID NOT NULL,
-    resource_type VARCHAR(255) NOT NULL,
-    token VARCHAR(255) NOT NULL UNIQUE,
-    access_level VARCHAR(255) NOT NULL,
-    expires_at TIMESTAMP(6) WITH TIME ZONE,
-    password_hash VARCHAR(255),
-    max_uses INTEGER,
-    uses INTEGER NOT NULL DEFAULT 0,
-    created_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE
+    unique_hash VARCHAR(255) NOT NULL UNIQUE,
+    resource_type SMALLINT NOT NULL,
+    resource_id BIGINT NOT NULL,
+    created_by_id BIGINT REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS link_access (
-    id UUID PRIMARY KEY,
-    created_at TIMESTAMP(6) WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP(6) WITH TIME ZONE,
-    shared_link_id UUID NOT NULL REFERENCES shared_link(id) ON DELETE CASCADE,
-    ip_address VARCHAR(255),
-    user_agent VARCHAR(255),
-    accessed_by UUID REFERENCES users(id) ON DELETE SET NULL
+    id BIGSERIAL PRIMARY KEY
 );
 
 CREATE TABLE IF NOT EXISTS highlight (
-    id UUID PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     created_at TIMESTAMP(6) WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP(6) WITH TIME ZONE,
-    content TEXT NOT NULL,
-    source_url VARCHAR(255),
-    page_title VARCHAR(255),
-    color VARCHAR(255) DEFAULT 'yellow',
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    folder_id UUID REFERENCES folder(id) ON DELETE SET NULL
+    text TEXT NOT NULL,
+    source TEXT NOT NULL,
+    url TEXT NOT NULL,
+    topic TEXT,
+    topic_color VARCHAR(255),
+    saved_at VARCHAR(255) NOT NULL,
+    folder_id BIGINT REFERENCES folder(id) ON DELETE SET NULL,
+    note TEXT,
+    is_code BOOLEAN NOT NULL DEFAULT FALSE,
+    is_favorite BOOLEAN NOT NULL DEFAULT FALSE,
+    is_archived BOOLEAN NOT NULL DEFAULT FALSE,
+    is_pinned BOOLEAN NOT NULL DEFAULT FALSE,
+    highlight_color VARCHAR(255),
+    is_ai BOOLEAN NOT NULL DEFAULT FALSE,
+    chat_name TEXT,
+    chat_url TEXT,
+    resource_type SMALLINT NOT NULL DEFAULT 0,
+    video_timestamp INTEGER,
+    link_access SMALLINT NOT NULL DEFAULT 0,
+    default_link_role SMALLINT NOT NULL DEFAULT 0,
+    is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
+    deleted_by_user_id BIGINT,
+    deleted_at TIMESTAMP(6) WITH TIME ZONE,
+    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS comment (
-    id UUID PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     created_at TIMESTAMP(6) WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP(6) WITH TIME ZONE,
-    content TEXT NOT NULL,
-    highlight_id UUID NOT NULL REFERENCES highlight(id) ON DELETE CASCADE,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    parent_id UUID REFERENCES comment(id) ON DELETE CASCADE
+    text TEXT NOT NULL,
+    highlight_id BIGINT REFERENCES highlight(id) ON DELETE CASCADE,
+    author_id BIGINT REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS highlight_tag (
-    highlight_id UUID NOT NULL REFERENCES highlight(id) ON DELETE CASCADE,
-    tag_id UUID NOT NULL REFERENCES tag(id) ON DELETE CASCADE,
+    highlight_id BIGINT NOT NULL REFERENCES highlight(id) ON DELETE CASCADE,
+    tag_id BIGINT NOT NULL REFERENCES tag(id) ON DELETE CASCADE,
     PRIMARY KEY (highlight_id, tag_id)
 );
 
 CREATE TABLE IF NOT EXISTS resource_permission (
-    id UUID PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     created_at TIMESTAMP(6) WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP(6) WITH TIME ZONE,
-    resource_id UUID NOT NULL,
-    resource_type VARCHAR(255) NOT NULL,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    access_level VARCHAR(255) NOT NULL,
-    status VARCHAR(255) NOT NULL,
-    granted_by UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE
+    resource_id BIGINT NOT NULL,
+    resource_type SMALLINT NOT NULL,
+    access_level SMALLINT NOT NULL,
+    status SMALLINT NOT NULL DEFAULT 0,
+    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS user_shared_view (
-    id UUID PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     created_at TIMESTAMP(6) WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP(6) WITH TIME ZONE,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    resource_id UUID NOT NULL,
-    resource_type VARCHAR(255) NOT NULL,
-    last_accessed_at TIMESTAMP(6) WITH TIME ZONE,
-    is_hidden BOOLEAN NOT NULL DEFAULT FALSE,
-    is_pinned BOOLEAN NOT NULL DEFAULT FALSE
+    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+    shared_link_id BIGINT REFERENCES shared_link(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS notification (
-    id UUID PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     created_at TIMESTAMP(6) WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP(6) WITH TIME ZONE,
-    recipient_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    actor_id UUID REFERENCES users(id) ON DELETE SET NULL,
-    type VARCHAR(255) NOT NULL,
-    resource_id UUID,
-    resource_type VARCHAR(255),
     message TEXT NOT NULL,
     is_read BOOLEAN NOT NULL DEFAULT FALSE,
-    action_url VARCHAR(255)
+    action_url TEXT,
+    type VARCHAR(255) NOT NULL DEFAULT 'GENERAL',
+    metadata TEXT,
+    responded VARCHAR(255),
+    actor_id BIGINT,
+    action_type VARCHAR(32),
+    target_entity_id BIGINT,
+    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE
 );
 
 CREATE TABLE IF NOT EXISTS batched_email_event (
-    id UUID PRIMARY KEY,
-    created_at TIMESTAMP(6) WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP(6) WITH TIME ZONE,
-    recipient_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    actor_id UUID REFERENCES users(id) ON DELETE SET NULL,
-    type VARCHAR(255) NOT NULL,
-    resource_id UUID,
-    resource_type VARCHAR(255),
-    message TEXT NOT NULL,
-    status VARCHAR(255) NOT NULL
+    id BIGSERIAL PRIMARY KEY,
+    folder_id BIGINT NOT NULL,
+    folder_name VARCHAR(255) NOT NULL,
+    action_count INTEGER NOT NULL DEFAULT 1,
+    first_action_at TIMESTAMP(6) WITH TIME ZONE NOT NULL,
+    last_action_at TIMESTAMP(6) WITH TIME ZONE NOT NULL,
+    processed BOOLEAN NOT NULL DEFAULT FALSE,
+    processed_at TIMESTAMP(6) WITH TIME ZONE,
+    owner_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+    editor_id BIGINT REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE IF NOT EXISTS extension_token (
-    id UUID PRIMARY KEY,
+    id BIGSERIAL PRIMARY KEY,
     created_at TIMESTAMP(6) WITH TIME ZONE NOT NULL,
-    updated_at TIMESTAMP(6) WITH TIME ZONE,
-    user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-    token VARCHAR(255) NOT NULL UNIQUE,
-    device_name VARCHAR(255),
     expires_at TIMESTAMP(6) WITH TIME ZONE NOT NULL,
-    last_used_at TIMESTAMP(6) WITH TIME ZONE,
-    is_active BOOLEAN NOT NULL DEFAULT TRUE
+    token TEXT NOT NULL UNIQUE,
+    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE
 );
