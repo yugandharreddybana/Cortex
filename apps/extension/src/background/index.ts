@@ -489,7 +489,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
       const { action, entity, payload = {}, offline = false } = message as {
         action: string; entity: string; payload: Record<string, unknown>; offline?: boolean;
       };
-      console.log(`[Cortex Sync - SW] WEB_MUTATION ${action}:${entity}`, payload.id ?? "", offline ? "(offline)" : "");
       (async () => {
         try {
           switch (`${action}:${entity}`) {
@@ -556,7 +555,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     case "PANEL_CREATE_FOLDER": {
       const folderPayload = (message.payload ?? {}) as Record<string, unknown>;
       const tempId = folderPayload["id"] as string;
-      console.log(`[Cortex Sync - SW] PANEL_CREATE_FOLDER id=${tempId}`);
 
       if (!pendingFolderCreations.has(tempId)) {
         const p = (async (): Promise<string> => {
@@ -609,7 +607,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             }
             await broadcastStorageUpdateToAllTabs({ folders: await secureGet("cortex_folders", []) });
 
-            console.log(`[Cortex Sync - SW] PANEL_CREATE_FOLDER saved id=${realId}`);
             return realId;
           } catch (err) {
             console.error(`[Cortex Sync - SW] PANEL_CREATE_FOLDER error`, err);
@@ -632,7 +629,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     case "PANEL_CREATE_TAG": {
       const tagPayload = (message.payload ?? {}) as Record<string, unknown>;
       const tempTagId = tagPayload["id"] as string;
-      console.log(`[Cortex Sync - SW] PANEL_CREATE_TAG id=${tempTagId}`);
 
       if (!pendingTagCreations.has(tempTagId)) {
         const p = (async (): Promise<string> => {
@@ -683,7 +679,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             }
             await broadcastStorageUpdateToAllTabs({ tags: await secureGet("cortex_tags", []) });
 
-            console.log(`[Cortex Sync - SW] PANEL_CREATE_TAG saved id=${realId}`);
             return realId;
           } catch (err) {
             console.error(`[Cortex Sync - SW] PANEL_CREATE_TAG error`, err);
@@ -794,7 +789,6 @@ async function broadcastStorageUpdateToAllTabs(data: Record<string, unknown>): P
         chrome.tabs.sendMessage(tab.id, { type: "STORAGE_UPDATED", data }).catch(() => {});
       }
     }
-    console.log(`[Cortex Sync - SW] STORAGE_UPDATED broadcast to ${tabs.length} tab(s)`);
   } catch { /* tabs API may not be ready during SW startup */ }
 }
 
@@ -942,7 +936,6 @@ async function resolveOneFolderTempId(
 ): Promise<string> {
   // 1. In-flight PANEL_CREATE_FOLDER for this id? Await it (Scenario 6 dedup).
   if (pendingFolderCreations.has(folderId)) {
-    console.log(`[Cortex Sync - SW] Scenario 6: awaiting pending folder tempId=${folderId}`);
     try { return await pendingFolderCreations.get(folderId)!; } catch { return folderId; }
   }
 
