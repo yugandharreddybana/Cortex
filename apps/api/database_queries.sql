@@ -1,21 +1,12 @@
--- =========================================================================
--- MASTER LOG OF DATABASE QUERIES
--- =========================================================================
--- This file contains all the historical SQL commands executed in this project.
--- DO NOT RUN this entire file directly if your database already has data.
--- Use the Flyway migrations in 'src/main/resources/db/migration' to update the schema automatically.
--- =========================================================================
-
--- -------------------------------------------------------------------------
--- Initial Schema setup (Base generation from JPA entities)
--- Executed via Hibernate auto-DDL previously, now tracked as V1 Migration.
--- -------------------------------------------------------------------------
-
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY,
     created_at TIMESTAMP(6) WITH TIME ZONE NOT NULL,
     updated_at TIMESTAMP(6) WITH TIME ZONE,
     email VARCHAR(255) NOT NULL UNIQUE,
+    full_name VARCHAR(255),
+    avatar_url VARCHAR(255),
+    password_hash VARCHAR(255) NOT NULL,
+    tier VARCHAR(255) NOT NULL DEFAULT 'starter',
     email_hash VARCHAR(64) NOT NULL UNIQUE,
     encrypted_email VARCHAR(255) NOT NULL UNIQUE,
     stripe_customer_id VARCHAR(255)
@@ -157,10 +148,8 @@ CREATE TABLE IF NOT EXISTS extension_token (
     is_active BOOLEAN NOT NULL DEFAULT TRUE
 );
 
-
 -- -------------------------------------------------------------------------
 -- Update: Add subscription_status to users table
 -- Flyway Migration: V2__add_subscription_status_to_users.sql
--- Reason: To store Stripe subscription tiers. Executed to replace Hibernate auto-update timeout.
 -- -------------------------------------------------------------------------
 ALTER TABLE users ADD COLUMN subscription_status VARCHAR(255);
