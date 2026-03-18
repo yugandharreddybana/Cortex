@@ -1,10 +1,12 @@
--- V1 Initial Schema generated from existing JPA entities
-
 CREATE TABLE IF NOT EXISTS users (
     id UUID PRIMARY KEY,
     created_at TIMESTAMP(6) WITH TIME ZONE NOT NULL,
     updated_at TIMESTAMP(6) WITH TIME ZONE,
     email VARCHAR(255) NOT NULL UNIQUE,
+    full_name VARCHAR(255),
+    avatar_url VARCHAR(255),
+    password_hash VARCHAR(255) NOT NULL,
+    tier VARCHAR(255) NOT NULL DEFAULT 'starter',
     email_hash VARCHAR(64) NOT NULL UNIQUE,
     encrypted_email VARCHAR(255) NOT NULL UNIQUE,
     stripe_customer_id VARCHAR(255)
