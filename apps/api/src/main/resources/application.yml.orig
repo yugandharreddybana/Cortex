@@ -8,11 +8,11 @@ spring:
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:postgres}
     hikari:
-      minimum-idle: 1          
-      maximum-pool-size: 20
-      idle-timeout: 30000      
-      max-lifetime: 600000    
-      connection-timeout: 10000 
+      minimum-idle: 1
+      maximum-pool-size: 2
+      idle-timeout: 30000
+      max-lifetime: 600000
+      connection-timeout: 10000
       keepalive-time: 60000
       connection-test-query: SELECT 1
       data-source-properties:
@@ -33,12 +33,10 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         jdbc:
-          batch_size: 50
-          fetch_size: 50
+          batch_size: 0
+          fetch_size: 0
         generate_statistics: false
-        order_inserts: true
-        order_updates: true
-        batch_versioned_data: true
+        statement_batch_size: 0
   task:
     scheduling:
       pool:
