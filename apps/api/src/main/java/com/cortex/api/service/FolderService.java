@@ -27,7 +27,9 @@ import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 @Service
 public class FolderService {
@@ -243,8 +245,12 @@ public class FolderService {
         }
 
         // Remove all permission records for descendants (cleanup shared access)
-        for (Folder descendant : allDescendants) {
-            permissionRepository.deleteByResourceIdAndResourceType(descendant.getId(), SharedLink.ResourceType.FOLDER);
+        List<Long> descendantIds = allDescendants.stream()
+                .map(Folder::getId)
+                .collect(java.util.stream.Collectors.toList());
+
+        if (!descendantIds.isEmpty()) {
+            permissionRepository.deleteByResourceIdInAndResourceType(descendantIds, SharedLink.ResourceType.FOLDER);
         }
 
         // Hard-delete all descendants (including root folder)
@@ -277,19 +283,43 @@ public class FolderService {
 
     @Transactional
     public List<Folder> syncFolders(User user, List<FolderDTO> dtos) {
+        // Optimization: Collect all folder IDs and parent IDs needed for upsert to fetch them in a single query
+        List<Long> neededFolderIds = new ArrayList<>();
+        for (FolderDTO dto : dtos) {
+            if (dto.id != null) {
+                neededFolderIds.add(dto.id);
+            }
+            if (dto.parentIdPresent && dto.parentId != null) {
+                neededFolderIds.add(Long.valueOf(dto.parentId));
+            }
+        }
+
+        Map<Long, Folder> existingFoldersMap;
+        if (!neededFolderIds.isEmpty()) {
+            List<Folder> existingFolders = folderRepository.findAllByIdsAndUserId(neededFolderIds, user.getId());
+            existingFoldersMap = existingFolders.stream()
+                    .collect(Collectors.toMap(Folder::getId, folder -> folder, (existing, replacement) -> existing));
+        } else {
+            existingFoldersMap = java.util.Collections.emptyMap();
+        }
+
+        List<Folder> foldersToSave = new ArrayList<>();
+
         for (FolderDTO dto : dtos) {
             Folder f;
             if (dto.id != null) {
                 // dto.id is already a Long (auto-increment PK); use it directly for upsert lookup
-                f = folderRepository.findByIdAndUserId(dto.id, user.getId())
-                        .orElseGet(() -> {
-                            Folder newF = new Folder();
-                            newF.setUser(user);
-                            // Set default values for new folders
-                            newF.setLinkAccess(com.cortex.api.entity.LinkAccess.RESTRICTED);
-                            newF.setDefaultLinkRole(com.cortex.api.entity.AccessLevel.VIEWER);
-                            return newF;
-                        });
+                Folder existing = existingFoldersMap.get(dto.id);
+                if (existing != null) {
+                    f = existing;
+                } else {
+                    Folder newF = new Folder();
+                    newF.setUser(user);
+                    // Set default values for new folders
+                    newF.setLinkAccess(com.cortex.api.entity.LinkAccess.RESTRICTED);
+                    newF.setDefaultLinkRole(com.cortex.api.entity.AccessLevel.VIEWER);
+                    f = newF;
+                }
             } else {
                 f = new Folder();
                 f.setUser(user);
@@ -325,8 +355,11 @@ public class FolderService {
             // Handle parent folder reference (sync always sends parentId)
             if (dto.parentIdPresent) {
                 if (dto.parentId != null) {
-                    Folder parent = folderRepository.findByIdAndUserId(Long.valueOf(dto.parentId), user.getId())
-                            .orElse(null);
+                    Folder parent = existingFoldersMap.get(Long.valueOf(dto.parentId));
+                    // Note: If parent was created in this batch and didn't exist in DB,
+                    // it wouldn't be in existingFoldersMap. However, clients must create
+                    // parent folders in separate requests or rely on the final DB state.
+                    // For now, this replicates the previous logic's `findByIdAndUserId` behavior.
                     f.setParentFolder(parent);
                 } else {
                     f.setParentFolder(null);
@@ -334,9 +367,11 @@ public class FolderService {
             }
             
             f.setPinned(dto.isPinned);
-            folderRepository.save(f);
+            foldersToSave.add(f);
         }
         
+        folderRepository.saveAll(foldersToSave);
+
         return getFoldersByUserId(user.getId());
     }
 
