@@ -5,9 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 export async function POST(req: NextRequest) {
   try {
     const session = await getSession();
-    console.log('[API][LOGIN] Incoming request', req.method, req.url);
     const body = await req.json();
-    console.log('[API][LOGIN] Request body:', body);
     const parsed = loginSchema.safeParse(body);
 
     if (!parsed.success) {
@@ -18,7 +16,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    console.log('[API][LOGIN] Forwarding to backend:', `${API_BASE}/api/v1/auth/login`);
     let upstream: Response;
     try {
       upstream = await fetch(`${API_BASE}/api/v1/auth/login`, {
@@ -30,7 +27,6 @@ export async function POST(req: NextRequest) {
       console.error('[API][LOGIN] Backend unreachable');
       return NextResponse.json({ success: false, error: "Server is currently unavailable. Please try again shortly." }, { status: 503 });
     }
-    console.log('[API][LOGIN] Upstream response status:', upstream.status);
 
     if (!upstream.ok) {
       const status = upstream.status;
@@ -44,7 +40,6 @@ export async function POST(req: NextRequest) {
     }
 
     const data = (await upstream.json()) as { token: string; user: { id: string; email: string; tier: string } };
-    console.log('[API][LOGIN] Upstream response data:', data);
 
     session.user = {
       token: data.token,

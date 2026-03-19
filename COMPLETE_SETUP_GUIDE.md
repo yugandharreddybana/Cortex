@@ -6,13 +6,13 @@
 
 **API (.env)** - `/apps/api/.env`
 ```
-DB_HOST=aws-1-eu-west-1.pooler.supabase.com
+DB_HOST=your-db-host
 DB_PORT=5432
-DB_NAME=postgres
-DB_USER=postgres.gppcofxrfuxnmgvlpend
-DB_PASSWORD=ItzMeYugi@0809
-JWT_SECRET=WJZRwc+sIiYM1SIoHe1ETsLNakMJwurxkoUx9Tvs0EY=
-ENCRYPTION_KEY=Kclxcd4KRneZx+7tVEkvp0gVRzxwz0/3Ml2KOA3zxmk=
+DB_NAME=your-db-name
+DB_USER=your-db-user
+DB_PASSWORD=your-db-password
+JWT_SECRET=your-32-character-jwt-secret
+ENCRYPTION_KEY=your-32-character-encryption-key
 ```
 
 **Web (.env.local)** - `/apps/web/.env.local`

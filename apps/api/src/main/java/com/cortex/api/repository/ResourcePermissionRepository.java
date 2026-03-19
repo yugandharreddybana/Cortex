@@ -24,4 +24,7 @@ public interface ResourcePermissionRepository extends JpaRepository<ResourcePerm
 
     void deleteByResourceIdAndResourceType(
             Long resourceId, SharedLink.ResourceType resourceType);
+
+    void deleteByResourceIdInAndResourceType(
+            List<Long> resourceIds, SharedLink.ResourceType resourceType);
 }
