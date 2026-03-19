@@ -41,6 +41,12 @@ public class User {
     @Column(nullable = false)
     private String encryptedEmail; // The actual AES-GCM payload
 
+    @Column(name = "stripe_customer_id")
+    private String stripeCustomerId;
+
+    @Column(name = "subscription_status")
+    private String subscriptionStatus; // e.g., active, past_due, canceled
+
     @PrePersist
     void onCreate() {
         if (createdAt == null) {
@@ -74,4 +80,10 @@ public class User {
 
     public String getEncryptedEmail() { return encryptedEmail; }
     public void setEncryptedEmail(String encryptedEmail) { this.encryptedEmail = encryptedEmail; }
+
+    public String getStripeCustomerId() { return stripeCustomerId; }
+    public void setStripeCustomerId(String stripeCustomerId) { this.stripeCustomerId = stripeCustomerId; }
+
+    public String getSubscriptionStatus() { return subscriptionStatus; }
+    public void setSubscriptionStatus(String subscriptionStatus) { this.subscriptionStatus = subscriptionStatus; }
 }

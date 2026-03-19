@@ -1,6 +1,8 @@
 package com.cortex.api.service;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.slf4j.Logger;
@@ -49,6 +51,15 @@ public class EmailService {
     @Value("${cortex.mail.enabled:false}")
     private boolean mailEnabled;
 
+    @Value("${spring.mail.username:noreply@cortex.com}")
+    private String fromAddress;
+
+    private final JavaMailSender mailSender;
+
+    public EmailService(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
+
     /**
      * Send a notification email when someone comments on a highlight.
      * Async: doesn't block the API request.
@@ -76,6 +87,8 @@ public class EmailService {
                     deepLink
             );
 
+            // TODO: Integrate with SendGrid / AWS SES / Gmail API
+            log.info("[Email] Sending comment notification to: {}", recipientEmail);
             sendEmail(recipientEmail, subject, body);
             
         } catch (Exception e) {
@@ -104,6 +117,7 @@ public class EmailService {
             String subject = senderName + " shared a highlight with you";
             String body = buildHighlightSharedBody(senderName, highlightText, deepLink);
 
+            log.info("[Email] Sending highlight shared notification to: {}", recipientEmail);
             sendEmail(recipientEmail, subject, body);
             
         } catch (Exception e) {
@@ -125,6 +139,8 @@ public class EmailService {
             String subject = "Verify your Cortex account";
             String body = "Please click the following link to verify your account: " + verificationLink;
             sendEmail(email, subject, body);
+            log.info("[Email] Sending verification email to: {}", email);
+            sendEmail(email, "Verify your Cortex account", "Please click the following link to verify your account: " + verificationLink);
             
         } catch (Exception e) {
             log.error("[Email] Failed to send verification email", e);
@@ -158,11 +174,29 @@ public class EmailService {
             String subject = "Your shared folder \"" + folderName + "\" was deleted by " + editorName;
             String body = buildEditorDeletedFolderBody(editorName, folderName, restoreLink);
 
+            log.info("[Email] Sending editor-deleted-folder notification to owner: {} (folder={})", ownerEmail, folderId);
             sendEmail(ownerEmail, subject, body);
 
         } catch (Exception e) {
             log.error("[Email] Failed to send editor-deleted-folder notification for folder={}", folderId, e);
             // Non-critical: swallow so the delete operation itself is not affected
+        }
+    }
+
+    /**
+     * Core helper method to send an email using JavaMailSender.
+     */
+    private void sendEmail(String to, String subject, String text) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromAddress);
+            message.setTo(to);
+            message.setSubject(subject);
+            message.setText(text);
+            mailSender.send(message);
+        } catch (Exception e) {
+            log.error("[Email] Critical failure sending email to: {} subject: {}", obfuscate(to), subject, e);
+            throw e; // rethrow so caller can catch and handle non-critically
         }
     }
 
@@ -263,6 +297,8 @@ public class EmailService {
             String subject  = granterName + " shared \"" + folderName + "\" with you on Cortex";
             String body     = buildFolderAccessGrantedBody(granterName, folderName, deepLink);
 
+            log.info("[Email] Sending folder-access-granted email to {} (folder={})",
+                    obfuscate(recipientEmail), folderId);
             sendEmail(recipientEmail, subject, body);
 
         } catch (Exception e) {
@@ -309,6 +345,8 @@ public class EmailService {
             String body     = buildActivityDigestBody(
                     editorName, folderName, actionCount, firstActionAt, lastActionAt, deepLink);
 
+            log.info("[Email] Sending activity digest to {} — editor='{}' folder='{}' actions={}",
+                    obfuscate(ownerEmail), editorName, folderName, actionCount);
             sendEmail(ownerEmail, subject, body);
 
         } catch (Exception e) {
