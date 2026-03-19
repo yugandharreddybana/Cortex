@@ -52,6 +52,7 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/api/v1/auth/**", "/ws/**", "/error").permitAll()
+                .requestMatchers("/api/v1/stripe/webhook").permitAll()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex

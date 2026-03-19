@@ -25,6 +25,12 @@ public interface FolderRepository extends JpaRepository<Folder, Long> {
     Optional<Folder> findByIdAndUserId(@Param("id") Long id, @Param("userId") Long userId);
 
     /**
+     * Find multiple folders by ID if they're owned by a specific user.
+     */
+    @Query("SELECT f FROM Folder f WHERE f.id IN :ids AND f.user.id = :userId")
+    List<Folder> findAllByIdsAndUserId(@Param("ids") List<Long> ids, @Param("userId") Long userId);
+
+    /**
      * Delete a folder by ID if it's owned by a specific user.
      */
     void deleteByIdAndUserId(Long id, Long userId);

@@ -136,13 +136,38 @@ function showYouTubeToast(title: string, timestamp: string) {
   });
 
   // YouTube red play icon + timestamp badge
-  toast.innerHTML = `
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="#FF0000" style="flex-shrink:0">
-      <path d="M23.5 6.2a3 3 0 00-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 00.5 6.2 31.3 31.3 0 000 12a31.3 31.3 0 00.5 5.8 3 3 0 002.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 002.1-2.1A31.3 31.3 0 0024 12a31.3 31.3 0 00-.5-5.8zM9.5 15.6V8.4L16 12l-6.5 3.6z"/>
-    </svg>
-    <span style="color:rgba(255,255,255,0.5)">Saved</span>
-    <span style="background:rgba(255,0,0,0.15);color:#FF6B6B;padding:2px 8px;border-radius:6px;font-size:11px;font-weight:600;font-variant-numeric:tabular-nums">[${timestamp}]</span>
-  `;
+  toast.innerHTML = "";
+
+  const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  svg.setAttribute("width", "16");
+  svg.setAttribute("height", "16");
+  svg.setAttribute("viewBox", "0 0 24 24");
+  svg.setAttribute("fill", "#FF0000");
+  svg.style.flexShrink = "0";
+
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", "M23.5 6.2a3 3 0 00-2.1-2.1C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.4.6A3 3 0 00.5 6.2 31.3 31.3 0 000 12a31.3 31.3 0 00.5 5.8 3 3 0 002.1 2.1c1.9.6 9.4.6 9.4.6s7.5 0 9.4-.6a3 3 0 002.1-2.1A31.3 31.3 0 0024 12a31.3 31.3 0 00-.5-5.8zM9.5 15.6V8.4L16 12l-6.5 3.6z");
+  svg.appendChild(path);
+
+  const savedSpan = document.createElement("span");
+  savedSpan.style.color = "rgba(255,255,255,0.5)";
+  savedSpan.textContent = "Saved";
+
+  const tsSpan = document.createElement("span");
+  Object.assign(tsSpan.style, {
+    background: "rgba(255,0,0,0.15)",
+    color: "#FF6B6B",
+    padding: "2px 8px",
+    borderRadius: "6px",
+    fontSize: "11px",
+    fontWeight: "600",
+    fontVariantNumeric: "tabular-nums",
+  });
+  tsSpan.textContent = `[${timestamp}]`;
+
+  toast.appendChild(svg);
+  toast.appendChild(savedSpan);
+  toast.appendChild(tsSpan);
 
   document.body.appendChild(toast);
 

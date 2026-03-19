@@ -15,6 +15,9 @@ import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -22,6 +25,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/notifications")
 public class NotificationController {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final NotificationRepository notificationRepo;
     private final ResourcePermissionRepository permissionRepo;
@@ -173,15 +178,17 @@ public class NotificationController {
         return m;
     }
 
-    /** Simple JSON field extractor — avoids pulling in a full JSON library for one field. */
+    /** Extract a field from a JSON string securely using Jackson. */
     private static String extractJsonField(String json, String field) {
         if (json == null || json.isBlank()) return null;
-        String key = "\"" + field + "\":\"";
-        int start = json.indexOf(key);
-        if (start < 0) return null;
-        start += key.length();
-        int end = json.indexOf("\"", start);
-        if (end < 0) return null;
-        return json.substring(start, end);
+        try {
+            JsonNode node = OBJECT_MAPPER.readTree(json);
+            if (node.has(field) && !node.get(field).isNull()) {
+                return node.get(field).asText();
+            }
+        } catch (Exception e) {
+            // Ignore parsing errors, return null
+        }
+        return null;
     }
 }
