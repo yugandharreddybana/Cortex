@@ -51,6 +51,11 @@ spring:
 
 cortex:
   jwt:
+    secret: ${CORTEX_JWT_SECRET}
+    expiration-ms: 604800000        # 7 days
+    extension-expiration-ms: 2592000000  # 30 days
+  encryption:
+    key: ${CORTEX_ENCRYPTION_KEY}
     secret: ${JWT_SECRET:your-256-bit-secret}
     expiration-ms: 604800000        # 7 days
     extension-expiration-ms: 2592000000  # 30 days
