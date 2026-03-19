@@ -1,5 +1,5 @@
 server:
-  port: 8080
+  port: ${PORT:8080}
 
 spring:
   datasource:
@@ -65,9 +65,14 @@ cortex:
   stripe:
     api-key: ${STRIPE_API_KEY:sk_test_123}
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_123}
+    secret: ${JWT_SECRET}
+    expiration-ms: 604800000        # 7 days
+    extension-expiration-ms: 2592000000  # 30 days
+  encryption:
+    key: ${ENCRYPTION_KEY}
 
 cors:
-  allowed-origins: http://localhost:3000,http://localhost:3001,https://localhost:3000,http://127.0.0.1:3000
+  allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,https://localhost:3000,http://127.0.0.1:3000}
 
 spring.mail:
   host: ${SMTP_HOST:smtp.gmail.com}

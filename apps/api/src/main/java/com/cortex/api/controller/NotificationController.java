@@ -2,8 +2,13 @@ package com.cortex.api.controller;
 
 import com.cortex.api.entity.Notification;
 import com.cortex.api.entity.PermissionStatus;
+import com.cortex.api.entity.User;
 import com.cortex.api.repository.NotificationRepository;
 import com.cortex.api.repository.ResourcePermissionRepository;
+import com.cortex.api.repository.UserRepository;
+import com.cortex.api.repository.FolderRepository;
+import com.cortex.api.repository.HighlightRepository;
+import com.cortex.api.service.NotificationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -25,11 +30,23 @@ public class NotificationController {
 
     private final NotificationRepository notificationRepo;
     private final ResourcePermissionRepository permissionRepo;
+    private final NotificationService notificationService;
+    private final UserRepository userRepo;
+    private final FolderRepository folderRepo;
+    private final HighlightRepository highlightRepo;
 
     public NotificationController(NotificationRepository notificationRepo,
-                                   ResourcePermissionRepository permissionRepo) {
+                                   ResourcePermissionRepository permissionRepo,
+                                   NotificationService notificationService,
+                                   UserRepository userRepo,
+                                   FolderRepository folderRepo,
+                                   HighlightRepository highlightRepo) {
         this.notificationRepo = notificationRepo;
         this.permissionRepo = permissionRepo;
+        this.notificationService = notificationService;
+        this.userRepo = userRepo;
+        this.folderRepo = folderRepo;
+        this.highlightRepo = highlightRepo;
     }
 
     /** GET /api/v1/notifications — all notifications for the user */
@@ -111,6 +128,28 @@ public class NotificationController {
                     if ("accept".equalsIgnoreCase(action)) {
                         perm.setStatus(PermissionStatus.ACCEPTED);
                         permissionRepo.save(perm);
+
+                        // Notify the granter that the invite was accepted
+                        String senderEmail = extractJsonField(n.getMetadata(), "senderEmail");
+                        if (senderEmail != null) {
+                            userRepo.findByEmail(senderEmail).ifPresent(granter -> {
+                                User invitee = perm.getUser();
+                                String inviteeName = (invitee.getFullName() != null && !invitee.getFullName().isBlank())
+                                    ? invitee.getFullName() : invitee.getEmail();
+
+                                String resourceTitle = extractJsonField(n.getMetadata(), "resourceTitle");
+                                if (resourceTitle == null) resourceTitle = "a resource";
+
+                                notificationService.createInstantNotification(
+                                    granter,
+                                    invitee,
+                                    "ACCEPTED",
+                                    perm.getResourceId(),
+                                    inviteeName + " accepted your invite to " + resourceTitle,
+                                    "/dashboard"
+                                );
+                            });
+                        }
                     } else {
                         perm.setStatus(PermissionStatus.DECLINED);
                         permissionRepo.save(perm);
