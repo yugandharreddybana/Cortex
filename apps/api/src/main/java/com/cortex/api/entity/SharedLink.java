@@ -15,7 +15,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 
 @Entity
-@Table(name = "shared_link")
+@Table(name = "shared_links")
 public class SharedLink {
 
     public enum ResourceType { HIGHLIGHT, FOLDER }

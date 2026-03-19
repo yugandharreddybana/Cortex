@@ -41,7 +41,7 @@ import java.time.Instant;
  */
 @Entity
 @Table(
-    name = "batched_email_event",
+    name = "batched_email_events",
     indexes = {
         @Index(name = "idx_bee_unprocessed_first_action", columnList = "processed, first_action_at"),
         @Index(name = "idx_bee_owner_editor_folder",      columnList = "owner_user_id, editor_user_id, folder_id")

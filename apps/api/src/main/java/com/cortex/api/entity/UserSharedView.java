@@ -13,7 +13,7 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 
 @Entity
-@Table(name = "user_shared_view")
+@Table(name = "user_shared_views")
 public class UserSharedView {
 
     @Id

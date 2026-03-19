@@ -18,7 +18,7 @@ import java.time.temporal.ChronoUnit;
  * Valid for 30 days from creation.
  */
 @Entity
-@Table(name = "extension_token")
+@Table(name = "extension_tokens")
 public class ExtensionToken {
 
     @Id

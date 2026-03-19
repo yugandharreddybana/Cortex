@@ -11,7 +11,7 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 
 @Entity
-@Table(name = "tag")
+@Table(name = "tags")
 public class Tag {
 
     @Id

@@ -16,7 +16,7 @@ import jakarta.persistence.UniqueConstraint;
 import java.time.Instant;
 
 @Entity
-@Table(name = "resource_permission", uniqueConstraints = {
+@Table(name = "resource_permissions", uniqueConstraints = {
     @UniqueConstraint(columnNames = {"user_id", "resource_id", "resource_type"})
 })
 public class ResourcePermission {
