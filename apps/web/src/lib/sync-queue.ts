@@ -159,56 +159,116 @@ export const useSyncQueueStore = create<SyncQueueState>()(
         const dead: QueuedMutation[] = [...state.deadLetterQueue];
         const tempMap = { ...state.tempIdMap };
 
-        for (const item of queue) {
-          try {
-            const mappedBody = mapTempIds(item.body ?? null, tempMap);
-            const res = await fetch(item.endpoint, {
-              method: item.method,
-              headers: { "Content-Type": "application/json" },
-              credentials: "include",
-              body: mappedBody ? JSON.stringify({ ...mappedBody, client_updated_at: item.clientUpdatedAt }) : undefined,
-            });
+        // Build dependency graph to batch independent requests
+        const itemBatchIndex = new Map<QueuedMutation, number>();
+        const batches: QueuedMutation[][] = [];
 
-            const statusType = classifyStatus(res.status);
-            if (statusType === "ok") {
-              if (item.entityType === "folder" && item.tempId) {
-                const json = (await res.json().catch(() => null)) as { id?: string } | null;
-                if (json?.id) tempMap[item.tempId] = json.id;
-              }
-              continue;
+        for (let i = 0; i < queue.length; i++) {
+          const item = queue[i];
+          let requiredBatch = 0;
+
+          for (let j = 0; j < i; j++) {
+            const prev = queue[j];
+            let depends = false;
+
+            // 1. Strict ordering for identical endpoints to prevent race conditions
+            if (item.endpoint === prev.endpoint) {
+              depends = true;
             }
 
-            if (statusType === "auth") {
-              set({ pausedByAuth: true });
-              nextQueue.push(item);
-              toast({ title: "Session expired", description: "Sync paused until re-authentication." });
-              break;
-            }
-
-            if (statusType === "conflict") {
-              toast({ title: "Conflict detected", description: "Server version retained." });
-              await refreshAfterConflict(item.endpoint);
-              continue;
-            }
-
-            if (statusType === "client") {
-              dead.push(item);
-              toast({ title: "Sync rejected", description: "Queued action moved to dead-letter queue." });
-              continue;
-            }
-
-            if (statusType === "server") {
-              const bumped = { ...item, retryCount: item.retryCount + 1 };
-              if (bumped.retryCount >= 3) {
-                dead.push(bumped);
-                toast({ title: "Repeated sync failure", description: "Queued action moved to dead-letter queue." });
-              } else {
-                nextQueue.push(bumped);
+            // 2. Dependency on a previously generated tempId
+            if (prev.tempId && item.body) {
+              const body = item.body as Record<string, unknown>;
+              if (
+                body.folderId === prev.tempId ||
+                body.folder_id === prev.tempId ||
+                body.parentId === prev.tempId
+              ) {
+                depends = true;
               }
             }
-          } catch {
-            nextQueue.push({ ...item, retryCount: item.retryCount + 1 });
+
+            if (depends) {
+              requiredBatch = Math.max(requiredBatch, (itemBatchIndex.get(prev) ?? 0) + 1);
+            }
           }
+
+          itemBatchIndex.set(item, requiredBatch);
+          if (!batches[requiredBatch]) batches[requiredBatch] = [];
+          batches[requiredBatch].push(item);
+        }
+
+        let authPaused = false;
+
+        for (const batch of batches) {
+          if (authPaused) {
+            nextQueue.push(...batch);
+            continue;
+          }
+
+          await Promise.all(
+            batch.map(async (item) => {
+              if (authPaused) {
+                nextQueue.push(item);
+                return;
+              }
+
+              try {
+                const mappedBody = mapTempIds(item.body ?? null, tempMap);
+                const res = await fetch(item.endpoint, {
+                  method: item.method,
+                  headers: { "Content-Type": "application/json" },
+                  credentials: "include",
+                  body: mappedBody
+                    ? JSON.stringify({ ...mappedBody, client_updated_at: item.clientUpdatedAt })
+                    : undefined,
+                });
+
+                const statusType = classifyStatus(res.status);
+                if (statusType === "ok") {
+                  if (item.entityType === "folder" && item.tempId) {
+                    const json = (await res.json().catch(() => null)) as { id?: string } | null;
+                    if (json?.id) tempMap[item.tempId] = json.id;
+                  }
+                  return; // continue in Promise.all is return
+                }
+
+                if (statusType === "auth") {
+                  if (!authPaused) {
+                    authPaused = true;
+                    set({ pausedByAuth: true });
+                    toast({ title: "Session expired", description: "Sync paused until re-authentication." });
+                  }
+                  nextQueue.push(item);
+                  return;
+                }
+
+                if (statusType === "conflict") {
+                  toast({ title: "Conflict detected", description: "Server version retained." });
+                  await refreshAfterConflict(item.endpoint);
+                  return;
+                }
+
+                if (statusType === "client") {
+                  dead.push(item);
+                  toast({ title: "Sync rejected", description: "Queued action moved to dead-letter queue." });
+                  return;
+                }
+
+                if (statusType === "server") {
+                  const bumped = { ...item, retryCount: item.retryCount + 1 };
+                  if (bumped.retryCount >= 3) {
+                    dead.push(bumped);
+                    toast({ title: "Repeated sync failure", description: "Queued action moved to dead-letter queue." });
+                  } else {
+                    nextQueue.push(bumped);
+                  }
+                }
+              } catch {
+                nextQueue.push({ ...item, retryCount: item.retryCount + 1 });
+              }
+            })
+          );
         }
 
         set({ syncQueue: nextQueue, deadLetterQueue: dead, tempIdMap: tempMap });

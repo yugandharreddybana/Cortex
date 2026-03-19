@@ -290,19 +290,23 @@ public class HighlightController {
 
         if (tagIds.isEmpty()) return;
 
+        List<Long> parsedTagIds = new java.util.ArrayList<>();
         for (String tagIdStr : tagIds) {
-            Long tagId;
             try {
-                tagId = Long.parseLong(tagIdStr);
+                parsedTagIds.add(Long.parseLong(tagIdStr));
             } catch (NumberFormatException e) {
-                // Skip non-numeric tag IDs (e.g. stale client UUIDs before migration)
+                // Skip non-numeric tag IDs
                 continue;
             }
-            // Try to find existing tag belonging to this user
-            Tag tag = tagRepo.findByIdAndUserId(tagId, user.getId())
-                    .orElse(null);
-            if (tag == null) continue; // Don't auto-create unknown tags
-            // Link tag to highlight via junction table
+        }
+
+        if (parsedTagIds.isEmpty()) return;
+
+        // Fetch all existing tags belonging to this user in a single query
+        List<Tag> userTags = tagRepo.findByIdInAndUserId(parsedTagIds, user.getId());
+
+        // Link fetched tags to highlight via junction table
+        for (Tag tag : userTags) {
             h.getHighlightTags().add(new HighlightTag(h, tag));
         }
     }
