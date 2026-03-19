@@ -11,6 +11,11 @@ import org.slf4j.LoggerFactory;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.Collections;
 
 /**
  * Email Service: Sends async notifications.
@@ -58,6 +63,35 @@ public class EmailService {
 
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
+    @Value("${spring.profiles.active:}")
+    private String activeProfile;
+
+    // Fake email store for E2E testing
+    private final List<Map<String, String>> sentEmails = Collections.synchronizedList(new ArrayList<>());
+
+    public List<Map<String, String>> getSentEmails() {
+        return new ArrayList<>(sentEmails);
+    }
+
+    public void clearSentEmails() {
+        sentEmails.clear();
+    }
+
+    private void recordTestEmail(String to, String subject, String body) {
+        // Only record if in dev/test, and keep bounded to avoid leaks
+        if (activeProfile != null && (activeProfile.contains("dev") || activeProfile.contains("test") || activeProfile.isEmpty())) {
+            Map<String, String> email = new HashMap<>();
+            email.put("to", to);
+            email.put("subject", subject);
+            email.put("body", body);
+            email.put("timestamp", Instant.now().toString());
+
+            // Avoid memory leak from E2E suite
+            if (sentEmails.size() > 500) {
+                sentEmails.remove(0);
+            }
+            sentEmails.add(email);
+        }
     }
 
     /**
@@ -287,15 +321,17 @@ public class EmailService {
             String folderId
     ) {
         try {
+            String deepLink = appBaseUrl + "/dashboard";
+            String subject  = granterName + " shared \"" + folderName + "\" with you on Cortex";
+            String body     = buildFolderAccessGrantedBody(granterName, folderName, deepLink);
+
+            recordTestEmail(recipientEmail, subject, body);
+
             if (!mailEnabled) {
                 log.info("[Email] Mock: Folder access granted (mail disabled). folder={} granterName={}",
                         folderId, granterName);
                 return;
             }
-
-            String deepLink = appBaseUrl + "/dashboard";
-            String subject  = granterName + " shared \"" + folderName + "\" with you on Cortex";
-            String body     = buildFolderAccessGrantedBody(granterName, folderName, deepLink);
 
             log.info("[Email] Sending folder-access-granted email to {} (folder={})",
                     obfuscate(recipientEmail), folderId);
