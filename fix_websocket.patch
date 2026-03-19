@@ -1,0 +1,11 @@
+--- apps/extension/src/lib/websocket.ts
++++ apps/extension/src/lib/websocket.ts
+@@ -165,7 +165,7 @@
+       // We handle reconnection ourselves via scheduleReconnect() so we can re-probe
+       // the backend before each attempt (prevents browser-level WS errors).
+       client = new Client({
+-        brokerURL: `ws://localhost:${port}/ws`,
++        brokerURL: `ws://localhost:${port}/ws?token=${token}`,
+         connectHeaders: {
+           Authorization: `Bearer ${token}`,
+         },

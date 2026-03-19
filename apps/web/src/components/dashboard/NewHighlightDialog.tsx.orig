@@ -107,7 +107,6 @@ export function NewHighlightDialog({ open, onOpenChange }: NewHighlightDialogPro
               />
             </Dialog.Overlay>
 
-            <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none p-4">
             {/* Panel */}
             <Dialog.Content asChild forceMount>
               <motion.div
@@ -116,7 +115,8 @@ export function NewHighlightDialog({ open, onOpenChange }: NewHighlightDialogPro
                 exit={{ opacity: 0, scale: 0.96, y: 4 }}
                 transition={{ type: "spring" as const, stiffness: 400, damping: 30 }}
                 className={cn(
-                  "relative z-50 pointer-events-auto",
+                  "fixed left-1/2 top-1/2 z-50",
+                  "-translate-x-1/2 -translate-y-1/2",
                   "w-full max-w-[520px] mx-4",
                   "bg-[#171717] border border-white/[0.09] rounded-2xl",
                   "shadow-[0_24px_64px_rgba(0,0,0,0.6)]",
@@ -228,8 +228,8 @@ export function NewHighlightDialog({ open, onOpenChange }: NewHighlightDialogPro
                       )}
                     >
                       <span className="truncate">
-                        {selectedTags.length > 0 
-                          ? `${selectedTags.length} tag${selectedTags.length > 1 ? 's' : ''}` 
+                        {selectedTags.length > 0
+                          ? `${selectedTags.length} tag${selectedTags.length > 1 ? 's' : ''}`
                           : "Select tags..."}
                       </span>
                       <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" className="text-white/40 shrink-0">
@@ -244,9 +244,9 @@ export function NewHighlightDialog({ open, onOpenChange }: NewHighlightDialogPro
                         "bg-[#1c1c1c] border border-white/[0.09] rounded-xl shadow-2xl",
                         "p-2 max-h-48 overflow-y-auto"
                       )}>
-                        <input 
-                          type="text" 
-                          placeholder="Search tags..." 
+                        <input
+                          type="text"
+                          placeholder="Search tags..."
                           value={tagQuery}
                           onChange={(e) => setTagQuery(e.target.value)}
                           onClick={(e) => e.stopPropagation()}
@@ -315,7 +315,7 @@ export function NewHighlightDialog({ open, onOpenChange }: NewHighlightDialogPro
                   </button>
                 </div>
               </motion.div>
-            </Dialog.Content></div>
+            </Dialog.Content>
           </Dialog.Portal>
         )}
       </AnimatePresence>
