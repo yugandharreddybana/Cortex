@@ -283,13 +283,24 @@ function mount() {
 
   // Listen for messages from background script
   try {
+    const ALLOWED_MESSAGES_WHEN_DISABLED = [
+      "CORTEX_SYNC",
+      "CORTEX_FOLDERS_SYNC",
+      "CORTEX_TAGS_SYNC",
+      "CORTEX_ENABLED_STATE",
+    ];
+
     chrome.runtime.onMessage.addListener((message) => {
       try {
         // Phase 16.1 — MV3: background sends enabled state updates via message
         if (message?.type === "CORTEX_ENABLED_STATE") {
           setEnabledState(message.enabled === true);
         }
-        if (!cortexEnabled && message?.type !== "CORTEX_SYNC" && message?.type !== "CORTEX_FOLDERS_SYNC" && message?.type !== "CORTEX_TAGS_SYNC" && message?.type !== "CORTEX_ENABLED_STATE") return;
+
+        if (!cortexEnabled && !ALLOWED_MESSAGES_WHEN_DISABLED.includes(message?.type)) {
+          return;
+        }
+
         if (message?.type === "OPEN_CAPTURE_DRAWER") {
           openDrawerWithSelection();
         }
@@ -433,6 +444,12 @@ if (document.readyState === "loading") {
 
 // ─── Toast notification (context-menu feedback) ──────────────────────────────
 
+declare global {
+  interface Window {
+    showToast: (message: string) => void;
+  }
+}
+
 function showToast(message: string) {
   try {
     const existing = document.getElementById("cortex-toast");
@@ -480,4 +497,4 @@ function showToast(message: string) {
 }
 
 // Attach to window for SidebarCapture
-(window as any).showToast = showToast;
+window.showToast = showToast;

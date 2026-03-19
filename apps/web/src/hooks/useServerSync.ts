@@ -76,7 +76,7 @@ async function applyResponses(hRes: Response, fRes: Response, tRes: Response) {
     tRes.ok ? tRes.json() : null,
   ]);
 
-  const patch: Record<string, unknown> = {};
+  const patch: Partial<ReturnType<typeof useDashboardStore.getState>> = {};
 
   if (rawHighlights !== null) {
     patch.highlights = dedupById(
@@ -115,7 +115,7 @@ async function applyResponses(hRes: Response, fRes: Response, tRes: Response) {
   }
 
   if (Object.keys(patch).length > 0) {
-    useDashboardStore.setState(patch as Parameters<typeof useDashboardStore.setState>[0]);
+    useDashboardStore.setState(patch as unknown as Parameters<typeof useDashboardStore.setState>[0]);
   }
 }
 

@@ -17,6 +17,12 @@ const client = new Client({
         useSyncStore.getState().addTag(tag);
     });
   },
+  onWebSocketError: (error) => {
+    console.error("WebSocket error:", error);
+  },
+  onStompError: (frame) => {
+    console.error("STOMP error:", frame.headers["message"], frame.body);
+  },
 });
 
 export function activateWebsocket() {
