@@ -291,7 +291,6 @@ export function Sidebar({ onCmdK }: SidebarProps) {
                   onDuplicate={(f) => setDuplicateTarget({ id: f.id, name: f.name })}
                   onCreateSubfolder={handleCreateSubfolder}
                   onPin={(f) => togglePinFolder(f.id)}
-                  onMove={(f, targetId) => moveFolder(f.id, targetId)}
                 />
               ))}
             </div>
@@ -538,7 +537,6 @@ function RecursiveFolderNode({
   onDuplicate,
   onCreateSubfolder,
   onPin,
-  onMove,
 }: {
   folder:      Folder;
   depth:       number;
@@ -551,7 +549,6 @@ function RecursiveFolderNode({
   onDuplicate: (f: Folder) => void;
   onCreateSubfolder: (parentId: string) => void;
   onPin:       (f: Folder) => void;
-  onMove:      (f: Folder, targetId: string) => void;
 }) {
   const [expanded, setExpanded] = React.useState(true);
   const children = getChildren(folder.id);
@@ -635,7 +632,6 @@ function RecursiveFolderNode({
               onDuplicate={() => onDuplicate(folder)}
               onCreateSubfolder={() => onCreateSubfolder(folder.id)}
               onPin={() => onPin(folder)}
-              onMove={(targetId) => onMove(folder, targetId)}
             />
           </div>
         </ContextMenu.Trigger>
@@ -731,7 +727,6 @@ function RecursiveFolderNode({
               onDuplicate={onDuplicate}
               onCreateSubfolder={onCreateSubfolder}
               onPin={onPin}
-              onMove={onMove}
             />
           ))}
         </div>

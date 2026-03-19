@@ -31,6 +31,14 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String header = request.getHeader("Authorization");
 
+        // Fallback to query parameter for WebSockets or environments that can't send headers easily
+        if (header == null) {
+            String tokenParam = request.getParameter("token");
+            if (tokenParam != null) {
+                header = "Bearer " + tokenParam;
+            }
+        }
+
         if (header != null && header.startsWith("Bearer ")) {
             String token = header.substring(7);
             if (jwtService.isValid(token)) {
