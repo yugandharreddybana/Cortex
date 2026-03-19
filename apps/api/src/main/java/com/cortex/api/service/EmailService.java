@@ -221,6 +221,10 @@ public class EmailService {
      * Core helper method to send an email using JavaMailSender.
      */
     private void sendEmail(String to, String subject, String text) {
+        log.info("[Email] Sending email to: {}", obfuscate(to));
+        log.debug("[Email] Subject: {}", subject);
+        log.debug("[Email] Body snippet: {}", text.length() > 50 ? text.substring(0, 50) + "..." : text);
+
         try {
             SimpleMailMessage message = new SimpleMailMessage();
             message.setFrom(fromAddress);
@@ -391,6 +395,7 @@ public class EmailService {
             // Swallowed: email failure must NOT prevent the batch row from being marked processed
         }
     }
+
 
 
     // ── Template Builders ────────────────────────────────────────────────────
