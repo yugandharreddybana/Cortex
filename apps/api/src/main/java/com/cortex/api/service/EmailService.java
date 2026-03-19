@@ -20,17 +20,20 @@ import java.util.Collections;
 /**
  * Email Service: Sends async notifications.
  *
- * <p>Every public method is annotated with {@code @Async} so SMTP calls always
+ * <p>
+ * Every public method is annotated with {@code @Async} so SMTP calls always
  * run in a separate thread and can <strong>never</strong> block the caller's
  * HTTP request thread or roll back the caller's database transaction.
  *
- * <p>All methods swallow exceptions internally and log them as errors; this
+ * <p>
+ * All methods swallow exceptions internally and log them as errors; this
  * ensures email failures are fully isolated from user-facing operations (folder
  * saves, highlight mutations, access-grant writes).
  *
  * <h3>READ-ONLY FOOTER</h3>
  * Every outbound email must include the footer defined in
- * {@link #READ_ONLY_FOOTER} which states that the inbox should not be replied to.
+ * {@link #READ_ONLY_FOOTER} which states that the inbox should not be replied
+ * to.
  */
 @Service
 public class EmailService {
@@ -41,14 +44,13 @@ public class EmailService {
      * Mandatory footer appended to every outbound email.
      * Satisfies the strict "read-only disclaimer" requirement.
      */
-    static final String READ_ONLY_FOOTER =
-            "\n\n──────────────────────────────────────────────\n"
+    static final String READ_ONLY_FOOTER = "\n\n──────────────────────────────────────────────\n"
             + "This is a read-only email. Please do not reply.\n"
             + "Manage your notification preferences in Cortex → Settings → Notifications.\n"
             + "© Cortex";
 
-    private static final DateTimeFormatter HUMAN_FMT =
-            DateTimeFormatter.ofPattern("MMM d, yyyy 'at' HH:mm 'UTC'").withZone(ZoneOffset.UTC);
+    private static final DateTimeFormatter HUMAN_FMT = DateTimeFormatter.ofPattern("MMM d, yyyy 'at' HH:mm 'UTC'")
+            .withZone(ZoneOffset.UTC);
 
     @Value("${cortex.app.url:http://localhost:3000}")
     private String appBaseUrl;
@@ -63,6 +65,7 @@ public class EmailService {
 
     public EmailService(JavaMailSender mailSender) {
         this.mailSender = mailSender;
+
     @Value("${spring.profiles.active:}")
     private String activeProfile;
 
@@ -79,7 +82,8 @@ public class EmailService {
 
     private void recordTestEmail(String to, String subject, String body) {
         // Only record if in dev/test, and keep bounded to avoid leaks
-        if (activeProfile != null && (activeProfile.contains("dev") || activeProfile.contains("test") || activeProfile.isEmpty())) {
+        if (activeProfile != null
+                && (activeProfile.contains("dev") || activeProfile.contains("test") || activeProfile.isEmpty())) {
             Map<String, String> email = new HashMap<>();
             email.put("to", to);
             email.put("subject", subject);
@@ -104,8 +108,7 @@ public class EmailService {
             String commenterName,
             String highlightId,
             String highlightText,
-            String commentText
-    ) {
+            String commentText) {
         try {
             if (!mailEnabled) {
                 log.info("[Email] Mock: Comment notification (mail disabled)");
@@ -118,13 +121,12 @@ public class EmailService {
                     commenterName,
                     highlightText,
                     commentText,
-                    deepLink
-            );
+                    deepLink);
 
             // TODO: Integrate with SendGrid / AWS SES / Gmail API
             log.info("[Email] Sending comment notification to: {}", recipientEmail);
             sendEmail(recipientEmail, subject, body);
-            
+
         } catch (Exception e) {
             log.error("[Email] Failed to send comment notification", e);
             // Don't throw; email failures are non-critical
@@ -139,8 +141,7 @@ public class EmailService {
             String recipientEmail,
             String senderName,
             String highlightId,
-            String highlightText
-    ) {
+            String highlightText) {
         try {
             if (!mailEnabled) {
                 log.info("[Email] Mock: Highlight shared notification (mail disabled)");
@@ -153,7 +154,7 @@ public class EmailService {
 
             log.info("[Email] Sending highlight shared notification to: {}", recipientEmail);
             sendEmail(recipientEmail, subject, body);
-            
+
         } catch (Exception e) {
             log.error("[Email] Failed to send highlight shared notification", e);
         }
@@ -174,29 +175,31 @@ public class EmailService {
             String body = "Please click the following link to verify your account: " + verificationLink;
             sendEmail(email, subject, body);
             log.info("[Email] Sending verification email to: {}", email);
-            sendEmail(email, "Verify your Cortex account", "Please click the following link to verify your account: " + verificationLink);
-            
+            sendEmail(email, "Verify your Cortex account",
+                    "Please click the following link to verify your account: " + verificationLink);
+
         } catch (Exception e) {
             log.error("[Email] Failed to send verification email", e);
         }
     }
 
     /**
-     * Send an email to the folder OWNER when an EDITOR soft-deletes their shared folder.
+     * Send an email to the folder OWNER when an EDITOR soft-deletes their shared
+     * folder.
      * Async: must not block the delete request.
      *
-     * @param ownerEmail   the folder owner's email address
-     * @param editorName   display name of the editor who deleted the folder
-     * @param folderName   name of the deleted folder
-     * @param folderId     ID of the deleted folder (used to build a restore deep-link)
+     * @param ownerEmail the folder owner's email address
+     * @param editorName display name of the editor who deleted the folder
+     * @param folderName name of the deleted folder
+     * @param folderId   ID of the deleted folder (used to build a restore
+     *                   deep-link)
      */
     @Async
     public void sendEditorDeletedFolderEmail(
             String ownerEmail,
             String editorName,
             String folderName,
-            String folderId
-    ) {
+            String folderId) {
         try {
             if (!mailEnabled) {
                 log.info("[Email] Mock: Editor-deleted folder notification (mail disabled). folder={}, editor={}",
@@ -208,7 +211,8 @@ public class EmailService {
             String subject = "Your shared folder \"" + folderName + "\" was deleted by " + editorName;
             String body = buildEditorDeletedFolderBody(editorName, folderName, restoreLink);
 
-            log.info("[Email] Sending editor-deleted-folder notification to owner: {} (folder={})", ownerEmail, folderId);
+            log.info("[Email] Sending editor-deleted-folder notification to owner: {} (folder={})", ownerEmail,
+                    folderId);
             sendEmail(ownerEmail, subject, body);
 
         } catch (Exception e) {
@@ -243,64 +247,61 @@ public class EmailService {
     private String buildEditorDeletedFolderBody(
             String editorName,
             String folderName,
-            String restoreLink
-    ) {
+            String restoreLink) {
         return String.format("""
-            Hi!
+                Hi!
 
-            An editor on your shared folder has deleted it.
+                An editor on your shared folder has deleted it.
 
-            Editor:  %s
-            Folder:  "%s"
+                Editor:  %s
+                Folder:  "%s"
 
-            This is a soft delete — your folder and its contents are safely preserved.
-            You can restore the folder at any time from your trash:
+                This is a soft delete — your folder and its contents are safely preserved.
+                You can restore the folder at any time from your trash:
 
-               %s
+                   %s
 
-            If you do not restore it, it will remain in your trash until you permanently delete it.
+                If you do not restore it, it will remain in your trash until you permanently delete it.
 
-            —
-            Cortex
-            """, editorName, folderName, restoreLink);
+                —
+                Cortex
+                """, editorName, folderName, restoreLink);
     }
 
     private String buildCommentNotificationBody(
             String commenterName,
             String highlightText,
             String commentText,
-            String deepLink
-    ) {
+            String deepLink) {
         return String.format("""
-            Hi!
-            
-            %s commented on your highlight:
-            
-            "%s"
-            
-            Comment: "%s"
-            
-            View the full discussion: %s
-            
-            —
-            Cortex
-            """, commenterName, highlightText, commentText, deepLink);
+                Hi!
+
+                %s commented on your highlight:
+
+                "%s"
+
+                Comment: "%s"
+
+                View the full discussion: %s
+
+                —
+                Cortex
+                """, commenterName, highlightText, commentText, deepLink);
     }
 
     private String buildHighlightSharedBody(
             String senderName,
             String highlightText,
-            String deepLink
-    ) {
+            String deepLink) {
         return String.format("""
-            Hi!
-            
-            %s shared a highlight with you:
-            
-            "%s"
-            
-            View it: %s
-            """, senderName, highlightText, deepLink) + READ_ONLY_FOOTER;
+                Hi!
+
+                %s shared a highlight with you:
+
+                "%s"
+
+                View it: %s
+                """, senderName, highlightText, deepLink) + READ_ONLY_FOOTER;
     }
 
     // ─────────────────────────────── Phase 3: Notification Engine emails ─────
@@ -308,26 +309,27 @@ public class EmailService {
     /**
      * Send an immediate email when a user is granted access to a shared folder.
      *
-     * <p><strong>Critical action</strong> — bypasses the 60-minute batch queue
-     * and is dispatched as soon as {@link com.cortex.api.service.NotificationService#triggerFolderAccessGrantedEmail}
+     * <p>
+     * <strong>Critical action</strong> — bypasses the 60-minute batch queue
+     * and is dispatched as soon as
+     * {@link com.cortex.api.service.NotificationService#triggerFolderAccessGrantedEmail}
      * is called.
      *
-     * @param recipientEmail  the new collaborator's email address
-     * @param granterName     display name of the person who shared the folder
-     * @param folderName      name of the folder they were given access to
-     * @param folderId        folder ID used to build the dashboard deep-link
+     * @param recipientEmail the new collaborator's email address
+     * @param granterName    display name of the person who shared the folder
+     * @param folderName     name of the folder they were given access to
+     * @param folderId       folder ID used to build the dashboard deep-link
      */
     @Async
     public void sendFolderAccessGrantedEmail(
             String recipientEmail,
             String granterName,
             String folderName,
-            String folderId
-    ) {
+            String folderId) {
         try {
             String deepLink = appBaseUrl + "/dashboard";
-            String subject  = granterName + " shared \"" + folderName + "\" with you on Cortex";
-            String body     = buildFolderAccessGrantedBody(granterName, folderName, deepLink);
+            String subject = granterName + " shared \"" + folderName + "\" with you on Cortex";
+            String body = buildFolderAccessGrantedBody(granterName, folderName, deepLink);
 
             recordTestEmail(recipientEmail, subject, body);
 
@@ -351,16 +353,18 @@ public class EmailService {
     /**
      * Send the 60-minute collaboration digest email to a folder owner.
      *
-     * <p>Called exclusively by {@link com.cortex.api.service.EmailBatchProcessor}.
-     * Aggregates all high-volume editor actions into a single human-readable summary.
+     * <p>
+     * Called exclusively by {@link com.cortex.api.service.EmailBatchProcessor}.
+     * Aggregates all high-volume editor actions into a single human-readable
+     * summary.
      *
-     * @param ownerEmail      the folder owner's email
-     * @param editorName      display name of the editor who performed the actions
-     * @param folderName      name of the folder (captured at first-action time)
-     * @param folderId        folder ID for the dashboard deep-link
-     * @param actionCount     total number of actions in this 60-minute window
-     * @param firstActionAt   when the first action occurred (window start)
-     * @param lastActionAt    when the most recent action occurred (window end)
+     * @param ownerEmail    the folder owner's email
+     * @param editorName    display name of the editor who performed the actions
+     * @param folderName    name of the folder (captured at first-action time)
+     * @param folderId      folder ID for the dashboard deep-link
+     * @param actionCount   total number of actions in this 60-minute window
+     * @param firstActionAt when the first action occurred (window start)
+     * @param lastActionAt  when the most recent action occurred (window end)
      */
     @Async
     public void sendActivityDigestEmail(
@@ -370,8 +374,7 @@ public class EmailService {
             String folderId,
             int actionCount,
             Instant firstActionAt,
-            Instant lastActionAt
-    ) {
+            Instant lastActionAt) {
         try {
             if (!mailEnabled) {
                 log.info("[Email] Mock: Activity digest (mail disabled). folder={} editor={} actions={}",
@@ -380,9 +383,9 @@ public class EmailService {
             }
 
             String deepLink = appBaseUrl + "/dashboard/folders/" + folderId;
-            String subject  = editorName + " made " + actionCount + " change"
-                              + (actionCount == 1 ? "" : "s") + " in your folder \"" + folderName + "\"";
-            String body     = buildActivityDigestBody(
+            String subject = editorName + " made " + actionCount + " change"
+                    + (actionCount == 1 ? "" : "s") + " in your folder \"" + folderName + "\"";
+            String body = buildActivityDigestBody(
                     editorName, folderName, actionCount, firstActionAt, lastActionAt, deepLink);
 
             log.info("[Email] Sending activity digest to {} — editor='{}' folder='{}' actions={}",
@@ -392,30 +395,28 @@ public class EmailService {
         } catch (Exception e) {
             log.error("[Email] ⚠ SMTP failure — activity digest to {} folder={}: {}",
                     obfuscate(ownerEmail), folderId, e.getMessage(), e);
-            // Swallowed: email failure must NOT prevent the batch row from being marked processed
+            // Swallowed: email failure must NOT prevent the batch row from being marked
+            // processed
         }
     }
-
-
 
     // ── Template Builders ────────────────────────────────────────────────────
 
     private String buildFolderAccessGrantedBody(
             String granterName,
             String folderName,
-            String deepLink
-    ) {
+            String deepLink) {
         return String.format("""
-            Hi!
+                Hi!
 
-            %s has shared the folder "%s" with you on Cortex.
+                %s has shared the folder "%s" with you on Cortex.
 
-            You can now view and collaborate on its contents:
+                You can now view and collaborate on its contents:
 
-               %s
+                   %s
 
-            If you did not expect this invitation, you can safely ignore this email.
-            """, granterName, folderName, deepLink) + READ_ONLY_FOOTER;
+                If you did not expect this invitation, you can safely ignore this email.
+                """, granterName, folderName, deepLink) + READ_ONLY_FOOTER;
     }
 
     private String buildActivityDigestBody(
@@ -424,36 +425,35 @@ public class EmailService {
             int actionCount,
             Instant firstActionAt,
             Instant lastActionAt,
-            String deepLink
-    ) {
+            String deepLink) {
         return String.format("""
-            Hi!
+                Hi!
 
-            %s made %d change%s in your shared folder "%s".
+                %s made %d change%s in your shared folder "%s".
 
-            Activity window:
-              From: %s
-              To:   %s
+                Activity window:
+                  From: %s
+                  To:   %s
 
-            Open the folder to review the changes:
+                Open the folder to review the changes:
 
-               %s
-            """,
-            editorName,
-            actionCount, actionCount == 1 ? "" : "s",
-            folderName,
-            HUMAN_FMT.format(firstActionAt),
-            HUMAN_FMT.format(lastActionAt),
-            deepLink
-        ) + READ_ONLY_FOOTER;
+                   %s
+                """,
+                editorName,
+                actionCount, actionCount == 1 ? "" : "s",
+                folderName,
+                HUMAN_FMT.format(firstActionAt),
+                HUMAN_FMT.format(lastActionAt),
+                deepLink) + READ_ONLY_FOOTER;
     }
 
     /** GDPR-safe log helper: masks everything before '@'. */
     private static String obfuscate(String email) {
-        if (email == null || !email.contains("@")) return "***";
+        if (email == null || !email.contains("@"))
+            return "***";
         int at = email.indexOf('@');
-        if (at <= 1) return "***";
+        if (at <= 1)
+            return "***";
         return email.charAt(0) + "***" + email.substring(at);
     }
 }
-
