@@ -270,7 +270,7 @@ export function App() {
       ]);
       if (hRes.ok) {
         const data = await hRes.json();
-        setHighlights(Array.isArray(data) ? data.map((h: any) => ({ ...h, checked: false })) : []);
+        setHighlights(Array.isArray(data) ? data.map((h: Highlight) => ({ ...h, checked: false })) : []);
         // Also sync to background storage
         chrome.runtime.sendMessage({ type: "SYNC_HIGHLIGHTS", payload: data }, () => {
           if (chrome.runtime.lastError) { /* ok */ }

@@ -1,0 +1,33 @@
+spring:
+  datasource:
+    url: jdbc:h2:mem:testdb;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  flyway:
+    enabled: false # disable flyway in tests since we use h2 create-drop for simplicity
+  jpa:
+    database-platform: org.hibernate.dialect.H2Dialect
+    hibernate:
+      ddl-auto: create-drop
+    properties:
+      hibernate:
+        format_sql: true
+        show_sql: false
+  sql:
+    init:
+      mode: never
+
+cortex:
+  jwt:
+    secret: TEST_SECRET_TEST_SECRET_TEST_SECRET_TEST_SECRET_TEST_SECRET=
+    expiration-ms: 3600000
+    extension-expiration-ms: 3600000
+  encryption:
+    key: TEST_KEY_TEST_KEY_TEST_KEY_TEST_KEY_TEST_KEY=
+  stripe:
+    api-key: sk_test_123
+    webhook-secret: whsec_123
+  sql:
+    init:
+      mode: never
