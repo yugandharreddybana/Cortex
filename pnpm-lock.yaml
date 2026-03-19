@@ -365,7 +365,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^2.1.9
-        version: 2.1.9(@types/node@25.3.5)
+        version: 2.1.9(@types/node@25.3.5)(jsdom@29.0.0)
 
 packages:
 

@@ -52,6 +52,14 @@ if lsof -ti:8080 &>/dev/null; then
 fi
 
 # ── 2. Start Java backend ────────────────────────────────────────────────────
+# Load backend environment variables
+if [ -f "$API_DIR/.env" ]; then
+  log "Loading backend environment variables from .env"
+  set -a
+  source "$API_DIR/.env"
+  set +a
+fi
+
 log "Starting backend on http://localhost:8080 ..."
 java -jar "$JAR" &
 API_PID=$!
