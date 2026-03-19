@@ -136,6 +136,9 @@ public class EmailService {
                 return;
             }
 
+            String subject = "Verify your Cortex account";
+            String body = "Please click the following link to verify your account: " + verificationLink;
+            sendEmail(email, subject, body);
             log.info("[Email] Sending verification email to: {}", email);
             sendEmail(email, "Verify your Cortex account", "Please click the following link to verify your account: " + verificationLink);
             
@@ -351,6 +354,19 @@ public class EmailService {
                     obfuscate(ownerEmail), folderId, e.getMessage(), e);
             // Swallowed: email failure must NOT prevent the batch row from being marked processed
         }
+    }
+
+    /**
+     * Internal method to actually send the email.
+     * Centralizes the mock logging and serves as the single integration point
+     * for future third-party email providers.
+     */
+    private void sendEmail(String to, String subject, String body) {
+        log.info("[Email] Sending email to: {}", obfuscate(to));
+        log.debug("[Email] Subject: {}", subject);
+        log.debug("[Email] Body snippet: {}", body.length() > 50 ? body.substring(0, 50) + "..." : body);
+
+        // TODO: Integrate with SendGrid / AWS SES / Gmail API
     }
 
     // ── Template Builders ────────────────────────────────────────────────────
