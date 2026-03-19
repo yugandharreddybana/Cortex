@@ -1,0 +1,48 @@
+--- apps/web/src/components/dashboard/Sidebar.tsx
++++ apps/web/src/components/dashboard/Sidebar.tsx
+@@ -744,6 +744,7 @@
+   onDuplicate: () => void;
+   onCreateSubfolder: () => void;
+   onPin:    () => void;
++  onMove:   (targetId: string) => void;
+ }) {
+   const isOwner = !folder.effectiveRole || folder.effectiveRole === "OWNER";
+   const isSharedFolder = !isOwner;
++  const folders = useDashboardStore((s) => s.folders);
+
+   return (
+     <DropdownMenu.Root>
+@@ -795,7 +796,25 @@
+             <>
+               <DropdownItem onSelect={onPin}><PinSmallIcon /> {folder.isPinned ? "Unpin" : "Pin"}</DropdownItem>
+               <DropdownItem onSelect={onRename}><PencilIcon /> Rename</DropdownItem>
+-              <DropdownItem><MoveIcon /> Move to…</DropdownItem>
++              <DropdownMenu.Sub>
++                <DropdownMenu.SubTrigger
++                  className={cn(
++                    "flex items-center gap-2.5 px-3 py-2 rounded-lg",
++                    "text-sm text-white/70 hover:text-white cursor-pointer select-none outline-none",
++                    "hover:bg-white/[0.06] focus:bg-white/[0.06] transition-colors duration-100",
++                    "data-[state=open]:bg-white/[0.06]"
++                  )}
++                >
++                  <MoveIcon /> Move to…
++                </DropdownMenu.SubTrigger>
++                <DropdownMenu.Portal>
++                  <DropdownMenu.SubContent
++                    sideOffset={4}
++                    className={cn(
++                      "z-50 min-w-[160px] max-h-[280px] overflow-y-auto rounded-xl",
++                      "bg-[#1e1e1e] border border-white/[0.09]",
++                      "shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)]",
++                      "p-1",
++                      "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
++                    )}
++                  >
++                    <FolderTreeMenu folders={folders} onSelect={onMove} parentIdToExclude={folder.id} />
++                  </DropdownMenu.SubContent>
++                </DropdownMenu.Portal>
++              </DropdownMenu.Sub>
+               <DropdownItem onSelect={onShare}><ShareIcon /> Share</DropdownItem>
+             </>
+           )}
