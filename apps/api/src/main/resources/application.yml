@@ -52,24 +52,14 @@ spring:
 
 cortex:
   jwt:
-    secret: ${CORTEX_JWT_SECRET}
+    secret: ${CORTEX_JWT_SECRET:${JWT_SECRET:your-256-bit-secret}}
     expiration-ms: 604800000        # 7 days
     extension-expiration-ms: 2592000000  # 30 days
   encryption:
-    key: ${CORTEX_ENCRYPTION_KEY}
-    secret: ${JWT_SECRET:your-256-bit-secret}
-    expiration-ms: 604800000        # 7 days
-    extension-expiration-ms: 2592000000  # 30 days
-  encryption:
-    key: ${ENCRYPTION_KEY:Kclxcd4KRneZx+7tVEkvp0gVRzxwz0/3Ml2KOA3zxmk=}
+    key: ${CORTEX_ENCRYPTION_KEY:${ENCRYPTION_KEY:Kclxcd4KRneZx+7tVEkvp0gVRzxwz0/3Ml2KOA3zxmk=}}
   stripe:
     api-key: ${STRIPE_API_KEY:sk_test_123}
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_123}
-    secret: ${JWT_SECRET}
-    expiration-ms: 604800000        # 7 days
-    extension-expiration-ms: 2592000000  # 30 days
-  encryption:
-    key: ${ENCRYPTION_KEY}
 
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,https://localhost:3000,http://127.0.0.1:3000}
