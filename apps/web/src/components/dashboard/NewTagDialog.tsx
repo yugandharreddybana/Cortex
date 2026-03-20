@@ -75,9 +75,10 @@ export function NewTagDialog({ open, onOpenChange }: NewTagDialogProps) {
     <Dialog.Root open={open} onOpenChange={handleOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-        <Dialog.Content
+        <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none p-4">
+          <Dialog.Content
           className={cn(
-            "fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
+            "relative z-50 pointer-events-auto",
             "w-full max-w-md",
             "rounded-2xl border border-white/[0.09] bg-[#181818]",
             "shadow-[0_24px_64px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.07)]",
@@ -213,7 +214,8 @@ export function NewTagDialog({ open, onOpenChange }: NewTagDialogProps) {
               </button>
             </div>
           </form>
-        </Dialog.Content>
+          </Dialog.Content>
+        </div>
       </Dialog.Portal>
     </Dialog.Root>
   );

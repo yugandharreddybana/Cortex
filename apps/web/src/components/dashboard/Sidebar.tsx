@@ -292,6 +292,7 @@ export function Sidebar({ onCmdK }: SidebarProps) {
                   onDuplicate={(f) => setDuplicateTarget({ id: f.id, name: f.name })}
                   onCreateSubfolder={handleCreateSubfolder}
                   onPin={(f) => togglePinFolder(f.id)}
+                  onMove={(f, targetId) => moveFolder(f.id, targetId)}
                 />
               ))}
             </div>
@@ -538,6 +539,7 @@ function RecursiveFolderNode({
   onDuplicate,
   onCreateSubfolder,
   onPin,
+  onMove,
 }: {
   folder:      Folder;
   depth:       number;
@@ -550,6 +552,7 @@ function RecursiveFolderNode({
   onDuplicate: (f: Folder) => void;
   onCreateSubfolder: (parentId: string) => void;
   onPin:       (f: Folder) => void;
+  onMove:      (f: Folder, targetId: string) => void;
 }) {
   const [expanded, setExpanded] = React.useState(true);
   const children = getChildren(folder.id);
@@ -633,6 +636,7 @@ function RecursiveFolderNode({
               onDuplicate={() => onDuplicate(folder)}
               onCreateSubfolder={() => onCreateSubfolder(folder.id)}
               onPin={() => onPin(folder)}
+              onMove={(targetId) => onMove(folder, targetId)}
             />
           </div>
         </ContextMenu.Trigger>
@@ -728,6 +732,7 @@ function RecursiveFolderNode({
               onDuplicate={onDuplicate}
               onCreateSubfolder={onCreateSubfolder}
               onPin={onPin}
+              onMove={onMove}
             />
           ))}
         </div>
@@ -753,6 +758,7 @@ function FolderDropdown({
   onDuplicate: () => void;
   onCreateSubfolder: () => void;
   onPin:    () => void;
+  onMove:   (targetId: string) => void;
 }) {
   const isOwner = !folder.effectiveRole || folder.effectiveRole === "OWNER";
   const isSharedFolder = !isOwner;
@@ -1006,5 +1012,111 @@ function PinSmallIcon() {
       <path d="M9.5 2.5L13.5 6.5L10 10L9 13L3 7L6 6L9.5 2.5Z" />
       <path d="M3 13L6 10" />
     </svg>
+  );
+}
+
+// ─── Folder Tree Sub-Menu (recursive for nested folders) ──────────────────────
+function FolderTreeMenu({
+  folders,
+  onSelect,
+  parentId,
+  depth = 0,
+  parentIdToExclude,
+}: {
+  folders:   Folder[];
+  onSelect:  (folderId: string) => void;
+  parentId?: string;
+  depth?:    number;
+  parentIdToExclude?: string;
+}) {
+  const seen = new Set<string>();
+  const items = folders.filter((f) => {
+    if (f.id === parentIdToExclude) return false;
+    if (parentId ? f.parentId !== parentId : !!f.parentId) return false;
+    const sid = String(f.id);
+    if (seen.has(sid)) return false;
+    seen.add(sid);
+    return true;
+  });
+
+  if (items.length === 0) {
+    if (depth === 0) {
+      return (
+        <div className="px-3 py-2 text-[11px] text-white/30">No folders available</div>
+      );
+    }
+    return null;
+  }
+
+  return (
+    <>
+      {items.map((folder) => {
+        const children = folders.filter((f) => f.parentId === folder.id && f.id !== parentIdToExclude);
+        const hasChildren = children.length > 0;
+
+        if (hasChildren) {
+          return (
+            <DropdownMenu.Sub key={folder.id}>
+              <DropdownMenu.SubTrigger
+                className={cn(
+                  "flex items-center gap-2 px-2.5 py-1.5 rounded-lg w-full",
+                  "text-[12px] text-white/70 hover:text-white",
+                  "hover:bg-white/[0.06] cursor-pointer outline-none transition-colors duration-100",
+                  "data-[state=open]:bg-white/[0.06]",
+                )}
+                onClick={(e) => {
+                  e.preventDefault();
+                  onSelect(folder.id);
+                }}
+              >
+                <span className="text-sm leading-none shrink-0">{folder.emoji}</span>
+                <span className="flex-1 truncate text-left">{folder.name}</span>
+                <span className="ml-auto text-white/30 text-[10px]">▸</span>
+              </DropdownMenu.SubTrigger>
+              <DropdownMenu.Portal>
+                <DropdownMenu.SubContent
+                  sideOffset={4}
+                  className={cn(
+                    "z-50 min-w-[160px] max-h-[280px] overflow-y-auto rounded-xl",
+                    "bg-[#1c1c1c] border border-white/[0.09]",
+                    "shadow-[0_8px_32px_rgba(0,0,0,0.5)]",
+                    "p-1",
+                    "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+                  )}
+                >
+                  <DropdownMenu.Item
+                    className={cn(
+                      "flex items-center gap-2 px-2.5 py-1.5 rounded-lg w-full mb-1",
+                      "text-[12px] text-white/70 hover:text-white",
+                      "hover:bg-white/[0.06] cursor-pointer outline-none transition-colors duration-100",
+                    )}
+                    onSelect={() => onSelect(folder.id)}
+                  >
+                    <span className="text-white/40">↳</span>
+                    Move into &quot;{folder.name}&quot;
+                  </DropdownMenu.Item>
+                  <FolderTreeMenu folders={folders} onSelect={onSelect} parentId={folder.id} depth={depth + 1} parentIdToExclude={parentIdToExclude} />
+                </DropdownMenu.SubContent>
+              </DropdownMenu.Portal>
+            </DropdownMenu.Sub>
+          );
+        }
+
+        return (
+          <DropdownMenu.Item
+            key={folder.id}
+            className={cn(
+              "flex items-center gap-2 px-2.5 py-1.5 rounded-lg w-full",
+              "text-[12px] text-white/70 hover:text-white",
+              "hover:bg-white/[0.06] cursor-pointer outline-none transition-colors duration-100",
+            )}
+            onSelect={() => onSelect(folder.id)}
+          >
+            <span className="text-sm leading-none shrink-0">{folder.emoji}</span>
+            <span className="flex-1 truncate text-left">{folder.name}</span>
+          </DropdownMenu.Item>
+        );
+      })}
+    </>
   );
 }

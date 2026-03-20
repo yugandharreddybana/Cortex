@@ -1,0 +1,15 @@
+{
+  "cookies": [
+    {
+      "name": "cortex_session",
+      "value": "Fe26.2*1*954f6ae98a0643300fa72e30d8852dc3ba9338ab73e59e7c3f5261e11dee3c95*HtajULH0fIEZdlFUGQIGxw*8gTInpMbRfI768b_0NRK13OyClvEmmVcOoJMyjyrAjzdfFj7STTgXTcFHEKxtheW7AG1e_KB78kywnr0ojNH4jNIwxa4A87Rlb80e0QOfaM8iZd_WvDv2oMBR4xlX6jljniUArdm5bLbp6FRV6_EMlvjmpW1qgtGfAncMgtgHDNcP5qqKIjIjmcmtlBvyfJV_loieBE_-OecNePBWmEPfLaEFbCA7dzp_T-sQj3_ivOPmfoRSS8-wRCvQpWm-WB1eQZoK48jFO2o9wgQIQ0I080N2ygnyw5HlhNjZzsqCerOczutxi6Zx1aEPep7dfpjjGVVkvQYpAjfPmrKcBYUzGoYZJavW2SMZ8doUNQbF9s*1774937053153*091d7add113462b7055e6fe8d51024caa911a19c19446ba526fa27d63370edc3*wQT-9bRSS-SuzpdCJ93CC1lY5qPhKtBqov7GkMvWhdI~2",
+      "domain": "localhost",
+      "path": "/",
+      "expires": 1774936993.16587,
+      "httpOnly": true,
+      "secure": false,
+      "sameSite": "Lax"
+    }
+  ],
+  "origins": []
+}

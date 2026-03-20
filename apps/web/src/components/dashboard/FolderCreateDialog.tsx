@@ -63,6 +63,7 @@ export function FolderCreateDialog({ open, onOpenChange, parentId }: FolderCreat
               />
             </Dialog.Overlay>
 
+            <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none p-4">
             {/* Panel */}
             <Dialog.Content asChild>
               <motion.div
@@ -73,7 +74,7 @@ export function FolderCreateDialog({ open, onOpenChange, parentId }: FolderCreat
                 transition={{ duration: 0.25, ease }}
                 className={cn(
                   // Positioning
-                  "fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
+                  "relative z-50 pointer-events-auto",
                   // Size
                   "w-full max-w-sm",
                   // Surface
@@ -139,7 +140,7 @@ export function FolderCreateDialog({ open, onOpenChange, parentId }: FolderCreat
                   </button>
                 </div>
               </motion.div>
-            </Dialog.Content>
+            </Dialog.Content></div>
           </Dialog.Portal>
         )}
       </AnimatePresence>

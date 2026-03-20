@@ -200,7 +200,7 @@ export async function activateWebsocket(): Promise<void> {
     //    We handle reconnection ourselves via scheduleReconnect() so we can re-probe
     //    the backend before each attempt (prevents browser-level WS errors).
     client = new Client({
-      brokerURL: `ws://localhost:${port}/ws`,
+      brokerURL: `ws://localhost:${port}/ws?token=${token}`,
       connectHeaders: {
         Authorization: `Bearer ${token}`,
       },

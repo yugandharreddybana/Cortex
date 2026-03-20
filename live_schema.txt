@@ -1,0 +1,118 @@
+batched_email_events|id|bigint
+batched_email_events|action_count|integer
+batched_email_events|first_action_at|timestamp with time zone
+batched_email_events|folder_id|bigint
+batched_email_events|folder_name|character varying
+batched_email_events|last_action_at|timestamp with time zone
+batched_email_events|processed|boolean
+batched_email_events|processed_at|timestamp with time zone
+batched_email_events|editor_user_id|bigint
+batched_email_events|owner_user_id|bigint
+comments|id|bigint
+comments|created_at|timestamp with time zone
+comments|text|text
+comments|user_id|bigint
+comments|highlight_id|bigint
+emotion_nodes|id|bigint
+emotion_nodes|color|character varying
+emotion_nodes|level|integer
+emotion_nodes|name|character varying
+emotion_nodes|parent_id|bigint
+entry_emotions|entry_id|bigint
+entry_emotions|emotion_name|character varying
+extension_tokens|id|bigint
+extension_tokens|created_at|timestamp with time zone
+extension_tokens|expires_at|timestamp with time zone
+extension_tokens|token|text
+extension_tokens|user_id|bigint
+folders|id|bigint
+folders|created_at|timestamp with time zone
+folders|default_link_role|character varying
+folders|emoji|character varying
+folders|is_pinned|boolean
+folders|link_access|character varying
+folders|name|character varying
+folders|updated_at|timestamp with time zone
+folders|parent_folder_id|bigint
+folders|user_id|bigint
+frustration_user|id|bigint
+frustration_user|created_at|timestamp without time zone
+frustration_user|date_of_birth|date
+frustration_user|email|character varying
+frustration_user|name|character varying
+frustration_user|password_hash|character varying
+frustration_user|preferred_theme_id|character varying
+frustration_user|updated_at|timestamp without time zone
+highlight_tags|highlight_id|bigint
+highlight_tags|tag_id|bigint
+highlights|id|bigint
+highlights|chat_name|text
+highlights|chat_url|text
+highlights|created_at|timestamp with time zone
+highlights|default_link_role|character varying
+highlights|deleted_at|timestamp with time zone
+highlights|deleted_by_user_id|bigint
+highlights|folder_id|bigint
+highlights|highlight_color|character varying
+highlights|is_ai|boolean
+highlights|is_archived|boolean
+highlights|is_code|boolean
+highlights|is_deleted|boolean
+highlights|is_favorite|boolean
+highlights|is_pinned|boolean
+highlights|link_access|character varying
+highlights|note|text
+highlights|resource_type|character varying
+highlights|saved_at|character varying
+highlights|source|text
+highlights|text|text
+highlights|topic|text
+highlights|topic_color|character varying
+highlights|url|text
+highlights|video_timestamp|integer
+highlights|user_id|bigint
+notifications|id|bigint
+notifications|action_type|character varying
+notifications|action_url|text
+notifications|actor_id|bigint
+notifications|created_at|timestamp with time zone
+notifications|is_read|boolean
+notifications|message|text
+notifications|metadata|text
+notifications|responded|character varying
+notifications|target_entity_id|bigint
+notifications|type|character varying
+notifications|user_id|bigint
+resource_permissions|id|bigint
+resource_permissions|access_level|character varying
+resource_permissions|created_at|timestamp with time zone
+resource_permissions|resource_id|bigint
+resource_permissions|resource_type|character varying
+resource_permissions|status|character varying
+resource_permissions|user_id|bigint
+shared_links|id|bigint
+shared_links|created_at|timestamp with time zone
+shared_links|resource_id|bigint
+shared_links|resource_type|character varying
+shared_links|unique_hash|character varying
+shared_links|created_by|bigint
+tags|id|bigint
+tags|color|character varying
+tags|name|character varying
+tags|user_id|bigint
+user_emotion_entries|id|bigint
+user_emotion_entries|timestamp|timestamp without time zone
+user_emotion_entries|user_email|character varying
+user_shared_views|id|bigint
+user_shared_views|created_at|timestamp with time zone
+user_shared_views|shared_link_id|bigint
+user_shared_views|user_id|bigint
+users|id|bigint
+users|avatar_url|character varying
+users|created_at|timestamp with time zone
+users|email|character varying
+users|email_hash|character varying
+users|encrypted_email|character varying
+users|full_name|character varying
+users|password_hash|character varying
+users|tier|character varying

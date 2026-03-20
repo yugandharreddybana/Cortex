@@ -42,6 +42,7 @@ export function DeleteAlertDialog({
               />
             </AlertDialog.Overlay>
 
+            <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none p-4">
             {/* Panel */}
             <AlertDialog.Content asChild>
               <motion.div
@@ -51,7 +52,7 @@ export function DeleteAlertDialog({
                 exit={{ opacity: 0, scale: 0.97, y: 4 }}
                 transition={{ duration: 0.25, ease }}
                 className={cn(
-                  "fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
+                  "relative z-50 pointer-events-auto",
                   "w-full max-w-md",
                   "rounded-2xl bg-[#171717] border border-white/[0.09]",
                   "shadow-[0_32px_64px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)]",
@@ -110,6 +111,7 @@ export function DeleteAlertDialog({
                 </div>
               </motion.div>
             </AlertDialog.Content>
+            </div>
           </AlertDialog.Portal>
         )}
       </AnimatePresence>
