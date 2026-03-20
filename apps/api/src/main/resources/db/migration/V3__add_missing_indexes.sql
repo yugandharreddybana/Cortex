@@ -8,7 +8,7 @@ CREATE INDEX IF NOT EXISTS idx_folder_parent_folder_id ON folders(parent_folder_
 CREATE INDEX IF NOT EXISTS idx_tag_user_id ON tags(user_id);
 
 -- Shared_links table index
-CREATE INDEX IF NOT EXISTS idx_shared_link_created_by_id ON shared_links(created_by_id);
+CREATE INDEX IF NOT EXISTS idx_shared_link_created_by ON shared_links(created_by);
 CREATE INDEX IF NOT EXISTS idx_shared_link_resource ON shared_links(resource_type, resource_id);
 
 -- Highlights table indexes
@@ -18,7 +18,7 @@ CREATE INDEX IF NOT EXISTS idx_highlight_deleted_by_user_id ON highlights(delete
 
 -- Comments table indexes
 CREATE INDEX IF NOT EXISTS idx_comment_highlight_id ON comments(highlight_id);
-CREATE INDEX IF NOT EXISTS idx_comment_author_id ON comments(author_id);
+CREATE INDEX IF NOT EXISTS idx_comment_user_id ON comments(user_id);
 
 -- Highlight_tags table indexes
 -- Note: A primary key automatically creates an index on (highlight_id, tag_id).
@@ -38,8 +38,8 @@ CREATE INDEX IF NOT EXISTS idx_notification_user_id ON notifications(user_id);
 CREATE INDEX IF NOT EXISTS idx_notification_is_read ON notifications(is_read);
 
 -- Batched_email_events table indexes
-CREATE INDEX IF NOT EXISTS idx_batched_email_event_owner_id ON batched_email_events(owner_id);
-CREATE INDEX IF NOT EXISTS idx_batched_email_event_editor_id ON batched_email_events(editor_id);
+CREATE INDEX IF NOT EXISTS idx_batched_email_event_owner_id ON batched_email_events(owner_user_id);
+CREATE INDEX IF NOT EXISTS idx_batched_email_event_editor_id ON batched_email_events(editor_user_id);
 CREATE INDEX IF NOT EXISTS idx_batched_email_event_processed ON batched_email_events(processed);
 
 -- Extension_tokens table index

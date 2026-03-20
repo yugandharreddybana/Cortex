@@ -63,6 +63,7 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
+
     @Value("${spring.profiles.active:}")
     private String activeProfile;
 
