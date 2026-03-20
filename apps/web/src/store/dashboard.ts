@@ -345,11 +345,24 @@ export const useDashboardStore = create<DashboardState>()(
         // Collect this folder and all descendants
         const state = get();
         const idsToDelete = new Set<string>();
+
+        // Build children map for O(N) traversal
+        const childrenMap = new Map<string, string[]>();
+        for (const f of state.folders) {
+          if (f.parentId) {
+            if (!childrenMap.has(f.parentId)) {
+              childrenMap.set(f.parentId, []);
+            }
+            childrenMap.get(f.parentId)!.push(f.id);
+          }
+        }
+
         function collectChildren(parentId: string) {
           idsToDelete.add(parentId);
-          for (const f of state.folders) {
-            if (f.parentId === parentId && !idsToDelete.has(f.id)) {
-              collectChildren(f.id);
+          const children = childrenMap.get(parentId) || [];
+          for (const childId of children) {
+            if (!idsToDelete.has(childId)) {
+              collectChildren(childId);
             }
           }
         }
@@ -386,12 +399,23 @@ export const useDashboardStore = create<DashboardState>()(
         const state = get();
         // Prevent circular parenting
         if (id === newParentId) return;
-        function isDescendant(parentId: string, targetId: string): boolean {
-          for (const f of state.folders) {
-            if (f.parentId === parentId) {
-              if (f.id === targetId) return true;
-              if (isDescendant(f.id, targetId)) return true;
+
+        // Build children map for O(N) traversal
+        const childrenMap = new Map<string, string[]>();
+        for (const f of state.folders) {
+          if (f.parentId) {
+            if (!childrenMap.has(f.parentId)) {
+              childrenMap.set(f.parentId, []);
             }
+            childrenMap.get(f.parentId)!.push(f.id);
+          }
+        }
+
+        function isDescendant(parentId: string, targetId: string): boolean {
+          const children = childrenMap.get(parentId) || [];
+          for (const childId of children) {
+            if (childId === targetId) return true;
+            if (isDescendant(childId, targetId)) return true;
           }
           return false;
         }

@@ -237,6 +237,11 @@ public class NotificationEngineIntegrationTest {
     static class TestConfig {
 
         @Bean
+        EmailService emailService() {
+            return mock(EmailService.class);
+        }
+
+        @Bean
         NotificationService notificationService(
                 NotificationRepository notifRepo,
                 BatchedEmailEventRepository batchRepo,

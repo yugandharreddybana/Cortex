@@ -1,0 +1,16 @@
+--- apps/web/src/components/dashboard/DeleteAlertDialog.tsx
++++ apps/web/src/components/dashboard/DeleteAlertDialog.tsx
+@@ -47,11 +47,12 @@
+               />
+             </AlertDialog.Overlay>
+
++            <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none p-4">
+             {/* Dialog panel */}
+             <AlertDialog.Content asChild>
+               <motion.div
+                 className={cn(
+-                  "fixed z-50 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2",
++                  "relative z-50 pointer-events-auto",
+                   "w-full max-w-md rounded-2xl border border-white/[0.09]",
+                   "bg-neutral-900 p-6 shadow-[0_24px_64px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.07)]",
+                 )}

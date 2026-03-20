@@ -88,11 +88,12 @@ export function DuplicateFolderModal({
               />
             </AlertDialog.Overlay>
 
+            <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none p-4">
             {/* Dialog panel */}
             <AlertDialog.Content asChild>
               <motion.div
                 className={cn(
-                  "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2",
+                  "relative z-50 pointer-events-auto",
                   "w-full max-w-md rounded-2xl border border-white/10",
                   "bg-neutral-900 p-6 shadow-2xl"
                 )}
@@ -165,6 +166,7 @@ export function DuplicateFolderModal({
                 </div>
               </motion.div>
             </AlertDialog.Content>
+            </div>
           </AlertDialog.Portal>
         )}
       </AnimatePresence>

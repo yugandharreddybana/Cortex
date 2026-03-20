@@ -107,6 +107,7 @@ export function NewHighlightDialog({ open, onOpenChange }: NewHighlightDialogPro
               />
             </Dialog.Overlay>
 
+            <div className="fixed inset-0 z-50 flex items-center justify-center pointer-events-none p-4">
             {/* Panel */}
             <Dialog.Content asChild forceMount>
               <motion.div
@@ -115,8 +116,7 @@ export function NewHighlightDialog({ open, onOpenChange }: NewHighlightDialogPro
                 exit={{ opacity: 0, scale: 0.96, y: 4 }}
                 transition={{ type: "spring" as const, stiffness: 400, damping: 30 }}
                 className={cn(
-                  "fixed left-1/2 top-1/2 z-50",
-                  "-translate-x-1/2 -translate-y-1/2",
+                  "relative z-50 pointer-events-auto",
                   "w-full max-w-[520px] mx-4",
                   "bg-[#171717] border border-white/[0.09] rounded-2xl",
                   "shadow-[0_24px_64px_rgba(0,0,0,0.6)]",
@@ -315,7 +315,7 @@ export function NewHighlightDialog({ open, onOpenChange }: NewHighlightDialogPro
                   </button>
                 </div>
               </motion.div>
-            </Dialog.Content>
+            </Dialog.Content></div>
           </Dialog.Portal>
         )}
       </AnimatePresence>
