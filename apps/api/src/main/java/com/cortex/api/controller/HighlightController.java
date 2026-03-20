@@ -38,12 +38,16 @@ public class HighlightController {
     private final HighlightTagRepository highlightTagRepo;
     private final FolderRepository folderRepo;
     private final WebSocketService webSocketService;
+    private final com.cortex.api.service.FolderService folderService;
+    private final com.cortex.api.service.SecurityService securityService;
     private final OllamaService ollamaService;
 
     public HighlightController(HighlightRepository highlightRepo, UserRepository userRepo,
                                TagRepository tagRepo, HighlightTagRepository highlightTagRepo,
                                FolderRepository folderRepo,
                                WebSocketService webSocketService,
+                               com.cortex.api.service.FolderService folderService,
+                               com.cortex.api.service.SecurityService securityService) {
                                OllamaService ollamaService) {
         this.highlightRepo = highlightRepo;
         this.userRepo = userRepo;
@@ -51,6 +55,8 @@ public class HighlightController {
         this.highlightTagRepo = highlightTagRepo;
         this.folderRepo = folderRepo;
         this.webSocketService = webSocketService;
+        this.folderService = folderService;
+        this.securityService = securityService;
         this.ollamaService = ollamaService;
     }
 
@@ -58,7 +64,16 @@ public class HighlightController {
     @GetMapping
     public List<HighlightDTO> list(Authentication auth) {
         Long userId = Long.parseLong(auth.getName());
-        return highlightRepo.findByUserIdOrderByCreatedAtDesc(userId)
+        List<Long> accessibleFolderIds = folderService.getFoldersByUserId(userId).stream()
+                .map(Folder::getId)
+                .toList();
+
+        if (accessibleFolderIds.isEmpty()) {
+            return highlightRepo.findByUserIdOrderByCreatedAtDesc(userId)
+                    .stream().map(this::toDTO).toList();
+        }
+
+        return highlightRepo.findByUserIdOrFolderIdsOrderByCreatedAtDesc(userId, accessibleFolderIds)
                 .stream().map(this::toDTO).toList();
     }
 
@@ -88,12 +103,12 @@ public class HighlightController {
     public HighlightDTO update(Authentication auth,
                                @PathVariable Long id,
                                @RequestBody HighlightDTO dto) {
-        Long userId = Long.parseLong(auth.getName());
         User user = resolveUser(auth);
-        Highlight h = highlightRepo.findByIdAndUserId(id, userId)
+        Highlight h = highlightRepo.findById(id)
+                .filter(hl -> !hl.isDeleted())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-        applyDTO(h, dto);
+        applyDTO(h, dto, user);
         applyTags(h, dto.tags, user);
         highlightRepo.save(h);
         HighlightDTO updated = toDTO(h);
@@ -107,12 +122,12 @@ public class HighlightController {
     public HighlightDTO patch(Authentication auth,
                               @PathVariable Long id,
                               @RequestBody HighlightDTO dto) {
-        Long userId = Long.parseLong(auth.getName());
         User user = resolveUser(auth);
-        Highlight h = highlightRepo.findByIdAndUserId(id, userId)
+        Highlight h = highlightRepo.findById(id)
+                .filter(hl -> !hl.isDeleted())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-        applyDTO(h, dto);
+        applyDTO(h, dto, user);
         applyTags(h, dto.tags, user);
         highlightRepo.save(h);
         HighlightDTO patched = toDTO(h);
@@ -122,12 +137,26 @@ public class HighlightController {
 
     @DeleteMapping("/{id}")
     @Transactional
-    @PreAuthorize("@securityService.hasHighlightAccess(#id, 'OWNER')")
+    @PreAuthorize("@securityService.hasHighlightAccess(#id, 'EDITOR')")
     public ResponseEntity<Map<String, Boolean>> delete(Authentication auth,
                                                         @PathVariable Long id) {
         Long userId = Long.parseLong(auth.getName());
-        // Soft delete: mark as deleted rather than removing from database
-        highlightRepo.softDeleteByIdAndUserId(id, userId, userId, java.time.Instant.now());
+        User user = resolveUser(auth);
+        Highlight h = highlightRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        if (h.getUser().getId().equals(userId)) {
+            // Owner deletion: mark as globally deleted
+            h.setDeleted(true);
+            h.setDeletedByUserId(userId);
+            h.setDeletedAt(java.time.Instant.now());
+            highlightRepo.save(h);
+        } else {
+            // Editor deletion in shared folder: hide it for this user only
+            h.getHiddenByUsers().add(user);
+            highlightRepo.save(h);
+        }
+
         // Notify connected clients to remove this highlight
         webSocketService.sendToUser(auth.getName(), "/topic/highlights/deleted", id);
         return ResponseEntity.ok(Map.of("ok", true));
@@ -141,10 +170,19 @@ public class HighlightController {
         User user = resolveUser(auth);
         Long userId = user.getId();
 
+        List<Long> accessibleFolderIds = folderService.getFoldersByUserId(userId).stream()
+                .map(Folder::getId)
+                .toList();
+
         // Get all highlights (including deleted) for initial state
         Map<Long, Highlight> existing = new java.util.HashMap<>();
-        highlightRepo.findAllByUserIdInclandDeleted(userId)
-                .forEach(h -> existing.put(h.getId(), h));
+        if (accessibleFolderIds.isEmpty()) {
+            highlightRepo.findAllByUserIdInclandDeleted(userId)
+                    .forEach(h -> existing.put(h.getId(), h));
+        } else {
+            highlightRepo.findAllByUserIdOrFolderIdsInclandDeleted(userId, accessibleFolderIds)
+                    .forEach(h -> existing.put(h.getId(), h));
+        }
 
         java.util.Set<Long> incomingIds = new java.util.HashSet<>();
 
@@ -157,8 +195,13 @@ public class HighlightController {
                 applyTags(h, dto.tags, user);
                 highlightRepo.save(h);
             } else {
+                // Skip updating if user does not have EDITOR access to this existing highlight
+                if (!securityService.hasHighlightAccess(h.getId(), "EDITOR")) {
+                    continue;
+                }
+
                 // Update existing (including soft delete status)
-                applyDTO(h, dto);
+                applyDTO(h, dto, user);
                 applyTags(h, dto.tags, user);
                 highlightRepo.save(h);
             }
@@ -175,8 +218,13 @@ public class HighlightController {
         });
 
         // Return all highlights (including soft-deleted ones) so client can sync its full state
-        return highlightRepo.findAllByUserIdInclandDeleted(userId)
-                .stream().map(this::toDTO).toList();
+        if (accessibleFolderIds.isEmpty()) {
+            return highlightRepo.findAllByUserIdInclandDeleted(userId)
+                    .stream().map(this::toDTO).toList();
+        } else {
+            return highlightRepo.findAllByUserIdOrFolderIdsInclandDeleted(userId, accessibleFolderIds)
+                    .stream().map(this::toDTO).toList();
+        }
     }
 
     // ── Helpers ──
@@ -250,11 +298,11 @@ public class HighlightController {
         Highlight h = new Highlight();
         if (dto.id != null) h.setId(dto.id);
         h.setUser(user);
-        applyDTO(h, dto);
+        applyDTO(h, dto, user);
         return h;
     }
 
-    private void applyDTO(Highlight h, HighlightDTO dto) {
+    private void applyDTO(Highlight h, HighlightDTO dto, User user) {
         if (dto.text != null) h.setText(dto.text);
         if (dto.source != null) h.setSource(dto.source);
         if (dto.url != null) h.setUrl(dto.url);
@@ -307,7 +355,21 @@ public class HighlightController {
             }
         }
         // Handle soft deletion — only update if explicitly provided
-        if (dto.isDeleted != null) h.setDeleted(dto.isDeleted);
+        if (dto.isDeleted != null) {
+            if (h.getUser().getId().equals(user.getId())) {
+                h.setDeleted(dto.isDeleted);
+                if (dto.isDeleted) {
+                    h.setDeletedByUserId(user.getId());
+                    h.setDeletedAt(java.time.Instant.now());
+                } else {
+                    h.setDeletedByUserId(null);
+                    h.setDeletedAt(null);
+                }
+            } else if (dto.isDeleted) {
+                // Non-owner trying to delete -> hide it for them
+                h.getHiddenByUsers().add(user);
+            }
+        }
     }
 
     /**
@@ -320,10 +382,18 @@ public class HighlightController {
         // (critical for moveHighlight which only sends folderId)
         if (tagIds == null) return;
 
-        // Delete existing tag associations from the database
-        if (!h.getHighlightTags().isEmpty()) {
-            highlightTagRepo.deleteAll(h.getHighlightTags());
-            h.getHighlightTags().clear();
+        // Collect the tags that belong to the current user
+        List<HighlightTag> currentUserTags = new java.util.ArrayList<>();
+        for (HighlightTag ht : h.getHighlightTags()) {
+            if (ht.getTag().getUser().getId().equals(user.getId())) {
+                currentUserTags.add(ht);
+            }
+        }
+
+        // Delete existing tag associations for the current user from the database
+        if (!currentUserTags.isEmpty()) {
+            highlightTagRepo.deleteAll(currentUserTags);
+            h.getHighlightTags().removeAll(currentUserTags);
         }
 
         if (tagIds.isEmpty()) return;
@@ -340,7 +410,7 @@ public class HighlightController {
 
         if (parsedTagIds.isEmpty()) return;
 
-        // Fetch all existing tags belonging to this user in a single query
+        // Fetch all existing tags belonging to the current user in a single query
         List<Tag> userTags = tagRepo.findByIdInAndUserId(parsedTagIds, user.getId());
 
         // Link fetched tags to highlight via junction table

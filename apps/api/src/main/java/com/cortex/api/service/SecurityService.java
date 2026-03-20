@@ -55,9 +55,19 @@ public class SecurityService {
                 .findByUserIdAndResourceIdAndResourceType(userId, highlightId, SharedLink.ResourceType.HIGHLIGHT);
         if (perm.isPresent() && perm.get().getAccessLevel().atLeast(required)) return true;
 
-        // 3. Check link-level access (ANYONE_WITH_LINK)
         Highlight h = highlightRepo.findById(highlightId).orElse(null);
-        if (h != null && h.getLinkAccess() == LinkAccess.ANYONE_WITH_LINK) {
+        if (h == null) return false;
+
+        // 3. Check folder-level inherited access
+        if (h.getFolderId() != null) {
+            AccessLevel folderRole = permissionService.getEffectiveRole(userId, h.getFolderId());
+            if (folderRole != null && folderRole.atLeast(required)) {
+                return true;
+            }
+        }
+
+        // 4. Check link-level access (ANYONE_WITH_LINK)
+        if (h.getLinkAccess() == LinkAccess.ANYONE_WITH_LINK) {
             return h.getDefaultLinkRole().atLeast(required);
         }
 

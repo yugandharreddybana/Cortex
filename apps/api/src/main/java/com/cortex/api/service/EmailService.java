@@ -63,11 +63,12 @@ public class EmailService {
 
     private final JavaMailSender mailSender;
 
-    public EmailService(JavaMailSender mailSender) {
-        this.mailSender = mailSender;
-
     @Value("${spring.profiles.active:}")
     private String activeProfile;
+
+    public EmailService(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+    }
 
     // Fake email store for E2E testing
     private final List<Map<String, String>> sentEmails = Collections.synchronizedList(new ArrayList<>());

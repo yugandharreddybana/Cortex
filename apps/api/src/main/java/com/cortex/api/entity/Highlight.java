@@ -10,6 +10,8 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.PrePersist;
@@ -95,6 +97,14 @@ public class Highlight {
     @OneToMany(mappedBy = "highlight", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
     private Set<Comment> comments = new HashSet<>();
 
+    @ManyToMany(fetch = FetchType.LAZY)
+    @JoinTable(
+        name = "hidden_highlights",
+        joinColumns = @JoinColumn(name = "highlight_id"),
+        inverseJoinColumns = @JoinColumn(name = "user_id")
+    )
+    private Set<User> hiddenByUsers = new HashSet<>();
+
     // ── Video / YouTube fields ──
     @Enumerated(EnumType.STRING)
     @Column(name = "resource_type", nullable = false)
@@ -142,6 +152,9 @@ public class Highlight {
         if (createdAt == null) createdAt = Instant.now();
         if (savedAt == null) savedAt = Instant.now().toString();
     }
+
+    public Set<User> getHiddenByUsers() { return hiddenByUsers; }
+    public void setHiddenByUsers(Set<User> hiddenByUsers) { this.hiddenByUsers = hiddenByUsers; }
 
     // ── Getters & Setters ──
 
