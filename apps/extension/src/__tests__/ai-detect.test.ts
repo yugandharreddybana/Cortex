@@ -45,7 +45,7 @@ describe("ai-detect utilities", () => {
     });
 
     afterEach(() => {
-      window.location = originalLocation;
+      window.location = originalLocation as any;
       document.title = originalTitle;
     });
 

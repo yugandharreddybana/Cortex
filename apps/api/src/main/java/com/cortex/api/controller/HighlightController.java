@@ -47,7 +47,7 @@ public class HighlightController {
                                FolderRepository folderRepo,
                                WebSocketService webSocketService,
                                com.cortex.api.service.FolderService folderService,
-                               com.cortex.api.service.SecurityService securityService) {
+                               com.cortex.api.service.SecurityService securityService,
                                OllamaService ollamaService) {
         this.highlightRepo = highlightRepo;
         this.userRepo = userRepo;
