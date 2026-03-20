@@ -8,7 +8,7 @@ export function ConnectDots({ text }: { text: string }) {
   const handleConnect = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/ai/connect-dots", {
+      const res = await fetch("/api/ai/connect-dots", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text })

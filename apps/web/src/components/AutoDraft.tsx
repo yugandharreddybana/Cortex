@@ -10,7 +10,7 @@ export function AutoDraft({ folderId }: { folderId: string }) {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/v1/ai/auto-draft", {
+      const res = await fetch("/api/ai/auto-draft", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ folderId, format: "Essay" })

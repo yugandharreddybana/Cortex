@@ -8,7 +8,7 @@ export function ActionEngine({ text }: { text: string }) {
   const handleSuggest = async () => {
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/ai/suggest-actions", {
+      const res = await fetch("/api/ai/suggest-actions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text })
