@@ -20,6 +20,8 @@ public class FolderDTO {
     public Instant createdAt;      // When the folder was created
     public Instant updatedAt;      // When the folder was last updated
 
+    public String synthesis;       // AI Feature 3: Generated folder synthesis
+
     @JsonSetter("parentId")
     public void setParentId(Long parentId) {
         this.parentId = parentId;
