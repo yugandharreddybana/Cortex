@@ -9,7 +9,7 @@ export function DevilsAdvocate({ text }: { text: string }) {
     e.stopPropagation();
     setLoading(true);
     try {
-      const res = await fetch("/api/v1/ai/devils-advocate", {
+      const res = await fetch("/api/ai/devils-advocate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text })
