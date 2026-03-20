@@ -47,6 +47,12 @@ public class User {
     @Column(name = "subscription_status")
     private String subscriptionStatus; // e.g., active, past_due, canceled
 
+    @Column(name = "current_period_end")
+    private Instant currentPeriodEnd;
+
+    @Column(name = "billing_interval")
+    private String billingInterval; // e.g., month, year
+
     @PrePersist
     void onCreate() {
         if (createdAt == null) {
@@ -86,4 +92,10 @@ public class User {
 
     public String getSubscriptionStatus() { return subscriptionStatus; }
     public void setSubscriptionStatus(String subscriptionStatus) { this.subscriptionStatus = subscriptionStatus; }
+
+    public Instant getCurrentPeriodEnd() { return currentPeriodEnd; }
+    public void setCurrentPeriodEnd(Instant currentPeriodEnd) { this.currentPeriodEnd = currentPeriodEnd; }
+
+    public String getBillingInterval() { return billingInterval; }
+    public void setBillingInterval(String billingInterval) { this.billingInterval = billingInterval; }
 }

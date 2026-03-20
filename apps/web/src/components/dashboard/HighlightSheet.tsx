@@ -6,6 +6,8 @@ import * as Popover from "@radix-ui/react-popover";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@cortex/ui";
 import { useDashboardStore } from "@/store/dashboard";
+import { ConnectDots } from "./ConnectDots";
+import { ActionEngine } from "./ActionEngine";
 import type { Highlight } from "@/store/dashboard";
 
 // ─── Tag color map ─────────────────────────────────────────────────────────────
@@ -199,6 +201,12 @@ export function HighlightSheet({ highlight, open, onOpenChange }: HighlightSheet
                       )}
                     />
                   </div>
+
+                  {/* Connect the Dots */}
+                  <ConnectDots text={highlight?.fullText || highlight?.text || ""} />
+
+                  {/* Action Engine */}
+                  <ActionEngine text={highlight?.fullText || highlight?.text || ""} />
 
                   {/* Tags */}
                   <div className="space-y-2">
