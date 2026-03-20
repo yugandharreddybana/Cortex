@@ -10,10 +10,24 @@
 
 **Cortex** is a comprehensive knowledge management ecosystem built to bridge the gap between passive consumption (reading articles, watching videos) and active synthesis (writing, organizing, collaborating).
 
-At its core, Cortex consists of:
-1. **A Browser Extension** for seamlessly highlighting text, capturing URLs, and saving context directly from the web or YouTube videos.
-2. **A Next.js Web Portal** where you can view, organize (via nested folders and tags), export, and collaborate on your highlights in real-time.
-3. **A Java Spring Boot Backend** that powers the entire ecosystem, handling secure data storage, strict hierarchical Role-Based Access Control (RBAC), WebSocket real-time synchronization, Stripe subscription management, and deeply integrated AI capabilities.
+### The Core Problem It Solves
+In the modern digital age, information fragmentation is a massive bottleneck. We read an insightful article on HackerNews, watch an educational tutorial on YouTube, and scroll through dense academic PDFs. Yet, when it comes time to synthesize this information—to write a research paper, prepare a presentation, or build a codebase—our knowledge is scattered across browser bookmarks, scattered Notion pages, messy Google Docs, and forgotten browser tabs. Cortex solves this by acting as a universal "capture net" that funnels all your fragmented insights into one centralized, highly structured, and AI-powered brain.
+
+### How It Works: The Cortex Lifecycle
+
+The application experience is broken down into four distinct phases:
+
+**1. Seamless Capture (The Browser Extension)**
+You install the Cortex Browser Extension. As you browse the web, you simply select text and click "Highlight." The extension doesn't just save the text; it saves the exact URL, the page title, and intelligent DOM locators (like XPath and text offsets) so that if you ever revisit the page, your highlights magically reappear, anchored perfectly in place. If you are watching a YouTube video and hear a great quote, you click the Cortex icon, and it captures the text *along with the exact video timestamp*.
+
+**2. Deep Organization (The Next.js Web Portal)**
+Once captured, your highlights flow into the Cortex Web Portal. Here, you don't just dump them into a flat list. You organize them into infinitely nested folders (e.g., `University > Semester 4 > Machine Learning > Neural Networks`). You can color-code folders, assign emojis, and attach custom metadata tags. The frontend is built "Offline-First" using a sophisticated Sync Queue. If you lose internet on an airplane, you can still move folders, tag items, and write notes. Once reconnected, the UI syncs your entire offline session to the server flawlessly.
+
+**3. Real-Time Collaboration (The Java Backend & WebSockets)**
+Knowledge is rarely built in isolation. Cortex allows you to share specific folders with colleagues or classmates. The platform enforces strict Hierarchical Role-Based Access Control (RBAC). If you grant a friend "Editor" access to your `Machine Learning` folder, they automatically gain access to all its nested child folders. When your friend logs in and edits a highlight or drops a comment, a Java Spring Boot backend utilizing WebSockets instantly pushes that change to your screen without you ever needing to refresh the page.
+
+**4. AI Synthesis & Export**
+Finally, Cortex doesn't just store your data; it helps you think. Instead of a generic chat window, Cortex offers targeted AI workflow accelerators. Select a folder of 50 highlights, and click "Auto-Draft"—the local LLM synthesizes those scattered thoughts into a structured outline. Click on a specific highlight and ask the AI to play "Devil's Advocate" to find biases in your research. Once you are done, you can export your curated folders natively into PDF, Microsoft Word (`.docx`), or Markdown to finalize your work.
 
 ### 🎯 Who is it for?
 - **Students & Academics**: Capture research citations, highlight important textbook passages online, and use AI to automatically draft study outlines.
