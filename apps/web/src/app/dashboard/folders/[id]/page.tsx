@@ -4,6 +4,8 @@ import { use } from "react";
 import { useDashboardStore } from "@/store/dashboard";
 import { HighlightsMasonry } from "@/components/dashboard/HighlightsMasonry";
 import { EmptyState } from "@/components/dashboard/EmptyState";
+import { AutoDraft } from "@/components/AutoDraft";
+import { FolderSynthesis } from "@/components/dashboard/FolderSynthesis";
 
 function FolderIcon() {
   return (
@@ -29,6 +31,8 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
             ? `${count} highlight${count === 1 ? "" : "s"}`
             : "No highlights in this folder"}
         </p>
+        {folder?.synthesis && <FolderSynthesis synthesis={folder.synthesis} />}
+        {count > 0 && <AutoDraft folderId={id} />}
       </div>
 
       {count === 0 ? (

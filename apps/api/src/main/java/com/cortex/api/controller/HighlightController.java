@@ -13,6 +13,7 @@ import com.cortex.api.repository.HighlightRepository;
 import com.cortex.api.repository.HighlightTagRepository;
 import com.cortex.api.repository.TagRepository;
 import com.cortex.api.repository.UserRepository;
+import com.cortex.api.service.OllamaService;
 import com.cortex.api.service.WebSocketService;
 import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
@@ -21,9 +22,11 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import reactor.core.scheduler.Schedulers;
 
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/highlights")
@@ -35,17 +38,20 @@ public class HighlightController {
     private final HighlightTagRepository highlightTagRepo;
     private final FolderRepository folderRepo;
     private final WebSocketService webSocketService;
+    private final OllamaService ollamaService;
 
     public HighlightController(HighlightRepository highlightRepo, UserRepository userRepo,
                                TagRepository tagRepo, HighlightTagRepository highlightTagRepo,
                                FolderRepository folderRepo,
-                               WebSocketService webSocketService) {
+                               WebSocketService webSocketService,
+                               OllamaService ollamaService) {
         this.highlightRepo = highlightRepo;
         this.userRepo = userRepo;
         this.tagRepo = tagRepo;
         this.highlightTagRepo = highlightTagRepo;
         this.folderRepo = folderRepo;
         this.webSocketService = webSocketService;
+        this.ollamaService = ollamaService;
     }
 
     @Transactional
@@ -66,6 +72,11 @@ public class HighlightController {
         applyTags(h, dto.tags, user);
         highlightRepo.save(h);
         HighlightDTO saved = toDTO(h);
+
+        if (h.getFolderId() != null && ("pro".equals(user.getTier()) || "premium".equals(user.getTier()) || "team".equals(user.getTier()))) {
+            triggerFolderSynthesis(h.getFolderId());
+        }
+
         // Notify the owning user's connected clients (extension, other tabs)
         webSocketService.sendToUser(auth.getName(), "/topic/highlights", saved);
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
@@ -156,12 +167,39 @@ public class HighlightController {
         // Upsert only — do NOT delete server highlights missing from the payload.
         // The client may send a partial set (e.g. offline-created items only).
 
+        // AI Feature 3: Synthesize updated folders
+        dtos.stream().filter(d -> d.folderId != null).map(d -> d.folderId).distinct().forEach(folderId -> {
+            if ("pro".equals(user.getTier()) || "premium".equals(user.getTier()) || "team".equals(user.getTier())) {
+                triggerFolderSynthesis(folderId);
+            }
+        });
+
         // Return all highlights (including soft-deleted ones) so client can sync its full state
         return highlightRepo.findAllByUserIdInclandDeleted(userId)
                 .stream().map(this::toDTO).toList();
     }
 
     // ── Helpers ──
+
+    private void triggerFolderSynthesis(Long folderId) {
+        folderRepo.findById(folderId).ifPresent(folder -> {
+            List<Highlight> highlights = highlightRepo.findByFolderIdAndNotDeleted(folderId);
+            if (highlights.isEmpty()) return;
+
+            String texts = highlights.stream()
+                    .map(Highlight::getText)
+                    .collect(Collectors.joining("\n- "));
+
+            String prompt = "Write a cohesive Living Literature Review paragraph synthesizing the following highlights into a single narrative.\n\nHighlights:\n- " + texts;
+
+            ollamaService.generate(prompt)
+                .publishOn(Schedulers.boundedElastic())
+                .subscribe(synthesis -> {
+                    folder.setSynthesis(synthesis);
+                    folderRepo.save(folder);
+                }, error -> {});
+        });
+    }
 
     private User resolveUser(Authentication auth) {
         return userRepo.findById(Long.parseLong(auth.getName()))

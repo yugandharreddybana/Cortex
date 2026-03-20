@@ -447,6 +447,34 @@ public class EmailService {
                 deepLink) + READ_ONLY_FOOTER;
     }
 
+    /**
+     * Send an email reminder to a user that their subscription will renew in 2 days.
+     *
+     * @param toEmail          the user's email address
+     * @param amountDue        the amount due in cents
+     * @param currency         the currency (e.g. usd)
+     * @param renewalDate      the expected date of renewal
+     */
+    @Async
+    public void sendSubscriptionRenewalReminder(String toEmail, long amountDue, String currency, Instant renewalDate) {
+        try {
+            if (!mailEnabled) {
+                log.info("[Email] Mock: Subscription renewal reminder (mail disabled). user={}", toEmail);
+                return;
+            }
+
+            String formattedAmount = String.format("%.2f", amountDue / 100.0);
+            String subject = "Upcoming Cortex Subscription Renewal";
+            String body = String.format("Hi!\n\nThis is a reminder that your Cortex subscription will automatically renew on %s.\n\nAmount: %s %s\n\nIf you have any questions, please contact support.%s",
+                    HUMAN_FMT.format(renewalDate), formattedAmount, currency.toUpperCase(), READ_ONLY_FOOTER);
+
+            log.info("[Email] Sending subscription renewal reminder to {}", obfuscate(toEmail));
+            sendEmail(toEmail, subject, body);
+        } catch (Exception e) {
+            log.error("[Email] Failed to send subscription renewal reminder to {}", obfuscate(toEmail), e);
+        }
+    }
+
     /** GDPR-safe log helper: masks everything before '@'. */
     private static String obfuscate(String email) {
         if (email == null || !email.contains("@"))

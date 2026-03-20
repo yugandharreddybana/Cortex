@@ -90,6 +90,9 @@ public class Folder {
     @Column(name = "updated_at", nullable = true)
     private Instant updatedAt = Instant.now();
 
+    @Column(columnDefinition = "TEXT")
+    private String synthesis;
+
     // Getters & Setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }
@@ -126,4 +129,7 @@ public class Folder {
 
     public Instant getUpdatedAt() { return updatedAt; }
     public void setUpdatedAt(Instant updatedAt) { this.updatedAt = updatedAt; }
+
+    public String getSynthesis() { return synthesis; }
+    public void setSynthesis(String synthesis) { this.synthesis = synthesis; }
 }

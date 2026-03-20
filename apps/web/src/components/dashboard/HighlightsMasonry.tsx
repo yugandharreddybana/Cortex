@@ -14,6 +14,7 @@ import { EmptyState } from "./EmptyState";
 import { ShareDialog, ShareIcon } from "./ShareDialog";
 import { useDashboardStore } from "@/store/dashboard";
 import type { Highlight, Folder } from "@/store/dashboard";
+import { DevilsAdvocate } from "./DevilsAdvocate";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -554,6 +555,8 @@ function HighlightCard({
           &ldquo;{h.text}&rdquo;
         </blockquote>
       )}
+
+      <DevilsAdvocate text={h.fullText || h.text} />
 
       {/* Source + folder metadata */}
       <div className="flex items-center gap-2 mt-3 flex-wrap">

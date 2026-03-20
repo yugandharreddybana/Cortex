@@ -214,6 +214,7 @@ public class FolderController {
         dto.updatedAt = f.getUpdatedAt();
         // RBAC: caller's effective role on this folder
         dto.effectiveRole = effectiveRole != null ? effectiveRole.name() : null;
+        dto.synthesis = f.getSynthesis();
         return dto;
     }
 }
