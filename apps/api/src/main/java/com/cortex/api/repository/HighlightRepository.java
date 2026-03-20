@@ -15,13 +15,13 @@ public interface HighlightRepository extends JpaRepository<Highlight, Long> {
      * Find all highlights for a user, excluding soft-deleted ones.
      * Ordered by creation date descending (most recent first).
      */
-    @Query("SELECT h FROM Highlight h WHERE h.user.id = :userId AND h.isDeleted = false ORDER BY h.createdAt DESC")
+    @Query("SELECT h FROM Highlight h LEFT JOIN FETCH h.tags t WHERE h.user.id = :userId AND h.isDeleted = false ORDER BY h.createdAt DESC")
     List<Highlight> findByUserIdOrderByCreatedAtDesc(@Param("userId") Long userId);
 
     /**
      * Find a specific highlight by ID and user ID, only if it's not deleted.
      */
-    @Query("SELECT h FROM Highlight h WHERE h.id = :id AND h.user.id = :userId AND h.isDeleted = false")
+    @Query("SELECT h FROM Highlight h LEFT JOIN FETCH h.tags t WHERE h.id = :id AND h.user.id = :userId AND h.isDeleted = false")
     Optional<Highlight> findByIdAndUserId(@Param("id") Long id, @Param("userId") Long userId);
 
     /**
@@ -66,6 +66,6 @@ public interface HighlightRepository extends JpaRepository<Highlight, Long> {
      * Find all non-deleted highlights belonging to a specific folder.
      * Used by the deep-clone operation to copy highlights into a new folder.
      */
-    @Query("SELECT h FROM Highlight h WHERE h.folderId = :folderId AND h.isDeleted = false")
+    @Query("SELECT h FROM Highlight h LEFT JOIN FETCH h.tags t WHERE h.folderId = :folderId AND h.isDeleted = false")
     List<Highlight> findByFolderIdAndNotDeleted(@Param("folderId") Long folderId);
 }

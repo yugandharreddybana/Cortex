@@ -28,19 +28,20 @@ public class StripeController {
     }
 
     @PostMapping("/checkout")
-    public ResponseEntity<?> createCheckoutSession(@RequestBody Map<String, String> payload) {
+    public ResponseEntity<?> createCheckoutSession(@RequestBody Map<String, Object> payload) {
         Long userId = securityService.getCurrentUserId();
         Optional<User> userOpt = userRepository.findById(userId);
         if (userOpt.isEmpty()) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
 
-        String priceId = payload.get("priceId");
-        String successUrl = payload.get("successUrl");
-        String cancelUrl = payload.get("cancelUrl");
+        String planId = (String) payload.get("planId");
+        Boolean isAnnual = (Boolean) payload.get("annual");
+        String successUrl = (String) payload.get("successUrl");
+        String cancelUrl = (String) payload.get("cancelUrl");
 
         try {
-            String url = stripeService.createCheckoutSession(userOpt.get(), priceId, successUrl, cancelUrl);
+            String url = stripeService.createCheckoutSession(userOpt.get(), planId, isAnnual, successUrl, cancelUrl);
             return ResponseEntity.ok(Map.of("url", url));
         } catch (StripeException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));

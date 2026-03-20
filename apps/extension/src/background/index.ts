@@ -330,9 +330,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     // The extension's own session is governed solely by cortex_ext_token in
     // chrome.storage.local.  Web app logout must NOT invalidate that token so
     // the extension keeps working after the user signs out of the web UI.
-    // Only chrome.storage.session (tab-scoped cache) is cleared here.
+    // However, we MUST NOT clear the entire chrome.storage.session because
+    // getExtensionToken() now relies on 'cortex_ext_token' in session storage
+    // as an in-memory fast-path, which breaks the extension if cleared here.
     case "CORTEX_LOGOUT":
-      chrome.storage.session.clear()
+      chrome.storage.session.remove(["pendingQuery"])
         .then(() => sendResponse({ ok: true }))
         .catch((err) => sendResponse({ ok: false, error: errMsg(err) }));
       return true;
