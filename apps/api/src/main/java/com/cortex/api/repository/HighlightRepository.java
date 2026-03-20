@@ -15,8 +15,14 @@ public interface HighlightRepository extends JpaRepository<Highlight, Long> {
      * Find all highlights for a user, excluding soft-deleted ones.
      * Ordered by creation date descending (most recent first).
      */
-    @Query("SELECT h FROM Highlight h LEFT JOIN FETCH h.tags t WHERE h.user.id = :userId AND h.isDeleted = false ORDER BY h.createdAt DESC")
+    @Query("SELECT h FROM Highlight h WHERE h.user.id = :userId AND h.isDeleted = false AND NOT EXISTS (SELECT 1 FROM h.hiddenByUsers u WHERE u.id = :userId) ORDER BY h.createdAt DESC")
     List<Highlight> findByUserIdOrderByCreatedAtDesc(@Param("userId") Long userId);
+
+    /**
+     * Find all highlights for a user or in specified folders, excluding soft-deleted ones.
+     */
+    @Query("SELECT h FROM Highlight h WHERE (h.user.id = :userId OR (h.folderId IN :folderIds AND h.folderId IS NOT NULL)) AND h.isDeleted = false AND NOT EXISTS (SELECT 1 FROM h.hiddenByUsers u WHERE u.id = :userId) ORDER BY h.createdAt DESC")
+    List<Highlight> findByUserIdOrFolderIdsOrderByCreatedAtDesc(@Param("userId") Long userId, @Param("folderIds") List<Long> folderIds);
 
     /**
      * Find a specific highlight by ID and user ID, only if it's not deleted.
@@ -36,8 +42,14 @@ public interface HighlightRepository extends JpaRepository<Highlight, Long> {
      * Find all highlights (including deleted ones) to support trash/recovery features.
      * Includes both active and soft-deleted highlights.
      */
-    @Query("SELECT h FROM Highlight h WHERE h.user.id = :userId ORDER BY h.createdAt DESC")
+    @Query("SELECT h FROM Highlight h WHERE h.user.id = :userId AND NOT EXISTS (SELECT 1 FROM h.hiddenByUsers u WHERE u.id = :userId) ORDER BY h.createdAt DESC")
     List<Highlight> findAllByUserIdInclandDeleted(@Param("userId") Long userId);
+
+    /**
+     * Find all highlights for a user or in specified folders, including soft-deleted ones.
+     */
+    @Query("SELECT h FROM Highlight h WHERE (h.user.id = :userId OR (h.folderId IN :folderIds AND h.folderId IS NOT NULL)) AND NOT EXISTS (SELECT 1 FROM h.hiddenByUsers u WHERE u.id = :userId) ORDER BY h.createdAt DESC")
+    List<Highlight> findAllByUserIdOrFolderIdsInclandDeleted(@Param("userId") Long userId, @Param("folderIds") List<Long> folderIds);
 
     /**
      * Find all soft-deleted highlights for a user (trash).

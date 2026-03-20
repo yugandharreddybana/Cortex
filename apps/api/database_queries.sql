@@ -194,3 +194,4 @@ CREATE INDEX IF NOT EXISTS idx_batched_email_event_processed ON batched_email_ev
 
 -- Extension_tokens table index
 CREATE INDEX IF NOT EXISTS idx_extension_token_user_id ON extension_tokens(user_id);
+CREATE TABLE hidden_highlights (user_id BIGINT REFERENCES users(id) ON DELETE CASCADE, highlight_id BIGINT REFERENCES highlight(id) ON DELETE CASCADE, PRIMARY KEY (user_id, highlight_id));
