@@ -63,7 +63,7 @@ describe("websocket", () => {
   it("should add folder to store when message received on /user/topic/folders", () => {
     mocks.onConnectCallback!();
     const folderSubCall = mocks.subscribe.mock.calls.find(call => call[0] === "/user/topic/folders");
-    const callback = folderSubCall[1];
+    const callback = folderSubCall![1];
 
     const mockFolder = { id: "1", name: "Test Folder", emoji: "📁" };
     callback({ body: JSON.stringify(mockFolder) });
@@ -77,7 +77,7 @@ describe("websocket", () => {
     useSyncStore.getState().addFolder({ id: "1", name: "Test Folder", emoji: "📁" });
     mocks.onConnectCallback!();
     const folderDeletedSubCall = mocks.subscribe.mock.calls.find(call => call[0] === "/user/topic/folders/deleted");
-    const callback = folderDeletedSubCall[1];
+    const callback = folderDeletedSubCall![1];
 
     callback({ body: JSON.stringify("1") });
 
@@ -88,7 +88,7 @@ describe("websocket", () => {
   it("should add tag to store when message received on /user/topic/tags", () => {
     mocks.onConnectCallback!();
     const tagSubCall = mocks.subscribe.mock.calls.find(call => call[0] === "/user/topic/tags");
-    const callback = tagSubCall[1];
+    const callback = tagSubCall![1];
 
     const mockTag = { id: "t1", name: "Test Tag", color: "red" };
     callback({ body: JSON.stringify(mockTag) });
