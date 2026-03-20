@@ -18,6 +18,7 @@ export interface Folder {
   effectiveRole?: string;   // OWNER | EDITOR | COMMENTER | VIEWER
   createdAt?: string;
   updatedAt?: string;
+  synthesis?: string;
 }
 
 export interface SmartCollection {

@@ -263,7 +263,7 @@ function PricingCTA({ plan, annual }: { plan: typeof PLANS[number], annual: bool
 
   const handleCheckout = async () => {
     if (!user) {
-      window.location.href = `/login?returnTo=/pricing`;
+      window.location.href = `/signup?tier=${plan.id}`;
       return;
     }
 
@@ -274,15 +274,12 @@ function PricingCTA({ plan, annual }: { plan: typeof PLANS[number], annual: bool
 
     setLoading(true);
     try {
-      // In a real implementation, you would look up the exact price ID from Stripe
-      // based on plan.id and annual boolean. Using a dummy for now.
-      const priceId = annual ? `price_${plan.id}_annual` : `price_${plan.id}_monthly`;
-
       const res = await fetch("/api/stripe/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          priceId,
+          planId: plan.id,
+          annual: annual,
           successUrl: `${window.location.origin}/dashboard?success=true`,
           cancelUrl: `${window.location.origin}/pricing?canceled=true`
         })

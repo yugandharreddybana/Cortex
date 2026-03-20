@@ -6,6 +6,7 @@ import com.stripe.Stripe;
 import com.stripe.exception.StripeException;
 import com.stripe.model.Customer;
 import com.stripe.model.Event;
+import com.stripe.model.Invoice;
 import com.stripe.model.Subscription;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
@@ -21,18 +22,21 @@ public class StripeService {
 
     private final UserRepository userRepository;
     private final String stripeWebhookSecret;
+    private final EmailService emailService;
 
     public StripeService(
             UserRepository userRepository,
+            EmailService emailService,
             @Value("${cortex.stripe.api-key:sk_test_123}") String stripeApiKey,
             @Value("${cortex.stripe.webhook-secret:whsec_123}") String stripeWebhookSecret) {
         this.userRepository = userRepository;
+        this.emailService = emailService;
         this.stripeWebhookSecret = stripeWebhookSecret;
         Stripe.apiKey = stripeApiKey;
     }
 
     @Transactional
-    public String createCheckoutSession(User user, String priceId, String successUrl, String cancelUrl) throws StripeException {
+    public String createCheckoutSession(User user, String planId, Boolean isAnnual, String successUrl, String cancelUrl) throws StripeException {
         String customerId = user.getStripeCustomerId();
 
         if (customerId == null || customerId.isEmpty()) {
@@ -48,14 +52,42 @@ public class StripeService {
             userRepository.save(user);
         }
 
+        // If the user selects the free starter plan, just redirect them to success
+        if ("starter".equals(planId)) {
+            return successUrl;
+        }
+
+        // Generate dynamic price payload for dummy testing
+        long unitAmount = 0L;
+        String productName = "Cortex " + planId.substring(0, 1).toUpperCase() + planId.substring(1);
+        if ("pro".equals(planId)) {
+            unitAmount = isAnnual ? 9600L : 1000L; // $96/yr or $10/mo
+        } else if ("team".equals(planId)) {
+            unitAmount = isAnnual ? 24000L : 2500L; // $240/yr or $25/mo
+        } else {
+            throw new IllegalArgumentException("Invalid plan tier: " + planId);
+        }
+
+        SessionCreateParams.LineItem.PriceData.Recurring.Interval interval =
+            isAnnual ? SessionCreateParams.LineItem.PriceData.Recurring.Interval.YEAR : SessionCreateParams.LineItem.PriceData.Recurring.Interval.MONTH;
+
         SessionCreateParams params = SessionCreateParams.builder()
                 .setMode(SessionCreateParams.Mode.SUBSCRIPTION)
                 .setCustomer(customerId)
                 .setSuccessUrl(successUrl)
                 .setCancelUrl(cancelUrl)
                 .addLineItem(SessionCreateParams.LineItem.builder()
-                        .setPrice(priceId)
                         .setQuantity(1L)
+                        .setPriceData(SessionCreateParams.LineItem.PriceData.builder()
+                                .setCurrency("usd")
+                                .setUnitAmount(unitAmount)
+                                .setProductData(SessionCreateParams.LineItem.PriceData.ProductData.builder()
+                                        .setName(productName)
+                                        .build())
+                                .setRecurring(SessionCreateParams.LineItem.PriceData.Recurring.builder()
+                                        .setInterval(interval)
+                                        .build())
+                                .build())
                         .build())
                 .build();
 
@@ -89,10 +121,15 @@ public class StripeService {
             if (session != null) {
                  handleCheckoutSessionCompleted(session);
             }
-        } else if ("customer.subscription.updated".equals(event.getType()) || "customer.subscription.deleted".equals(event.getType())) {
+        } else if ("customer.subscription.created".equals(event.getType()) || "customer.subscription.updated".equals(event.getType()) || "customer.subscription.deleted".equals(event.getType())) {
             Subscription subscription = (Subscription) event.getDataObjectDeserializer().getObject().orElse(null);
             if (subscription != null) {
                 handleSubscriptionUpdated(subscription);
+            }
+        } else if ("invoice.upcoming".equals(event.getType())) {
+            Invoice invoice = (Invoice) event.getDataObjectDeserializer().getObject().orElse(null);
+            if (invoice != null) {
+                handleUpcomingInvoice(invoice);
             }
         }
     }
@@ -103,8 +140,13 @@ public class StripeService {
         if (userOpt.isPresent()) {
             User user = userOpt.get();
             user.setSubscriptionStatus("active");
-            // Simplified tier assignment for now based on completion
-            user.setTier("premium"); // In a real app, infer from the line items/price ID
+            user.setTier("pro"); // Infer 'pro' since our dummy setup defaults to Pro/Team
+
+            // Fallback for currentPeriodEnd if the subscription update webhook arrives late
+            if (user.getCurrentPeriodEnd() == null) {
+                user.setCurrentPeriodEnd(java.time.Instant.now().plus(30, java.time.temporal.ChronoUnit.DAYS));
+            }
+
             userRepository.save(user);
         }
     }
@@ -115,10 +157,42 @@ public class StripeService {
         if (userOpt.isPresent()) {
             User user = userOpt.get();
             user.setSubscriptionStatus(subscription.getStatus());
+
+            // Set the billing interval and current period end date
+            if (subscription.getItems() != null && !subscription.getItems().getData().isEmpty()) {
+                com.stripe.model.SubscriptionItem item = subscription.getItems().getData().get(0);
+                if (item.getPrice() != null && item.getPrice().getRecurring() != null) {
+                    user.setBillingInterval(item.getPrice().getRecurring().getInterval());
+                }
+            }
+
+            user.setCurrentPeriodEnd(java.time.Instant.ofEpochSecond(subscription.getCurrentPeriodEnd()));
+
             if (!"active".equals(subscription.getStatus()) && !"trialing".equals(subscription.getStatus())) {
                  user.setTier("starter");
+            } else if ("active".equals(subscription.getStatus())) {
+                // Ensure active subscriptions retain their tier. If it was downgraded, restore it.
+                if ("starter".equals(user.getTier())) {
+                    user.setTier("pro");
+                }
             }
+
             userRepository.save(user);
+        }
+    }
+
+    private void handleUpcomingInvoice(Invoice invoice) {
+        String customerId = invoice.getCustomer();
+        Optional<User> userOpt = userRepository.findByStripeCustomerId(customerId);
+        if (userOpt.isPresent()) {
+            User user = userOpt.get();
+            long amountDue = invoice.getAmountDue();
+            String currency = invoice.getCurrency() != null ? invoice.getCurrency() : "usd";
+            java.time.Instant nextPaymentAttempt = invoice.getNextPaymentAttempt() != null ?
+                java.time.Instant.ofEpochSecond(invoice.getNextPaymentAttempt()) :
+                java.time.Instant.ofEpochSecond(invoice.getPeriodEnd());
+
+            emailService.sendSubscriptionRenewalReminder(user.getEmail(), amountDue, currency, nextPaymentAttempt);
         }
     }
 }
