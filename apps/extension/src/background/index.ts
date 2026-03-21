@@ -1067,7 +1067,12 @@ async function runHourlySync(): Promise<void> {
       // Normalize IDs to strings before storing — Java API returns Long (numeric JSON)
       // to prevent string/number ID conflicts in the web dashboard.
       const normalizedFolders = (Array.isArray(folders) ? folders : []).map(
-        (f: Record<string, unknown>) => ({ ...f, id: String(f.id), parentId: f.parentId != null ? String(f.parentId) : null })
+        (f: Record<string, unknown>) => ({
+          ...f,
+          id: String(f.id),
+          parentId: f.parentId != null ? String(f.parentId) : null,
+          accessRole: f.effectiveRole ?? undefined
+        })
       );
       await secureSet("cortex_folders", normalizedFolders);
     }

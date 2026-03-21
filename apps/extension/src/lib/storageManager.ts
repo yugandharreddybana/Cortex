@@ -17,6 +17,7 @@ export interface StoredFolder {
   emoji:     string;
   parentId?: string;
   isPinned?: boolean;
+  accessRole?: string;
 }
 
 export interface StoredTag {

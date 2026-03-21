@@ -852,7 +852,7 @@ export function SidebarCapture({ selectedText, onClose }: SidebarCaptureProps) {
             >
               <span>{selectedFolder?.emoji ?? "📂"}</span>
               <span style={{ flex: 1, textAlign: "left" }}>
-                {selectedFolder?.name ?? "Select folder…"}
+                {selectedFolder?.name ?? "Select folder…"} {selectedFolder?.accessRole && selectedFolder.accessRole !== "OWNER" && "🤝"}
               </span>
               <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
                 style={{ transform: folderPickerOpen ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.15s" }}>
@@ -1289,6 +1289,11 @@ function FolderTreeItem({
       >
         <span>{folder.emoji}</span>
         <span style={{ flex: 1, textAlign: "left" }}>{folder.name}</span>
+        {folder.accessRole && folder.accessRole !== "OWNER" && (
+          <span style={{ fontSize: "10px", marginRight: "6px" }} title="Shared Folder">
+            🤝
+          </span>
+        )}
         {isViewer && (
           <span style={{ fontSize: "9px", color: "rgba(255,255,255,0.35)", marginLeft: "auto", flexShrink: 0 }}>
             view&nbsp;only
