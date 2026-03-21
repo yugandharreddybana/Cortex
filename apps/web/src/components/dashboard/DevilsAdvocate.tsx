@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 
-export function DevilsAdvocate({ text }: { text: string }) {
+export function DevilsAdvocate({ text, url }: { text: string; url?: string }) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ score: number; warning: string } | null>(null);
 
@@ -13,7 +13,7 @@ export function DevilsAdvocate({ text }: { text: string }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ text })
+        body: JSON.stringify({ text, url })
       });
       if (res.ok) {
         const data = await res.json();
