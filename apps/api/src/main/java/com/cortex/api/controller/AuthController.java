@@ -35,6 +35,11 @@ public class AuthController {
         return ResponseEntity.ok(response);
     }
 
+    @RequestMapping(value = "/login", method = org.springframework.web.bind.annotation.RequestMethod.HEAD)
+    public ResponseEntity<Void> loginHead() {
+        return ResponseEntity.ok().build();
+    }
+
     // Health probe for the extension to detect if Java backend is running.
     // Uses GET (not HEAD) because Spring MVC HEAD + POST on the same path can hang.
     @RequestMapping(value = "/probe", method = {
