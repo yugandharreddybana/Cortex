@@ -11,6 +11,7 @@ export function ActionEngine({ text }: { text: string }) {
       const res = await fetch("/api/ai/suggest-actions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ text })
       });
       if (res.ok) {

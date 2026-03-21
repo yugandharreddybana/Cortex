@@ -31,6 +31,11 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
         String header = request.getHeader("Authorization");
 
+        if (request.getRequestURI().contains("/api/v1/ai/")) {
+            System.out.println("[DEBUG-FILTER] AI Request Hit: " + request.getMethod() + " " + request.getRequestURI());
+            System.out.println("[DEBUG-FILTER] Received Authorization Header: " + (header != null ? header.substring(0, Math.min(20, header.length())) + "..." : "NULL"));
+        }
+
         // Fallback to query parameter for WebSockets or environments that can't send headers easily
         if (header == null) {
             String tokenParam = request.getParameter("token");
