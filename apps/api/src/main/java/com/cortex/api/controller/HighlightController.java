@@ -238,7 +238,7 @@ public class HighlightController {
                     .map(Highlight::getText)
                     .collect(Collectors.joining("\n- "));
 
-            String prompt = "Write a cohesive Living Literature Review paragraph synthesizing the following highlights into a single narrative.\n\nHighlights:\n- " + texts;
+            String prompt = "You are a research assistant. Write a cohesive, single-paragraph 'Living Literature Review' that synthesizes the following highlights into a continuous, logical narrative. Do not list them; connect the central themes.\n\nHighlights:\n- " + texts;
 
             ollamaService.generate(prompt)
                 .publishOn(Schedulers.boundedElastic())

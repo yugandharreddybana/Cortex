@@ -30,14 +30,30 @@ public class TierValidationAspect {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Authentication required");
         }
 
-        String email = auth.getName();
-        User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+        String principal = auth.getName();
+        System.out.println("[DEBUG-TIER] Evaluating tier for principal: " + principal);
+        User user;
+        try {
+            Long userId = Long.valueOf(principal);
+            user = userRepository.findById(userId)
+                    .orElseThrow(() -> {
+                        System.out.println("[DEBUG-TIER] User ID " + userId + " not found in DB!");
+                        return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found by ID");
+                    });
+        } catch (NumberFormatException e) {
+            System.out.println("[DEBUG-TIER] Principal is not a number, trying email: " + principal);
+            user = userRepository.findByEmail(principal)
+                    .orElseThrow(() -> {
+                        System.out.println("[DEBUG-TIER] Email " + principal + " not found in DB!");
+                        return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found by email");
+                    });
+        }
 
         String userTier = user.getTier();
         if (userTier == null) {
             userTier = "starter"; // Default fallback
         }
+        System.out.println("[DEBUG-TIER] User resolved successfully. Tier is: " + userTier);
 
         boolean hasRequiredTier = false;
         for (String allowedTier : requireTier.value()) {
@@ -48,10 +64,12 @@ public class TierValidationAspect {
         }
 
         if (!hasRequiredTier) {
+            System.out.println("[DEBUG-TIER] User tier " + userTier + " is NOT authorized. Requires: " + Arrays.toString(requireTier.value()));
             throw new ResponseStatusException(
                 HttpStatus.PAYMENT_REQUIRED,
                 "Upgrade required. This feature requires one of the following tiers: " + Arrays.toString(requireTier.value())
             );
         }
+        System.out.println("[DEBUG-TIER] User is authorized!");
     }
 }

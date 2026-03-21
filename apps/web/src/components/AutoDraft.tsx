@@ -13,6 +13,7 @@ export function AutoDraft({ folderId }: { folderId: string }) {
       const res = await fetch("/api/ai/auto-draft", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ folderId, format: "Essay" })
       });
       if (!res.ok) {
