@@ -311,12 +311,17 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
     // ── Dashboard login hydration: write server data into extension storage ──
     case "CORTEX_INIT": {
       const { folders = [], tags = [], highlights = [] } = (message.payload ?? {}) as {
-        folders: unknown[]; tags: unknown[]; highlights: unknown[];
+        folders: Record<string, unknown>[]; tags: Record<string, unknown>[]; highlights: Record<string, unknown>[];
       };
+      
+      const normalizedFolders = folders.map(f => ({ ...f, id: String(f.id), parentId: f.parentId != null ? String(f.parentId) : null }));
+      const normalizedTags = tags.map(t => ({ ...t, id: String(t.id) }));
+      const normalizedHighlights = highlights.map(h => ({ ...h, id: String(h.id), folderId: h.folderId != null ? String(h.folderId) : null }));
+
       Promise.all([
-        secureSet("cortex_folders", folders),
-        secureSet("cortex_tags",    tags),
-        secureSet("highlights",     highlights),
+        secureSet("cortex_folders", normalizedFolders),
+        secureSet("cortex_tags",    normalizedTags),
+        secureSet("highlights",     normalizedHighlights),
         // Phase 16.1: mark extension session as authenticated on login hydration
         chrome.storage.local.set({ cortex_auth_state: { status: "authenticated" } }),
       ]).then(() => sendResponse({ ok: true }))
@@ -498,7 +503,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             case "CREATE:folder":
             case "UPDATE:folder": {
               const folders = await secureGet<Record<string, unknown>[]>("cortex_folders", []);
-              const idx = folders.findIndex((f) => f["id"] === payload.id);
+              const idx = folders.findIndex((f) => String(f["id"]) === String(payload.id));
               if (idx >= 0) { folders[idx] = { ...folders[idx], ...payload }; } else { folders.unshift(payload); }
               await secureSet("cortex_folders", folders);
               await broadcastStorageUpdateToAllTabs({ folders });
@@ -514,7 +519,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
             case "CREATE:tag":
             case "UPDATE:tag": {
               const tags = await secureGet<Record<string, unknown>[]>("cortex_tags", []);
-              const idx = tags.findIndex((t) => t["id"] === payload.id);
+              const idx = tags.findIndex((t) => String(t["id"]) === String(payload.id));
               if (idx >= 0) { tags[idx] = { ...tags[idx], ...payload }; } else { tags.unshift(payload); }
               await secureSet("cortex_tags", tags);
               await broadcastStorageUpdateToAllTabs({ tags });
@@ -597,7 +602,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
             // 3. Save to encrypted storage ONLY after server confirms
             const folders = await secureGet<Record<string, unknown>[]>("cortex_folders", []);
-            if (!folders.find((f) => f["id"] === realId)) {
+            if (!folders.find((f) => String(f["id"]) === String(realId))) {
               folders.unshift({ ...folderPayload, ...serverFolder, id: realId });
               await secureSet("cortex_folders", folders);
             }
@@ -669,7 +674,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
             // 3. Save to encrypted storage ONLY after server confirms
             const tags = await secureGet<Record<string, unknown>[]>("cortex_tags", []);
-            if (!tags.find((t) => t["id"] === realId)) {
+            if (!tags.find((t) => String(t["id"]) === String(realId))) {
               tags.unshift({ ...tagPayload, ...serverTag, id: realId });
               await secureSet("cortex_tags", tags);
             }
