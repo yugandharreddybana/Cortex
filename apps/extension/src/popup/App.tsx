@@ -23,6 +23,7 @@ interface Folder {
   emoji?:    string | null;
   parentId?: string | null;
   isPinned?: boolean;
+  accessRole?: string;
 }
 
 interface Tag {
@@ -127,7 +128,13 @@ export function App() {
     // Bulk delete selected highlights
     const handleBulkDelete = useCallback(async () => {
       if (!window.confirm("Are you sure you want to delete the selected highlights? This cannot be undone.")) return;
-      const selectedIds = highlights.filter((h) => h.checked).map((h) => h.id);
+      const selectedIds = highlights.filter((h) => {
+        if (!h.checked) return false;
+        const f = h.folderId ? folders.find(folder => folder.id === h.folderId) : undefined;
+        const canDelete = !f || !f.accessRole || f.accessRole === "OWNER" || f.accessRole === "EDITOR";
+        return canDelete;
+      }).map((h) => h.id);
+
       if (selectedIds.length === 0) return;
       setHighlights((prev) => prev.filter((h) => !selectedIds.includes(h.id)));
       // Delete each highlight via the background SW (which handles server + local storage)
@@ -137,7 +144,7 @@ export function App() {
           () => { if (chrome.runtime.lastError) { /* ok */ } },
         );
       }
-    }, [highlights]);
+    }, [highlights, folders]);
   const [loading, setLoading]         = useState(true);
   const [enabled, setEnabled]         = useState(true);
   const [view, setView]               = useState<View>({ type: "folders" });
@@ -643,21 +650,25 @@ export function App() {
                         Delete Selected
                       </button>
                     </div>
-                    {filtered.slice(0, 50).map((h, i) => (
-                      <motion.div
-                        key={h.id}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        transition={{
-                          delay: i * 0.03,
-                          duration: 0.3,
-                          ease: EASE,
-                        }}
-                      >
-                        <HighlightItem highlight={h} onDelete={handleDelete} />
-                      </motion.div>
-                    ))}
+                    {filtered.slice(0, 50).map((h, i) => {
+                      const f = h.folderId ? folders.find(folder => folder.id === h.folderId) : undefined;
+                      const canDelete = !f || !f.accessRole || f.accessRole === "OWNER" || f.accessRole === "EDITOR";
+                      return (
+                        <motion.div
+                          key={h.id}
+                          initial={{ opacity: 0, y: 8 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -8 }}
+                          transition={{
+                            delay: i * 0.03,
+                            duration: 0.3,
+                            ease: EASE,
+                          }}
+                        >
+                          <HighlightItem highlight={h} onDelete={handleDelete} canDelete={canDelete} />
+                        </motion.div>
+                      );
+                    })}
                   </>
                 </AnimatePresence>
               )}
@@ -872,6 +883,7 @@ function FolderListView({
           isPinned={!!f.isPinned}
           depth={depth}
           onClick={() => onSelectFolder(f.id, f.name)}
+          accessRole={f.accessRole}
         />,
       );
       // Render children recursively (subfolders are always expanded)
@@ -950,6 +962,7 @@ function FolderRow({
   isPinned,
   depth,
   onClick,
+  accessRole,
 }: {
   emoji: string;
   name: string;
@@ -957,6 +970,7 @@ function FolderRow({
   isPinned: boolean;
   depth: number;
   onClick: () => void;
+  accessRole?: string;
 }) {
   const [hovered, setHovered] = useState(false);
 
@@ -994,6 +1008,9 @@ function FolderRow({
       >
         {name}
       </span>
+      {accessRole && accessRole !== "OWNER" && (
+        <span style={{ fontSize: "12px" }} title="Shared Folder">🤝</span>
+      )}
       {isPinned && (
         <svg
           width="10"
@@ -1037,9 +1054,11 @@ function FolderRow({
 function HighlightItem({
   highlight: h,
   onDelete,
+  canDelete = true,
 }: {
   highlight: Highlight;
   onDelete: (id: string) => void;
+  canDelete?: boolean;
 }) {
   const [hovered, setHovered] = useState(false);
 
@@ -1062,7 +1081,7 @@ function HighlightItem({
       }}
     >
       {/* Delete button */}
-      {hovered && (
+      {hovered && canDelete && (
         <button
           onClick={(e) => {
             e.stopPropagation();
