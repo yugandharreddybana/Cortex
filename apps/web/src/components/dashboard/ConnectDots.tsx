@@ -1,18 +1,22 @@
 import React, { useState } from "react";
 import { Link2 } from "lucide-react";
 
-export function ConnectDots({ text, url }: { text: string; url?: string }) {
+export function ConnectDots({ text, url, customPrompt, onRequireContext }: { text: string; url?: string; customPrompt?: string; onRequireContext?: () => void }) {
   const [loading, setLoading] = useState(false);
   const [dots, setDots] = useState<string>("");
 
   const handleConnect = async () => {
+    if (onRequireContext) {
+      onRequireContext();
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/ai/connect-dots", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ text, url })
+        body: JSON.stringify({ text, url, customPrompt })
       });
       if (res.ok) {
         setDots(await res.text());
@@ -31,13 +35,20 @@ export function ConnectDots({ text, url }: { text: string; url?: string }) {
           <Link2 size={16} className="text-accent" />
           Connect the Dots
         </h4>
-        <button
-          onClick={handleConnect}
-          disabled={loading}
-          className="text-xs font-medium px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-white/70 transition-colors"
-        >
-          {loading ? "Analyzing..." : "Find semantic links"}
-        </button>
+        <div className="relative group/tooltip inline-block">
+          <button
+            onClick={handleConnect}
+            disabled={loading}
+            className="text-xs font-medium px-3 py-1.5 rounded-lg bg-white/[0.05] hover:bg-white/[0.1] text-white/70 transition-colors"
+          >
+            {loading ? "Analyzing..." : "Find semantic links"}
+          </button>
+          {/* Tooltip */}
+          <div className="pointer-events-none absolute bottom-full right-0 mb-2 w-max max-w-[200px] opacity-0 group-hover/tooltip:opacity-100 transition-opacity bg-black text-white text-[10px] px-2 py-1 rounded shadow-lg z-50 text-right">
+            Find meaningful connections and patterns with your recent highlights.
+            <svg className="absolute text-black h-2 w-full right-4 top-full" x="0px" y="0px" viewBox="0 0 255 255"><polygon className="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
+          </div>
+        </div>
       </div>
 
       {dots && (

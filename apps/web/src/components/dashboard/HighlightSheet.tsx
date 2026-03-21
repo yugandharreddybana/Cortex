@@ -8,6 +8,7 @@ import { cn } from "@cortex/ui";
 import { useDashboardStore } from "@/store/dashboard";
 import { ConnectDots } from "./ConnectDots";
 import { ActionEngine } from "./ActionEngine";
+import { AIContextModal } from "./AIContextModal";
 import type { Highlight } from "@/store/dashboard";
 
 // ─── Tag color map ─────────────────────────────────────────────────────────────
@@ -57,8 +58,24 @@ export function HighlightSheet({ highlight, open, onOpenChange }: HighlightSheet
   const [popoverOpen, setPopoverOpen] = React.useState(false);
   const [saved,       setSaved]       = React.useState(false);
 
+  // Custom AI Instructions state
+  const [customPrompt, setCustomPrompt] = React.useState("");
+
+  // AI Context Modal State
+  const [contextModalOpen, setContextModalOpen] = React.useState(false);
+
+  const isAIText = highlight?.topic === "AI Text";
+  const needsContext = isAIText && (!highlight?.aiContext || !highlight?.aiResponse);
+
+  const handleRequireContext = React.useCallback(() => {
+    if (needsContext) {
+      setContextModalOpen(true);
+    }
+  }, [needsContext]);
+
   // Sync state when highlight changes
   React.useEffect(() => {
+    setCustomPrompt("");
     setNote(highlight?.note ?? "");
     setPickedTags(highlight?.tags ?? []);
     setSaved(false);
@@ -202,11 +219,42 @@ export function HighlightSheet({ highlight, open, onOpenChange }: HighlightSheet
                     />
                   </div>
 
+                  {/* Custom AI Instructions */}
+                  <div className="space-y-2 mt-6 border-t border-white/[0.08] pt-6">
+                    <label className="text-xs font-semibold uppercase tracking-widest text-white/35 flex justify-between items-center">
+                      Custom AI Instructions
+                      <span className="text-[10px] lowercase font-normal opacity-60">(optional)</span>
+                    </label>
+                    <textarea
+                      value={customPrompt}
+                      onChange={(e) => setCustomPrompt(e.target.value)}
+                      rows={2}
+                      placeholder="e.g. format as a bulleted list, act as a devil's advocate..."
+                      className={cn(
+                        "w-full rounded-xl px-3.5 py-2",
+                        "bg-white/[0.04] border border-white/[0.08]",
+                        "text-sm text-white/80 placeholder:text-white/20",
+                        "outline-none focus:border-accent/40 focus:ring-1 focus:ring-accent/20",
+                        "resize-none transition-all duration-150",
+                      )}
+                    />
+                  </div>
+
                   {/* Connect the Dots */}
-                  <ConnectDots text={highlight?.fullText || highlight?.text || ""} url={highlight?.url} />
+                  <ConnectDots
+                    text={isAIText ? `Context: ${highlight?.aiContext}\nResponse: ${highlight?.aiResponse}` : (highlight?.fullText || highlight?.text || "")}
+                    url={highlight?.url}
+                    customPrompt={customPrompt}
+                    onRequireContext={needsContext ? handleRequireContext : undefined}
+                  />
 
                   {/* Action Engine */}
-                  <ActionEngine text={highlight?.fullText || highlight?.text || ""} url={highlight?.url} />
+                  <ActionEngine
+                    text={isAIText ? `Context: ${highlight?.aiContext}\nResponse: ${highlight?.aiResponse}` : (highlight?.fullText || highlight?.text || "")}
+                    url={highlight?.url}
+                    customPrompt={customPrompt}
+                    onRequireContext={needsContext ? handleRequireContext : undefined}
+                  />
 
                   {/* Tags */}
                   <div className="space-y-2">
@@ -340,6 +388,16 @@ export function HighlightSheet({ highlight, open, onOpenChange }: HighlightSheet
           </Dialog.Portal>
         )}
       </AnimatePresence>
+
+      {/* Render context modal independently so it can stack on top */}
+      {highlight && (
+        <AIContextModal
+          highlight={highlight}
+          open={contextModalOpen}
+          onOpenChange={setContextModalOpen}
+          onSuccess={() => {}}
+        />
+      )}
     </Dialog.Root>
   );
 }
