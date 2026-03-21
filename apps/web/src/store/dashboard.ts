@@ -50,6 +50,8 @@ export interface Highlight {
   isArchived: boolean;
   isPinned?:  boolean;
   highlightColor?: string; // hex color for color-coded highlights
+  aiContext?: string;
+  aiResponse?: string;
   resourceType?: "TEXT" | "VIDEO";
   videoTimestamp?: number;
   linkAccess?: string;      // RESTRICTED, PUBLIC
@@ -107,7 +109,7 @@ interface DashboardState {
   addTag:              (name: string, color: string) => void;
   deleteTag:           (id: string) => void;
   addHighlight:        (h: Pick<Highlight, "text" | "source"> & { folderId?: string, tags?: string[] }) => Promise<boolean>;
-  updateHighlight:     (id: string, patch: Partial<Pick<Highlight, "note" | "tags" | "highlightColor">>) => void;
+  updateHighlight:     (id: string, patch: Partial<Pick<Highlight, "note" | "tags" | "highlightColor" | "aiContext" | "aiResponse">>) => void;
   moveHighlight:       (id: string, folderId: string, folderName: string) => void;
   toggleFavorite:      (id: string) => void;
   toggleArchive:       (id: string) => void;

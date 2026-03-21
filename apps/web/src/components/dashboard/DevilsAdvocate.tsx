@@ -1,26 +1,38 @@
 import React, { useState } from "react";
 import { AlertTriangle } from "lucide-react";
 
-export function DevilsAdvocate({ text, url }: { text: string; url?: string }) {
+export function DevilsAdvocate({ text, url, customPrompt, onRequireContext }: { text: string; url?: string; customPrompt?: string; onRequireContext?: () => void }) {
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<{ score: number; warning: string } | null>(null);
 
   const handleAnalyze = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    if (onRequireContext) {
+      onRequireContext();
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/ai/devils-advocate", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({ text, url })
+        body: JSON.stringify({ text, url, customPrompt })
       });
       if (res.ok) {
-        const data = await res.json();
-        setResult(typeof data === "string" ? JSON.parse(data) : data);
+        const textData = await res.text();
+        try {
+          // Ollama might wrap the JSON in markdown blocks even when told not to.
+          const cleanedText = textData.replace(/```json/g, '').replace(/```/g, '').trim();
+          const parsed = JSON.parse(cleanedText);
+          setResult(parsed);
+        } catch (parseErr) {
+          console.error("Failed to parse AI response", textData);
+          setResult({ score: 0, warning: "Failed to generate analysis (Invalid format from AI)." });
+        }
       }
     } catch (err) {
-      console.error(err);
+      console.error("Failed to analyze text", err);
     } finally {
       setLoading(false);
     }
@@ -28,14 +40,21 @@ export function DevilsAdvocate({ text, url }: { text: string; url?: string }) {
 
   if (!result) {
     return (
-      <button
-        onClick={handleAnalyze}
-        disabled={loading}
-        className="mt-3 flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 transition-colors"
-      >
-        <AlertTriangle size={12} />
-        {loading ? "Analyzing..." : "Devil's Advocate"}
-      </button>
+      <div className="relative group/tooltip inline-block mt-3 w-full">
+        <button
+          onClick={handleAnalyze}
+          disabled={loading}
+          className="flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded bg-orange-500/10 text-orange-400 hover:bg-orange-500/20 transition-colors"
+        >
+          <AlertTriangle size={12} />
+          {loading ? "Analyzing..." : "Devil's Advocate"}
+        </button>
+        {/* Tooltip */}
+        <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] opacity-0 group-hover/tooltip:opacity-100 transition-opacity bg-black text-white text-[10px] px-2 py-1 rounded shadow-lg z-50">
+          Analyzes text for hidden biases, logical fallacies, or unverified claims.
+          <svg className="absolute text-black h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255"><polygon className="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
+        </div>
+      </div>
     );
   }
 
