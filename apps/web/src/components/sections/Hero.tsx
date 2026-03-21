@@ -122,6 +122,20 @@ export function Hero() {
           Your second brain, running at the speed of thought.
         </motion.p>
 
+        {/* Features Preview tags */}
+        <motion.div
+          variants={fadeUp}
+          transition={itemTransition}
+          className="flex flex-wrap justify-center gap-2 mb-10 text-xs font-medium text-white/50"
+        >
+          <span className="px-3 py-1.5 rounded-full border border-white/10 bg-white/5">Auto-Draft Essays</span>
+          <span className="px-3 py-1.5 rounded-full border border-white/10 bg-white/5">Devil's Advocate</span>
+          <span className="px-3 py-1.5 rounded-full border border-white/10 bg-white/5">Connect the Dots</span>
+          <span className="px-3 py-1.5 rounded-full border border-white/10 bg-white/5">Suggest Action Items</span>
+          <span className="px-3 py-1.5 rounded-full border border-white/10 bg-white/5">Custom Prompts</span>
+          <span className="px-3 py-1.5 rounded-full border border-white/10 bg-white/5">AI Source Context</span>
+        </motion.div>
+
         {/* CTAs */}
         <motion.div
           variants={fadeUp}

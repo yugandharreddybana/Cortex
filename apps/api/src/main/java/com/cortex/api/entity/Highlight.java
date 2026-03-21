@@ -91,6 +91,12 @@ public class Highlight {
     @Column(name = "chat_url", columnDefinition = "TEXT")
     private String chatUrl;
 
+    @Column(name = "ai_context", columnDefinition = "TEXT")
+    private String aiContext;
+
+    @Column(name = "ai_response", columnDefinition = "TEXT")
+    private String aiResponse;
+
     /**
      * One-to-Many: all comments on this highlight.
      */
@@ -220,6 +226,12 @@ public class Highlight {
 
     public String getChatUrl() { return chatUrl; }
     public void setChatUrl(String chatUrl) { this.chatUrl = chatUrl; }
+
+    public String getAiContext() { return aiContext; }
+    public void setAiContext(String aiContext) { this.aiContext = aiContext; }
+
+    public String getAiResponse() { return aiResponse; }
+    public void setAiResponse(String aiResponse) { this.aiResponse = aiResponse; }
 
     public ResourceType getResourceType() { return resourceType; }
     public void setResourceType(ResourceType resourceType) { this.resourceType = resourceType; }
