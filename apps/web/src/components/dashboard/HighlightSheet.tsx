@@ -203,10 +203,10 @@ export function HighlightSheet({ highlight, open, onOpenChange }: HighlightSheet
                   </div>
 
                   {/* Connect the Dots */}
-                  <ConnectDots text={highlight?.fullText || highlight?.text || ""} />
+                  <ConnectDots text={highlight?.fullText || highlight?.text || ""} url={highlight?.url} />
 
                   {/* Action Engine */}
-                  <ActionEngine text={highlight?.fullText || highlight?.text || ""} />
+                  <ActionEngine text={highlight?.fullText || highlight?.text || ""} url={highlight?.url} />
 
                   {/* Tags */}
                   <div className="space-y-2">
