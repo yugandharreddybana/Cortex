@@ -11,6 +11,7 @@ export function ConnectDots({ text, url }: { text: string; url?: string }) {
       const res = await fetch("/api/ai/connect-dots", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ text, url })
       });
       if (res.ok) {

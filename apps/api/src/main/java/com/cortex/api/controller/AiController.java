@@ -6,7 +6,7 @@ import com.cortex.api.entity.User;
 import com.cortex.api.repository.HighlightRepository;
 import com.cortex.api.service.OllamaService;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
 
@@ -28,7 +28,7 @@ public class AiController {
     @PostMapping("/auto-draft")
     @RequireTier({"starter", "pro", "premium", "team"})
     public Mono<ResponseEntity<String>> generateAutoDraft(
-            @AuthenticationPrincipal User user,
+            Authentication auth,
             @RequestBody AutoDraftRequest request) {
 
         List<Highlight> highlights = highlightRepository.findByFolderIdAndNotDeleted(request.folderId());
@@ -48,39 +48,42 @@ public class AiController {
                 .collect(Collectors.joining("\n- "));
 
         String prompt = String.format(
-            "Synthesize the following highlights into a structured outline formatted as %s.\n\nHighlights:\n- %s",
+            "You are an expert synthesizer. Organize the following raw highlights into a cohesive, structured outline formatted strictly as %s. Group related concepts together and use clear headings.\n\nRaw Highlights:\n- %s",
             request.format(), texts
         );
 
         return ollamaService.generate(prompt)
                 .map(ResponseEntity::ok)
-                .defaultIfEmpty(ResponseEntity.internalServerError().body("Failed to generate outline"));
+                .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body("{\"error\": \"Failed to generate outline.\"}")))
+                .defaultIfEmpty(ResponseEntity.internalServerError().body("{\"error\": \"Failed to generate outline.\"}"));
     }
 
     @PostMapping("/devils-advocate")
     @RequireTier({"starter", "pro", "premium", "team"})
     public Mono<ResponseEntity<String>> devilsAdvocate(
-            @AuthenticationPrincipal User user,
+            Authentication auth,
             @RequestBody HighlightRequest request) {
 
         String urlContext = (request.url() != null && !request.url().isEmpty()) ? "\nSource URL: " + request.url() : "";
         String prompt = String.format(
-            "Play Devil's Advocate against the following text. Provide a 1-sentence warning of its potential bias or flaw, and assign a Trust Score from 1 to 10.\n\nText: %s%s\n\nReturn JSON in exactly this format: {\"score\": 5, \"warning\": \"your warning here\"}",
+            "You are a critical thinker. Analyze the text below for hidden biases, logical fallacies, or unverified claims. Provide EXACTLY one sentence warning the user of potential flaws. Then, assign a 'Trust Score' from 1 to 10 (10 being completely factual, 1 being baseless).\n\nText: %s\n\nOutput STRICTLY in valid JSON matching this schema: {\"score\": number, \"warning\": \"string\"}. Do NOT wrap the JSON in Markdown backticks.",
             request.text(), urlContext
         );
 
         return ollamaService.generate(prompt, true)
                 .map(ResponseEntity::ok)
-                .defaultIfEmpty(ResponseEntity.internalServerError().body("Failed to analyze highlight"));
+                .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body("{\"error\": \"Failed to analyze highlight. Is the AI model downloaded?\"}")))
+                .defaultIfEmpty(ResponseEntity.internalServerError().body("{\"error\": \"Failed to analyze highlight. Is the AI model downloaded?\"}"));
     }
 
     @PostMapping("/connect-dots")
     @RequireTier({"starter", "pro", "premium", "team"})
     public Mono<ResponseEntity<String>> connectDots(
-            @AuthenticationPrincipal User user,
+            Authentication auth,
             @RequestBody ConnectDotsRequest request) {
 
-        List<Highlight> recentHighlights = highlightRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
+        Long userId = Long.parseLong(auth.getName());
+        List<Highlight> recentHighlights = highlightRepository.findByUserIdOrderByCreatedAtDesc(userId);
         String recentTexts = recentHighlights.stream()
                 .limit(100)
                 .map(h -> {
@@ -94,30 +97,32 @@ public class AiController {
 
         String urlContext = (request.url() != null && !request.url().isEmpty()) ? "\nTarget Source URL: " + request.url() : "";
         String prompt = String.format(
-            "Cross-reference the following target highlight with the user's recent highlights to find semantic linkages and common themes. Provide a short 3-4 sentence paragraph connecting the dots.\n\nTarget Highlight: %s%s\n\nRecent Highlights:\n- %s",
+            "You are an analytical engine. I will provide a 'Target Highlight' and a list of 'Recent Highlights'. Find meaningful connections, surprising patterns, or contradictions between them. Write a concise 3-4 sentence paragraph connecting the ideas. Do not list them; synthesize them.\n\nTarget Highlight: %s\n\nRecent Highlights:\n- %s",
             request.text(), urlContext, recentTexts
         );
 
         return ollamaService.generate(prompt)
                 .map(ResponseEntity::ok)
-                .defaultIfEmpty(ResponseEntity.internalServerError().body("Failed to connect dots"));
+                .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body("{\"error\": \"Failed to connect dots.\"}")))
+                .defaultIfEmpty(ResponseEntity.internalServerError().body("{\"error\": \"Failed to connect dots.\"}"));
     }
 
     @PostMapping("/suggest-actions")
     @RequireTier({"starter", "pro", "premium", "team"})
     public Mono<ResponseEntity<String>> suggestActions(
-            @AuthenticationPrincipal User user,
+            Authentication auth,
             @RequestBody HighlightRequest request) {
 
         String urlContext = (request.url() != null && !request.url().isEmpty()) ? "\nSource URL: " + request.url() : "";
         String prompt = String.format(
-            "Based on the following text, suggest exactly 3 clear, concise actionable steps the user should take. For example: 'Create a Jira ticket to...'. Return them as a JSON array of strings.\n\nText: %s%s",
+            "You are a productivity engine. Extract exactly 3 concrete, actionable steps the user should take based on the text below. Each step must start with a strong verb. Return ONLY a valid JSON array of strings. Do NOT wrap the JSON in Markdown backticks.\n\nText: %s",
             request.text(), urlContext
         );
 
         return ollamaService.generate(prompt, true)
                 .map(ResponseEntity::ok)
-                .defaultIfEmpty(ResponseEntity.internalServerError().body("Failed to suggest actions"));
+                .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body("{\"error\": \"Failed to suggest actions.\"}")))
+                .defaultIfEmpty(ResponseEntity.internalServerError().body("{\"error\": \"Failed to suggest actions.\"}"));
     }
 
     public record AutoDraftRequest(Long folderId, String format) {}
