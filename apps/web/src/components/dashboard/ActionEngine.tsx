@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { CheckCircle2, Loader2, Sparkles } from "lucide-react";
 
-export function ActionEngine({ text }: { text: string }) {
+export function ActionEngine({ text, url }: { text: string; url?: string }) {
   const [loading, setLoading] = useState(false);
   const [actions, setActions] = useState<string[]>([]);
 
@@ -11,7 +11,7 @@ export function ActionEngine({ text }: { text: string }) {
       const res = await fetch("/api/ai/suggest-actions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text })
+        body: JSON.stringify({ text, url })
       });
       if (res.ok) {
         const data = await res.json();

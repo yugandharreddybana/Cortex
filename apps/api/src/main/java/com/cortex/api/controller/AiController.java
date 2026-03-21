@@ -26,7 +26,7 @@ public class AiController {
     }
 
     @PostMapping("/auto-draft")
-    @RequireTier({"pro", "premium", "team"})
+    @RequireTier({"starter", "pro", "premium", "team"})
     public Mono<ResponseEntity<String>> generateAutoDraft(
             @AuthenticationPrincipal User user,
             @RequestBody AutoDraftRequest request) {
@@ -38,7 +38,13 @@ public class AiController {
         }
 
         String texts = highlights.stream()
-                .map(Highlight::getText)
+                .map(h -> {
+                    String text = h.getText();
+                    if (h.getUrl() != null && !h.getUrl().isEmpty()) {
+                        text += " (Source URL: " + h.getUrl() + ")";
+                    }
+                    return text;
+                })
                 .collect(Collectors.joining("\n- "));
 
         String prompt = String.format(
@@ -52,14 +58,15 @@ public class AiController {
     }
 
     @PostMapping("/devils-advocate")
-    @RequireTier({"pro", "premium", "team"})
+    @RequireTier({"starter", "pro", "premium", "team"})
     public Mono<ResponseEntity<String>> devilsAdvocate(
             @AuthenticationPrincipal User user,
             @RequestBody HighlightRequest request) {
 
+        String urlContext = (request.url() != null && !request.url().isEmpty()) ? "\nSource URL: " + request.url() : "";
         String prompt = String.format(
-            "Play Devil's Advocate against the following text. Provide a 1-sentence warning of its potential bias or flaw, and assign a Trust Score from 1 to 10.\n\nText: %s\n\nReturn JSON in exactly this format: {\"score\": 5, \"warning\": \"your warning here\"}",
-            request.text()
+            "Play Devil's Advocate against the following text. Provide a 1-sentence warning of its potential bias or flaw, and assign a Trust Score from 1 to 10.\n\nText: %s%s\n\nReturn JSON in exactly this format: {\"score\": 5, \"warning\": \"your warning here\"}",
+            request.text(), urlContext
         );
 
         return ollamaService.generate(prompt, true)
@@ -68,7 +75,7 @@ public class AiController {
     }
 
     @PostMapping("/connect-dots")
-    @RequireTier({"pro", "premium", "team"})
+    @RequireTier({"starter", "pro", "premium", "team"})
     public Mono<ResponseEntity<String>> connectDots(
             @AuthenticationPrincipal User user,
             @RequestBody ConnectDotsRequest request) {
@@ -76,12 +83,19 @@ public class AiController {
         List<Highlight> recentHighlights = highlightRepository.findByUserIdOrderByCreatedAtDesc(user.getId());
         String recentTexts = recentHighlights.stream()
                 .limit(100)
-                .map(Highlight::getText)
+                .map(h -> {
+                    String text = h.getText();
+                    if (h.getUrl() != null && !h.getUrl().isEmpty()) {
+                        text += " (Source URL: " + h.getUrl() + ")";
+                    }
+                    return text;
+                })
                 .collect(Collectors.joining("\n- "));
 
+        String urlContext = (request.url() != null && !request.url().isEmpty()) ? "\nTarget Source URL: " + request.url() : "";
         String prompt = String.format(
-            "Cross-reference the following target highlight with the user's recent highlights to find semantic linkages and common themes. Provide a short 3-4 sentence paragraph connecting the dots.\n\nTarget Highlight: %s\n\nRecent Highlights:\n- %s",
-            request.text(), recentTexts
+            "Cross-reference the following target highlight with the user's recent highlights to find semantic linkages and common themes. Provide a short 3-4 sentence paragraph connecting the dots.\n\nTarget Highlight: %s%s\n\nRecent Highlights:\n- %s",
+            request.text(), urlContext, recentTexts
         );
 
         return ollamaService.generate(prompt)
@@ -90,14 +104,15 @@ public class AiController {
     }
 
     @PostMapping("/suggest-actions")
-    @RequireTier({"pro", "premium", "team"})
+    @RequireTier({"starter", "pro", "premium", "team"})
     public Mono<ResponseEntity<String>> suggestActions(
             @AuthenticationPrincipal User user,
             @RequestBody HighlightRequest request) {
 
+        String urlContext = (request.url() != null && !request.url().isEmpty()) ? "\nSource URL: " + request.url() : "";
         String prompt = String.format(
-            "Based on the following text, suggest exactly 3 clear, concise actionable steps the user should take. For example: 'Create a Jira ticket to...'. Return them as a JSON array of strings.\n\nText: %s",
-            request.text()
+            "Based on the following text, suggest exactly 3 clear, concise actionable steps the user should take. For example: 'Create a Jira ticket to...'. Return them as a JSON array of strings.\n\nText: %s%s",
+            request.text(), urlContext
         );
 
         return ollamaService.generate(prompt, true)
@@ -106,6 +121,6 @@ public class AiController {
     }
 
     public record AutoDraftRequest(Long folderId, String format) {}
-    public record HighlightRequest(String text) {}
-    public record ConnectDotsRequest(String text) {}
+    public record HighlightRequest(String text, String url) {}
+    public record ConnectDotsRequest(String text, String url) {}
 }

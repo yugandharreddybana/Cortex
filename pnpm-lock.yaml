@@ -26,7 +26,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^2.1.9
-        version: 2.1.9(@types/node@22.19.15)(@vitest/browser@4.1.0)(jsdom@29.0.1)
+        version: 2.1.9(@types/node@22.19.13)(@vitest/browser@4.1.0)(jsdom@29.0.1)
 
   apps/e2e:
     devDependencies:
@@ -35,10 +35,10 @@ importers:
         version: 1.58.2
       '@types/node':
         specifier: ^22.19.13
-        version: 22.19.15
+        version: 22.19.13
       ts-node:
         specifier: ^10.9.2
-        version: 10.9.2(@types/node@22.19.15)(typescript@5.9.3)
+        version: 10.9.2(@types/node@22.19.13)(typescript@5.9.3)
       typescript:
         specifier: ^5.9.3
         version: 5.9.3
@@ -120,7 +120,7 @@ importers:
         version: 4.5.0(@types/node@25.3.5)(jiti@1.21.7)
       vitest:
         specifier: ^2.0.0
-        version: 2.1.9(@types/node@25.5.0)(jsdom@29.0.1)
+        version: 2.1.9(@types/node@25.3.5)(jsdom@29.0.1)
 
   apps/web:
     dependencies:
@@ -192,7 +192,7 @@ importers:
         version: 6.2.2
       lenis:
         specifier: ^1.3.4
-        version: 1.3.19(react@19.2.4)
+        version: 1.3.18(react@19.2.4)
       lucide-react:
         specifier: ^0.577.0
         version: 0.577.0(react@19.2.4)
@@ -250,7 +250,7 @@ importers:
         version: 19.2.3(@types/react@19.2.14)
       '@vitest/browser':
         specifier: ^4.1.0
-        version: 4.1.0(vite@5.4.21(@types/node@22.19.13))(vitest@4.1.0(@types/node@22.19.13)(jsdom@29.0.0)(vite@5.4.21(@types/node@22.19.13)))
+        version: 4.1.0(vite@5.4.21(@types/node@22.19.13))(vitest@2.1.9)
       '@vitest/expect':
         specifier: ^2.1.9
         version: 2.1.9
@@ -300,11 +300,11 @@ importers:
         specifier: ^5.4.21
         version: 5.4.21(@types/node@22.19.13)
       vitest:
-        specifier: ^4.1.0
-        version: 4.1.0(@types/node@22.19.13)(jsdom@29.0.0)(vite@5.4.21(@types/node@22.19.13))
+        specifier: ^2.1.9
+        version: 2.1.9(@types/node@22.19.13)(@vitest/browser@4.1.0)(jsdom@29.0.1)
       vitest-browser-react:
         specifier: ^2.1.0
-        version: 2.1.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.1.0(@types/node@22.19.13)(jsdom@29.0.0)(vite@5.4.21(@types/node@22.19.13)))
+        version: 2.1.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@2.1.9)
 
   packages/config-tailwind:
     devDependencies:
@@ -377,7 +377,7 @@ importers:
         version: 5.9.3
       vitest:
         specifier: ^2.1.9
-        version: 2.1.9(@types/node@25.5.0)(jsdom@29.0.1)
+        version: 2.1.9(@types/node@25.3.5)(jsdom@29.0.1)
 
 packages:
 
@@ -574,8 +574,8 @@ packages:
   '@emnapi/runtime@1.9.1':
     resolution: {integrity: sha512-VYi5+ZVLhpgK4hQ0TAjiQiZ6ol0oe4mBx7mVv7IflsiEp0OWoVsp/+f9Vc1hOhE0TtkORVrI1GvzyreqpgWtkA==}
 
-  '@emnapi/wasi-threads@1.1.0':
-    resolution: {integrity: sha512-WI0DdZ8xFSbgMjR1sFsKABJ/C5OnRrjT06JXbZKexJGrDuPTzZdDYfFlsgcCXCyf+suG5QU2e/y1Wo2V/OapLQ==}
+  '@emnapi/wasi-threads@1.2.0':
+    resolution: {integrity: sha512-N10dEJNSsUx41Z6pZsXU8FjPjpBEplgH24sfkmITrBED1/U2Esum9F3lfLrMjKHHjmi557zQn7kR9R+XWXu5Rg==}
 
   '@esbuild/aix-ppc64@0.21.5':
     resolution: {integrity: sha512-1SDgH6ZSPTlggy1yI6+Dbkiz8xzpHJEVAlF/AM1tHPLsf5STom9rwtjE4hKAF20FfXXNTFqEYXyJNWh1GiZedQ==}
@@ -4583,38 +4583,8 @@ packages:
   tslib@2.8.1:
     resolution: {integrity: sha512-oJFu94HQb+KVduSUQL7wnpmqnfmLsOA/nAh6b6EH0wCEoK0/mPeXU6c3wKDV83MkOuHPRHtSXKKU99IBazS/2w==}
 
-  turbo-darwin-64@2.8.13:
-    resolution: {integrity: sha512-PmOvodQNiOj77+Zwoqku70vwVjKzL34RTNxxoARjp5RU5FOj/CGiC6vcDQhNtFPUOWSAaogHF5qIka9TBhX4XA==}
-    cpu: [x64]
-    os: [darwin]
-
-  turbo-darwin-arm64@2.8.13:
-    resolution: {integrity: sha512-kI+anKcLIM4L8h+NsM7mtAUpElkCOxv5LgiQVQR8BASyDFfc8Efj5kCk3cqxuxOvIqx0sLfCX7atrHQ2kwuNJQ==}
-    cpu: [arm64]
-    os: [darwin]
-
-  turbo-linux-64@2.8.13:
-    resolution: {integrity: sha512-j29KnQhHyzdzgCykBFeBqUPS4Wj7lWMnZ8CHqytlYDap4Jy70l4RNG46pOL9+lGu6DepK2s1rE86zQfo0IOdPw==}
-    cpu: [x64]
-    os: [linux]
-
-  turbo-linux-arm64@2.8.13:
-    resolution: {integrity: sha512-OEl1YocXGZDRDh28doOUn49QwNe82kXljO1HXApjU0LapkDiGpfl3jkAlPKxEkGDSYWc8MH5Ll8S16Rf5tEBYg==}
-    cpu: [arm64]
-    os: [linux]
-
-  turbo-windows-64@2.8.13:
-    resolution: {integrity: sha512-717bVk1+Pn2Jody7OmWludhEirEe0okoj1NpRbSm5kVZz/yNN/jfjbxWC6ilimXMz7xoMT3IDfQFJsFR3PMANA==}
-    cpu: [x64]
-    os: [win32]
-
-  turbo-windows-arm64@2.8.13:
-    resolution: {integrity: sha512-R819HShLIT0Wj6zWVnIsYvSNtRNj1q9VIyaUz0P24SMcLCbQZIm1sV09F4SDbg+KCCumqD2lcaR2UViQ8SnUJA==}
-    cpu: [arm64]
-    os: [win32]
-
-  turbo@2.8.13:
-    resolution: {integrity: sha512-nyM99hwFB9/DHaFyKEqatdayGjsMNYsQ/XBNO6MITc7roncZetKb97MpHxWf3uiU+LB9c9HUlU3Jp2Ixei2k1A==}
+  turbo@2.8.20:
+    resolution: {integrity: sha512-Rb4qk5YT8RUwwdXtkLpkVhNEe/lor6+WV7S5tTlLpxSz6MjV5Qi8jGNn4gS6NAvrYGA/rNrE6YUQM85sCZUDbQ==}
     hasBin: true
 
   type-check@0.4.0:
@@ -5238,7 +5208,7 @@ snapshots:
 
   '@emnapi/core@1.9.1':
     dependencies:
-      '@emnapi/wasi-threads': 1.1.0
+      '@emnapi/wasi-threads': 1.2.0
       tslib: 2.8.1
     optional: true
 
@@ -5247,7 +5217,7 @@ snapshots:
       tslib: 2.8.1
     optional: true
 
-  '@emnapi/wasi-threads@1.1.0':
+  '@emnapi/wasi-threads@1.2.0':
     dependencies:
       tslib: 2.8.1
     optional: true
@@ -6544,7 +6514,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@vitest/browser@4.1.0(vite@5.4.21(@types/node@22.19.13))(vitest@4.1.0(@types/node@22.19.13)(jsdom@29.0.0)(vite@5.4.21(@types/node@22.19.13)))':
+  '@vitest/browser@4.1.0(vite@5.4.21(@types/node@22.19.13))(vitest@2.1.9)':
     dependencies:
       '@blazediff/core': 1.9.1
       '@vitest/mocker': 4.1.0(vite@5.4.21(@types/node@22.19.13))
@@ -6553,7 +6523,7 @@ snapshots:
       pngjs: 7.0.0
       sirv: 3.0.2
       tinyrainbow: 3.1.0
-      vitest: 2.1.9(@types/node@22.19.15)(@vitest/browser@4.1.0)(jsdom@29.0.1)
+      vitest: 2.1.9(@types/node@22.19.13)(@vitest/browser@4.1.0)(jsdom@29.0.1)
       ws: 8.19.0
     transitivePeerDependencies:
       - bufferutil
@@ -6568,15 +6538,6 @@ snapshots:
       chai: 5.3.3
       tinyrainbow: 1.2.0
 
-  '@vitest/expect@4.1.0':
-    dependencies:
-      '@standard-schema/spec': 1.1.0
-      '@types/chai': 5.2.3
-      '@vitest/spy': 4.1.0
-      '@vitest/utils': 4.1.0
-      chai: 6.2.2
-      tinyrainbow: 3.1.0
-
   '@vitest/mocker@2.1.9(vite@5.4.21(@types/node@22.19.13))':
     dependencies:
       '@vitest/spy': 2.1.9
@@ -6585,7 +6546,7 @@ snapshots:
     optionalDependencies:
       vite: 5.4.21(@types/node@22.19.13)
 
-  '@vitest/mocker@2.1.9(vite@5.4.21(@types/node@25.5.0))':
+  '@vitest/mocker@2.1.9(vite@5.4.21(@types/node@25.3.5))':
     dependencies:
       '@vitest/spy': 2.1.9
       estree-walker: 3.0.3
@@ -6908,8 +6869,8 @@ snapshots:
   browserslist@4.28.1:
     dependencies:
       baseline-browser-mapping: 2.10.9
-      caniuse-lite: 1.0.30001780
-      electron-to-chromium: 1.5.321
+      caniuse-lite: 1.0.30001776
+      electron-to-chromium: 1.5.307
       node-releases: 2.0.36
       update-browserslist-db: 1.2.3(browserslist@4.28.1)
 
@@ -9273,14 +9234,14 @@ snapshots:
 
   ts-interface-checker@0.1.13: {}
 
-  ts-node@10.9.2(@types/node@22.19.15)(typescript@5.9.3):
+  ts-node@10.9.2(@types/node@22.19.13)(typescript@5.9.3):
     dependencies:
       '@cspotcode/source-map-support': 0.8.1
       '@tsconfig/node10': 1.0.12
       '@tsconfig/node12': 1.0.11
       '@tsconfig/node14': 1.0.3
       '@tsconfig/node16': 1.0.4
-      '@types/node': 22.19.15
+      '@types/node': 22.19.13
       acorn: 8.16.0
       acorn-walk: 8.3.5
       arg: 4.1.3
@@ -9460,7 +9421,7 @@ snapshots:
 
   v8-compile-cache-lib@3.0.1: {}
 
-  vite-node@2.1.9(@types/node@22.19.15):
+  vite-node@2.1.9(@types/node@22.19.13):
     dependencies:
       cac: 6.7.14
       debug: 4.4.3
@@ -9556,16 +9517,16 @@ snapshots:
       jiti: 1.21.7
       yaml: 2.8.2
 
-  vitest-browser-react@2.1.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@4.1.0(@types/node@22.19.13)(jsdom@29.0.0)(vite@5.4.21(@types/node@22.19.13))):
+  vitest-browser-react@2.1.0(@types/react-dom@19.2.3(@types/react@19.2.14))(@types/react@19.2.14)(react-dom@19.2.4(react@19.2.4))(react@19.2.4)(vitest@2.1.9):
     dependencies:
       react: 19.2.4
       react-dom: 19.2.4(react@19.2.4)
-      vitest: 4.1.0(@types/node@22.19.13)(jsdom@29.0.0)(vite@5.4.21(@types/node@22.19.13))
+      vitest: 2.1.9(@types/node@22.19.13)(@vitest/browser@4.1.0)(jsdom@29.0.1)
     optionalDependencies:
       '@types/react': 19.2.14
       '@types/react-dom': 19.2.3(@types/react@19.2.14)
 
-  vitest@2.1.9(@types/node@22.19.15)(@vitest/browser@4.1.0)(jsdom@29.0.1):
+  vitest@2.1.9(@types/node@22.19.13)(@vitest/browser@4.1.0)(jsdom@29.0.1):
     dependencies:
       '@vitest/expect': 2.1.9
       '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@22.19.13))
@@ -9588,8 +9549,8 @@ snapshots:
       vite-node: 2.1.9(@types/node@22.19.13)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 22.19.15
-      '@vitest/browser': 4.1.0(vite@5.4.21(@types/node@22.19.15))(vitest@2.1.9)
+      '@types/node': 22.19.13
+      '@vitest/browser': 4.1.0(vite@5.4.21(@types/node@22.19.13))(vitest@2.1.9)
       jsdom: 29.0.1
     transitivePeerDependencies:
       - less
@@ -9602,7 +9563,7 @@ snapshots:
       - supports-color
       - terser
 
-  vitest@2.1.9(@types/node@25.5.0)(jsdom@29.0.1):
+  vitest@2.1.9(@types/node@25.3.5)(jsdom@29.0.1):
     dependencies:
       '@vitest/expect': 2.1.9
       '@vitest/mocker': 2.1.9(vite@5.4.21(@types/node@25.3.5))
@@ -9625,7 +9586,7 @@ snapshots:
       vite-node: 2.1.9(@types/node@25.3.5)
       why-is-node-running: 2.3.0
     optionalDependencies:
-      '@types/node': 25.5.0
+      '@types/node': 25.3.5
       jsdom: 29.0.1
     transitivePeerDependencies:
       - less

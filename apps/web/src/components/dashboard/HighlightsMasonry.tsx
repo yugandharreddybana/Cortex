@@ -556,7 +556,7 @@ function HighlightCard({
         </blockquote>
       )}
 
-      <DevilsAdvocate text={h.fullText || h.text} />
+      <DevilsAdvocate text={h.fullText || h.text} url={h.url} />
 
       {/* Source + folder metadata */}
       <div className="flex items-center gap-2 mt-3 flex-wrap">

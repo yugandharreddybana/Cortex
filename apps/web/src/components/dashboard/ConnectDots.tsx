@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link2 } from "lucide-react";
 
-export function ConnectDots({ text }: { text: string }) {
+export function ConnectDots({ text, url }: { text: string; url?: string }) {
   const [loading, setLoading] = useState(false);
   const [dots, setDots] = useState<string>("");
 
@@ -11,7 +11,7 @@ export function ConnectDots({ text }: { text: string }) {
       const res = await fetch("/api/ai/connect-dots", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text })
+        body: JSON.stringify({ text, url })
       });
       if (res.ok) {
         setDots(await res.text());
