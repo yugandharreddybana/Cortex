@@ -1,3 +1,4 @@
+// @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { isAISite, getAIContext } from "../content/ai-detect";
 
@@ -35,8 +36,8 @@ describe("ai-detect utilities", () => {
   });
 
   describe("getAIContext", () => {
-    const originalLocation = window.location;
-    const originalTitle = document.title;
+    const originalLocation = typeof window !== 'undefined' ? window.location : null;
+    const originalTitle = typeof document !== 'undefined' ? document.title : null;
 
     beforeEach(() => {
       // @ts-ignore - Mocking window.location

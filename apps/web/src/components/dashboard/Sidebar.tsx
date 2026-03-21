@@ -251,6 +251,9 @@ export function Sidebar({ onCmdK }: SidebarProps) {
                     <PinSmallIcon />
                     <span className="text-base leading-none shrink-0">{folder.emoji}</span>
                     <span className="flex-1 truncate text-left">{folder.name}</span>
+                    {folder.effectiveRole && folder.effectiveRole !== "OWNER" && (
+                      <span className="text-[10px] ml-1" title="Shared Folder">🤝</span>
+                    )}
                   </Link>
                 );
               })}
@@ -624,6 +627,9 @@ function RecursiveFolderNode({
             >
               <span className="text-base leading-none shrink-0">{folder.emoji}</span>
               <span className="flex-1 truncate text-left">{folder.name}</span>
+              {folder.effectiveRole && folder.effectiveRole !== "OWNER" && (
+                <span className="text-[10px] ml-1" title="Shared Folder">🤝</span>
+              )}
               <span className="bg-white/10 text-white/60 text-[10px] px-1.5 rounded-full tabular-nums leading-4 shrink-0">
                 {folderCountMap[folder.id] || 0}
               </span>
@@ -1071,6 +1077,9 @@ function FolderTreeMenu({
               >
                 <span className="text-sm leading-none shrink-0">{folder.emoji}</span>
                 <span className="flex-1 truncate text-left">{folder.name}</span>
+                {folder.effectiveRole && folder.effectiveRole !== "OWNER" && (
+                  <span className="text-[10px] ml-1 shrink-0" title="Shared Folder">🤝</span>
+                )}
                 <span className="ml-auto text-white/30 text-[10px]">▸</span>
               </DropdownMenu.SubTrigger>
               <DropdownMenu.Portal>
@@ -1114,6 +1123,9 @@ function FolderTreeMenu({
           >
             <span className="text-sm leading-none shrink-0">{folder.emoji}</span>
             <span className="flex-1 truncate text-left">{folder.name}</span>
+            {folder.effectiveRole && folder.effectiveRole !== "OWNER" && (
+              <span className="text-[10px] ml-1 shrink-0" title="Shared Folder">🤝</span>
+            )}
           </DropdownMenu.Item>
         );
       })}
