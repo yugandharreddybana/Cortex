@@ -10,5 +10,5 @@ export { CommandPalette, type CommandPaletteProps, type MentionSource } from "./
 export { Skeleton, SkeletonText, SkeletonCard } from "./components/Skeleton";
 export { Card, CardHeader, CardContent, CardFooter } from "./components/Card";
 export { Badge, type BadgeVariant } from "./components/Badge";
-export { Tooltip, TooltipContent, TooltipTrigger } from "./components/Tooltip";
+export { TooltipProvider, Tooltip, TooltipContent, TooltipTrigger } from "./components/Tooltip";
 export { Avatar, AvatarImage, AvatarFallback } from "./components/Avatar";

@@ -18,6 +18,7 @@ import {
 import { cn } from "@cortex/ui";
 import { Avatar, AvatarFallback, AvatarImage } from "@cortex/ui";
 import { Badge } from "@cortex/ui";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@cortex/ui";
 import { useDashboardStore } from "@/store/dashboard";
 import { useAuthStore } from "@/store/authStore";
 import type { Folder, SmartCollection } from "@/store/dashboard";
@@ -134,6 +135,9 @@ export function Sidebar({ onCmdK }: SidebarProps) {
     },
     [folders],
   );
+
+  const myRootFolders = React.useMemo(() => rootFolders.filter(f => !f.effectiveRole || f.effectiveRole === "OWNER"), [rootFolders]);
+  const sharedRootFolders = React.useMemo(() => rootFolders.filter(f => f.effectiveRole && f.effectiveRole !== "OWNER"), [rootFolders]);
   const getChildren = React.useCallback(
     (parentId: string) => {
       const seen = new Set<string>();
@@ -251,9 +255,6 @@ export function Sidebar({ onCmdK }: SidebarProps) {
                     <PinSmallIcon />
                     <span className="text-base leading-none shrink-0">{folder.emoji}</span>
                     <span className="flex-1 truncate text-left">{folder.name}</span>
-                    {folder.effectiveRole && folder.effectiveRole !== "OWNER" && (
-                      <span className="text-[10px] ml-1" title="Shared Folder">🤝</span>
-                    )}
                   </Link>
                 );
               })}
@@ -262,45 +263,102 @@ export function Sidebar({ onCmdK }: SidebarProps) {
         )}
 
         {/* ── Folder tree (recursive + dnd-kit) ── */}
-        <div className="px-3 pt-4 pb-2">
-          <div className="flex items-center justify-between px-3 mb-2">
-            <span className="text-2xs font-semibold uppercase tracking-widest text-muted">Folders</span>
-            <button
-              onClick={() => setFolderDialogOpen(true)}
-              className={cn(
-                "p-1 rounded-md",
-                "text-white/30 hover:text-white/70",
-                "hover:bg-white/[0.08]",
-                "transition-all duration-150",
-              )}
-              aria-label="New folder"
-            >
-              <PlusIcon />
-            </button>
+        <TooltipProvider>
+          <div className="px-3 pt-4 pb-2">
+            <div className="flex items-center justify-between px-3 mb-2">
+              <div className="flex items-center gap-1.5">
+                <span className="text-2xs font-semibold uppercase tracking-widest text-muted">Folders</span>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <button className="text-white/30 hover:text-white/70 transition-colors" aria-label="Folders information">
+                      <InfoIcon />
+                    </button>
+                  </TooltipTrigger>
+                  <TooltipContent side="right">
+                    <p>Folders you created and own.</p>
+                  </TooltipContent>
+                </Tooltip>
+              </div>
+              <button
+                onClick={() => setFolderDialogOpen(true)}
+                className={cn(
+                  "p-1 rounded-md",
+                  "text-white/30 hover:text-white/70",
+                  "hover:bg-white/[0.08]",
+                  "transition-all duration-150",
+                )}
+                aria-label="New folder"
+              >
+                <PlusIcon />
+              </button>
+            </div>
+
+            <DndContext id="sidebar-folders-mine" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+              <div className="space-y-0.5">
+                {myRootFolders.map((folder) => (
+                  <RecursiveFolderNode
+                    key={folder.id}
+                    folder={folder}
+                    depth={0}
+                    pathname={pathname}
+                    getChildren={getChildren}
+                    folderCountMap={folderCountMap}
+                    onRename={(f) => setRenameTarget({ id: f.id, name: f.name })}
+                    onDelete={(f) => setDeleteTarget({ id: f.id, name: f.name })}
+                    onShare={(f) => setShareTarget({ id: f.id, name: f.name })}
+                    onDuplicate={(f) => setDuplicateTarget({ id: f.id, name: f.name })}
+                    onCreateSubfolder={handleCreateSubfolder}
+                    onPin={(f) => togglePinFolder(f.id)}
+                    onMove={(f, targetId) => moveFolder(f.id, targetId)}
+                  />
+                ))}
+              </div>
+            </DndContext>
           </div>
 
-          <DndContext id="sidebar-folders" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-            <div className="space-y-0.5">
-              {rootFolders.map((folder) => (
-                <RecursiveFolderNode
-                  key={folder.id}
-                  folder={folder}
-                  depth={0}
-                  pathname={pathname}
-                  getChildren={getChildren}
-                  folderCountMap={folderCountMap}
-                  onRename={(f) => setRenameTarget({ id: f.id, name: f.name })}
-                  onDelete={(f) => setDeleteTarget({ id: f.id, name: f.name })}
-                  onShare={(f) => setShareTarget({ id: f.id, name: f.name })}
-                  onDuplicate={(f) => setDuplicateTarget({ id: f.id, name: f.name })}
-                  onCreateSubfolder={handleCreateSubfolder}
-                  onPin={(f) => togglePinFolder(f.id)}
-                  onMove={(f, targetId) => moveFolder(f.id, targetId)}
-                />
-              ))}
+          {/* ── Shared Folder tree ── */}
+          {sharedRootFolders.length > 0 && (
+            <div className="px-3 pt-2 pb-2">
+              <div className="flex items-center justify-between px-3 mb-2">
+                <div className="flex items-center gap-1.5">
+                  <span className="text-2xs font-semibold uppercase tracking-widest text-muted">Shared Folders</span>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button className="text-white/30 hover:text-white/70 transition-colors" aria-label="Shared Folders information">
+                        <InfoIcon />
+                      </button>
+                    </TooltipTrigger>
+                    <TooltipContent side="right">
+                      <p>Folders shared with you by other users.</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </div>
+              </div>
+
+              <DndContext id="sidebar-folders-shared" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                <div className="space-y-0.5">
+                  {sharedRootFolders.map((folder) => (
+                    <RecursiveFolderNode
+                      key={folder.id}
+                      folder={folder}
+                      depth={0}
+                      pathname={pathname}
+                      getChildren={getChildren}
+                      folderCountMap={folderCountMap}
+                      onRename={(f) => setRenameTarget({ id: f.id, name: f.name })}
+                      onDelete={(f) => setDeleteTarget({ id: f.id, name: f.name })}
+                      onShare={(f) => setShareTarget({ id: f.id, name: f.name })}
+                      onDuplicate={(f) => setDuplicateTarget({ id: f.id, name: f.name })}
+                      onCreateSubfolder={handleCreateSubfolder}
+                      onPin={(f) => togglePinFolder(f.id)}
+                      onMove={(f, targetId) => moveFolder(f.id, targetId)}
+                    />
+                  ))}
+                </div>
+              </DndContext>
             </div>
-          </DndContext>
-        </div>
+          )}
+        </TooltipProvider>
 
         {/* ── Smart Collections ── */}
         {smartCollections.length > 0 && (
@@ -627,9 +685,6 @@ function RecursiveFolderNode({
             >
               <span className="text-base leading-none shrink-0">{folder.emoji}</span>
               <span className="flex-1 truncate text-left">{folder.name}</span>
-              {folder.effectiveRole && folder.effectiveRole !== "OWNER" && (
-                <span className="text-[10px] ml-1" title="Shared Folder">🤝</span>
-              )}
               <span className="bg-white/10 text-white/60 text-[10px] px-1.5 rounded-full tabular-nums leading-4 shrink-0">
                 {folderCountMap[folder.id] || 0}
               </span>
@@ -973,6 +1028,7 @@ function StarIcon()       { return ic("M8 2l1.8 3.6L14 6.4l-3 2.9.7 4.1L8 11.4l-
 function ArchiveIcon()    { return ic("M3 5h10M4 5v7a1 1 0 001 1h6a1 1 0 001-1V5M6 9h4"); }
 function SearchIcon()     { return ic("M7 13A6 6 0 107 1a6 6 0 000 12zM13 13l2 2"); }
 function PlusIcon()       { return ic("M8 3v10M3 8h10"); }
+function InfoIcon()       { return ic("M8 15A7 7 0 108 1a7 7 0 000 14zM8 11V7M8 5h.01"); }
 function PencilIcon()     { return ic("M11 2l3 3-8 8H3v-3l8-8z"); }
 function MoveIcon()       { return ic("M3 8h10M9 5l3 3-3 3M11 12v2a1 1 0 01-1 1H3a1 1 0 01-1-1V5a1 1 0 011-1h2"); }
 function TrashIcon()      { return ic("M3 5h10M5 5V3h6v2M6 8v4M10 8v4"); }
@@ -1077,9 +1133,6 @@ function FolderTreeMenu({
               >
                 <span className="text-sm leading-none shrink-0">{folder.emoji}</span>
                 <span className="flex-1 truncate text-left">{folder.name}</span>
-                {folder.effectiveRole && folder.effectiveRole !== "OWNER" && (
-                  <span className="text-[10px] ml-1 shrink-0" title="Shared Folder">🤝</span>
-                )}
                 <span className="ml-auto text-white/30 text-[10px]">▸</span>
               </DropdownMenu.SubTrigger>
               <DropdownMenu.Portal>
@@ -1123,9 +1176,6 @@ function FolderTreeMenu({
           >
             <span className="text-sm leading-none shrink-0">{folder.emoji}</span>
             <span className="flex-1 truncate text-left">{folder.name}</span>
-            {folder.effectiveRole && folder.effectiveRole !== "OWNER" && (
-              <span className="text-[10px] ml-1 shrink-0" title="Shared Folder">🤝</span>
-            )}
           </DropdownMenu.Item>
         );
       })}
