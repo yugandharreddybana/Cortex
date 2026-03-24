@@ -20,7 +20,10 @@ type Tab = "connect" | "actions" | "factcheck";
 
 function getAIText(h: Highlight): string {
   if (h.highlightType === "ai_chat" || h.topic === "AI Text") {
-    return [h.aiContext && `Context: ${h.aiContext}`, h.aiResponse && `Response: ${h.aiResponse}`]
+    return [
+      h.aiContext && `Context: ${h.aiContext}`,
+      h.aiResponse && `Response: ${h.aiResponse}`,
+    ]
       .filter(Boolean)
       .join("\n") || h.text;
   }
@@ -30,6 +33,58 @@ function getAIText(h: Highlight): string {
 function getAIUrl(h: Highlight): string | undefined {
   if (h.highlightType === "ai_chat" || h.topic === "AI Text") return undefined;
   return h.url && h.url !== "#" ? h.url : undefined;
+}
+
+/**
+ * Robustly parse the action-items API response into a string[].
+ * The backend (Ollama) may return any of:
+ *   - A proper JSON array:          ["Do X", "Do Y", "Do Z"]
+ *   - A markdown-fenced JSON array: ```json\n[...]\n```
+ *   - A JSON-stringified string:    "[\"Do X\", \"Do Y\"]"
+ *   - A plain multi-line string:    "Do X\nDo Y\nDo Z"
+ *   - A previously cached result:   already a JSON array string
+ * Always returns string[] so .map() is safe.
+ */
+function parseActionItems(raw: string): string[] {
+  if (!raw || typeof raw !== "string") return [];
+
+  // Strip markdown code fences
+  const cleaned = raw
+    .replace(/```json\s*/gi, "")
+    .replace(/```\s*/g, "")
+    .trim();
+
+  // Attempt JSON parse
+  try {
+    const parsed = JSON.parse(cleaned);
+    // Already a proper array
+    if (Array.isArray(parsed)) {
+      return parsed.map((x) => String(x)).filter(Boolean);
+    }
+    // JSON-wrapped string that itself contains an array
+    if (typeof parsed === "string") {
+      const inner = JSON.parse(parsed);
+      if (Array.isArray(inner)) {
+        return inner.map((x) => String(x)).filter(Boolean);
+      }
+      return [parsed].filter(Boolean);
+    }
+    // JSON object with an array value (e.g. { items: [...] })
+    if (typeof parsed === "object" && parsed !== null) {
+      const firstArray = Object.values(parsed).find(Array.isArray);
+      if (firstArray) {
+        return (firstArray as unknown[]).map((x) => String(x)).filter(Boolean);
+      }
+    }
+  } catch {
+    // Not JSON — fall through to line splitting
+  }
+
+  // Plain newline/bullet separated text
+  return cleaned
+    .split(/\n+/)
+    .map((line) => line.replace(/^[-•*\d.]+\s*/, "").trim())
+    .filter(Boolean);
 }
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -47,10 +102,12 @@ export function HighlightAIPanel({ highlight: h, onResultSaved }: HighlightAIPan
   const needsContext = isAIChat && (!h.aiContext || !h.aiResponse);
 
   // Per-tab loading / result state (seeded from cached results)
-  const [connectResult,  setConnectResult]  = React.useState(h.connectDotsResult ?? "");
-  const [actionsResult,  setActionsResult]  = React.useState(h.actionItemsResult ?? "");
-  const [factResult,     setFactResult]     = React.useState<{ score: number; warning: string } | null>(
-    h.devilsAdvocateResult ? (() => { try { return JSON.parse(h.devilsAdvocateResult!); } catch { return null; } })() : null,
+  const [connectResult, setConnectResult] = React.useState(h.connectDotsResult ?? "");
+  const [actionsResult, setActionsResult] = React.useState(h.actionItemsResult ?? "");
+  const [factResult, setFactResult] = React.useState<{ score: number; warning: string } | null>(
+    h.devilsAdvocateResult
+      ? (() => { try { return JSON.parse(h.devilsAdvocateResult!); } catch { return null; } })()
+      : null,
   );
   const [loading, setLoading] = React.useState<Tab | null>(null);
 
@@ -98,9 +155,9 @@ export function HighlightAIPanel({ highlight: h, onResultSaved }: HighlightAIPan
         });
         if (res.ok) {
           const raw = await res.text();
-          const cleaned = raw.replace(/```json/g, "").replace(/```/g, "").trim();
-          const parsed: string[] = JSON.parse(cleaned);
-          const result = JSON.stringify(parsed);
+          // Parse defensively — Ollama output is unpredictable
+          const items = parseActionItems(raw);
+          const result = JSON.stringify(items);
           setActionsResult(result);
           onResultSaved({ actionItemsResult: result });
         }
@@ -120,7 +177,7 @@ export function HighlightAIPanel({ highlight: h, onResultSaved }: HighlightAIPan
         }
       }
     } catch {
-      // silent
+      // silent — user sees stale/empty state; they can retry
     } finally {
       setLoading(null);
     }
@@ -234,8 +291,7 @@ export function HighlightAIPanel({ highlight: h, onResultSaved }: HighlightAIPan
                   onGenerate={handleGenerate}
                   placeholder="Extract 3 concrete action items from this highlight"
                   renderResult={(r) => {
-                    let items: string[] = [];
-                    try { items = JSON.parse(r) as string[]; } catch { items = [r]; }
+                    const items = parseActionItems(r);
                     return (
                       <ul className="space-y-1.5">
                         {items.map((item, i) => (
@@ -323,11 +379,11 @@ function AITabContent({
   placeholder,
   renderResult,
 }: {
-  result:        string;
-  loading:       boolean;
-  onGenerate:    () => void;
-  placeholder:   string;
-  renderResult:  (r: string) => React.ReactNode;
+  result:       string;
+  loading:      boolean;
+  onGenerate:   () => void;
+  placeholder:  string;
+  renderResult: (r: string) => React.ReactNode;
 }) {
   return (
     <div className="min-h-[48px]">
