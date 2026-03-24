@@ -1,6 +1,7 @@
 "use client";
 
 import { use } from "react";
+import { useShallow } from "zustand/react/shallow";
 import { useDashboardStore } from "@/store/dashboard";
 import { HighlightsMasonry } from "@/components/dashboard/HighlightsMasonry";
 import { EmptyState } from "@/components/dashboard/EmptyState";
@@ -9,7 +10,17 @@ import { FolderSynthesis } from "@/components/dashboard/FolderSynthesis";
 
 function FolderIcon() {
   return (
-    <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="28"
+      height="28"
+      viewBox="0 0 28 28"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M3 20V9a2 2 0 012-2h5l2 2h11a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
     </svg>
   );
@@ -17,10 +28,19 @@ function FolderIcon() {
 
 export default function FolderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const folder = useDashboardStore((s) => s.folders.find((f) => f.id === id));
-  const folderHighlights = useDashboardStore((s) =>
-    s.highlights.filter((h) => h.folderId === id && !h.isArchived && !h.isDeleted),
+
+  // useShallow prevents infinite re-renders caused by .find() / .filter()
+  // returning a new reference on every call even when contents are identical.
+  const folder = useDashboardStore(
+    useShallow((s) => s.folders.find((f) => f.id === id) ?? null),
   );
+
+  const folderHighlights = useDashboardStore(
+    useShallow((s) =>
+      s.highlights.filter((h) => h.folderId === id && !h.isArchived && !h.isDeleted),
+    ),
+  );
+
   const count = folderHighlights.length;
 
   return (
