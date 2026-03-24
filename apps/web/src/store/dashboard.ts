@@ -57,6 +57,11 @@ export interface Highlight {
   linkAccess?: string;      // RESTRICTED, PUBLIC
   defaultLinkRole?: string; // VIEWER, COMMENTER, EDITOR
   isDeleted?: boolean;      // Soft deletion support
+  highlightType?: "web" | "ai_chat" | "manual";
+  connectDotsResult?: string;
+  actionItemsResult?: string;
+  devilsAdvocateResult?: string;
+  customPrompt?: string;
   // Added for UI logic for large highlights
   isTruncated?: boolean;
   fullText?: string;
@@ -109,7 +114,7 @@ interface DashboardState {
   addTag:              (name: string, color: string) => void;
   deleteTag:           (id: string) => void;
   addHighlight:        (h: Pick<Highlight, "text" | "source"> & { folderId?: string, tags?: string[] }) => Promise<boolean>;
-  updateHighlight:     (id: string, patch: Partial<Pick<Highlight, "note" | "tags" | "highlightColor" | "aiContext" | "aiResponse">>) => void;
+  updateHighlight:     (id: string, patch: Partial<Pick<Highlight, "note" | "tags" | "highlightColor" | "aiContext" | "aiResponse" | "connectDotsResult" | "actionItemsResult" | "devilsAdvocateResult" | "customPrompt" | "source">>) => void;
   moveHighlight:       (id: string, folderId: string, folderName: string) => void;
   toggleFavorite:      (id: string) => void;
   toggleArchive:       (id: string) => void;
@@ -125,6 +130,8 @@ interface DashboardState {
   apiKeys: Array<{ id: string; name: string; key: string; createdAt: string }>;
   addApiKey:    (name: string) => void;
   deleteApiKey: (id: string) => void;
+  lastCreatedApiKey: string | null;
+  clearLastCreatedApiKey: () => void;
 
   // Trash / undo
   trash:               Highlight[];
@@ -149,6 +156,8 @@ interface DashboardState {
   fetchFolders: () => Promise<void>;
   // Tag hydration
   fetchTags: () => Promise<void>;
+  updateFolderSynthesis: (id: string, synthesis: string) => void;
+  setTagFilterExclusive: (tagIds: string[]) => void;
 
   // Reset all user data (clears on logout)
   resetStore: () => void;
@@ -179,6 +188,10 @@ function dedupFolders<T extends { id: string | number }>(arr: T[]): T[] {
 // Client-side ID counter for local-only entities (SmartCollections)
 let _localIdCounter = 0;
 function nextLocalId(): string { return `local-${++_localIdCounter}`; }
+
+// Forward declaration for recompute helper — used inside store
+type RecomputeFn = () => void;
+let _recomputeFolderCounts: RecomputeFn = () => {};
 
 // Convenience wrapper for API calls (returns parsed JSON or null)
 async function apiFetch<T = unknown>(
@@ -237,6 +250,15 @@ export const useDashboardStore = create<DashboardState>()(
             effectiveRole: f.effectiveRole ?? undefined,
           }));
           set({ folders: dedupFolders(mapped) });
+          // Recompute folder counts from current highlights
+          const { highlights: currentHighlights } = get();
+          const counts: Record<string, number> = {};
+          for (const h of currentHighlights) {
+            if (h.folderId && !h.isArchived && !h.isDeleted) {
+              counts[h.folderId] = (counts[h.folderId] ?? 0) + 1;
+            }
+          }
+          set((s) => ({ folders: s.folders.map((f) => ({ ...f, count: counts[f.id] ?? 0 })) }));
         } catch {
           // Keep existing folders on error — don't clear them
         } finally {
@@ -266,6 +288,7 @@ export const useDashboardStore = create<DashboardState>()(
 
       smartCollections: [],
       apiKeys: [],
+      lastCreatedApiKey: null,
 
       tags: [],
 
@@ -279,8 +302,7 @@ export const useDashboardStore = create<DashboardState>()(
 
       setSidebarCollapsed: (v)     => set({ sidebarCollapsed: v }),
       setActiveFolder: (id) => {
-        set({ activeFolder: id, isLoading: true });
-        setTimeout(() => set({ isLoading: false }), 300);
+        set({ activeFolder: id });
       },
       setSortOrder:        (order) => set({ sortOrder: order }),
       toggleSidebar:       ()      => set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
@@ -466,6 +488,10 @@ export const useDashboardStore = create<DashboardState>()(
         set((s) => ({
           tags: s.tags.filter((t) => t.id !== id),
           activeTagFilters: s.activeTagFilters.filter((t) => t !== id),
+          highlights: s.highlights.map((h) => ({
+            ...h,
+            tags: h.tags?.filter((tid) => tid !== id),
+          })),
         }));
         void apiFetch(`/api/tags/${encodeURIComponent(id)}`, { method: "DELETE" });
       },
@@ -519,6 +545,7 @@ export const useDashboardStore = create<DashboardState>()(
           isArchived: Boolean(data.isArchived),
           isPinned:   Boolean(data.isPinned),
           highlightColor: data.highlightColor != null ? String(data.highlightColor) : undefined,
+          highlightType: (String(data.url ?? "#") !== "#" ? "web" : String(data.topic ?? "Manual") === "AI Text" ? "ai_chat" : "manual") as "web" | "ai_chat" | "manual",
           isTruncated: trimmedText.length > 500,
           fullText:   trimmedText.length > 500 ? trimmedText : undefined,
         };
@@ -687,26 +714,22 @@ export const useDashboardStore = create<DashboardState>()(
         })),
 
       addApiKey: async (name) => {
-        const newKey = {
-          id:        "",
-          name:      name.trim(),
-          key:       `ctx_${Array.from(crypto.getRandomValues(new Uint8Array(24))).map(b => b.toString(16).padStart(2, "0")).join("")}`,
-          createdAt: new Date().toISOString(),
-        };
         const { ok, data } = await apiFetch<{ id: number | string; name: string; key: string; createdAt: string }>(
           "/api/developer/api-keys",
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(newKey),
+            body: JSON.stringify({ name: name.trim() }),
           },
         );
-        if (ok && data) {
-          newKey.id = String(data.id);
-        } else {
-          newKey.id = nextLocalId();
-        }
-        set((s) => ({ apiKeys: [...s.apiKeys, newKey] }));
+        if (!ok || !data) return;
+        const newKey = {
+          id:        String(data.id),
+          name:      data.name,
+          key:       data.key,
+          createdAt: data.createdAt ?? new Date().toISOString(),
+        };
+        set((s) => ({ apiKeys: [...s.apiKeys, newKey], lastCreatedApiKey: newKey.key }));
       },
 
       deleteApiKey: (id) => {
@@ -714,7 +737,53 @@ export const useDashboardStore = create<DashboardState>()(
         void apiFetch(`/api/developer/api-keys/${encodeURIComponent(id)}`, { method: "DELETE" });
       },
 
-      populateDemoData: () => {},
+      clearLastCreatedApiKey: () => set({ lastCreatedApiKey: null }),
+
+      populateDemoData: () => {
+        const now = new Date();
+        const daysAgo = (d: number) => new Date(now.getTime() - d * 86400000).toISOString();
+        set((s) => ({
+          highlights: [
+            ...s.highlights,
+            {
+              id: "demo-1", text: "Large language models are trained on vast corpora of text data, allowing them to generate coherent and contextually relevant responses across a wide range of topics.", source: "OpenAI Research Blog", url: "https://openai.com/research", topic: "AI & Machine Learning", topicColor: "bg-violet-500/20 text-violet-300", savedAt: daysAgo(1), isFavorite: false, isArchived: false, isPinned: true, tags: ["demo-tag-1"], highlightType: "web" as const,
+            },
+            {
+              id: "demo-2", text: "The Feynman Technique is a mental model for learning: if you can't explain something simply, you don't understand it well enough.", source: "Farnam Street", url: "https://fs.blog/feynman-technique", topic: "Learning", topicColor: "bg-emerald-500/20 text-emerald-300", savedAt: daysAgo(3), isFavorite: true, isArchived: false, isPinned: false, tags: ["demo-tag-3"], highlightType: "web" as const,
+            },
+            {
+              id: "demo-3", text: "Product-market fit means being in a good market with a product that can satisfy that market.", source: "Marc Andreessen", url: "#", topic: "Product", topicColor: "bg-blue-500/20 text-blue-300", savedAt: daysAgo(5), isFavorite: false, isArchived: false, isPinned: false, tags: ["demo-tag-2"], highlightType: "manual" as const,
+            },
+            {
+              id: "demo-4", text: "We are what we repeatedly do. Excellence, then, is not an act but a habit.", source: "Aristotle", url: "#", topic: "Philosophy", topicColor: "bg-amber-500/20 text-amber-300", savedAt: daysAgo(7), isFavorite: true, isArchived: false, isPinned: false, tags: ["demo-tag-3"], highlightType: "manual" as const,
+            },
+            {
+              id: "demo-5", text: "The best code is no code at all. Every new line of code you willingly bring into the world is code that has to be debugged.", source: "Jeff Atwood / Coding Horror", url: "https://blog.codinghorror.com", topic: "Engineering", topicColor: "bg-teal-500/20 text-teal-300", savedAt: daysAgo(10), isFavorite: false, isArchived: false, isPinned: false, tags: ["demo-tag-1", "demo-tag-2"], highlightType: "web" as const,
+            },
+          ].filter((d) => !s.highlights.some((h) => h.id === d.id)),
+          folders: [
+            ...s.folders,
+            { id: "demo-folder-1", name: "AI & Tech", emoji: "🧠", count: 2, isPinned: false },
+            { id: "demo-folder-2", name: "Reading List", emoji: "📚", count: 2, isPinned: false },
+          ].filter((d) => !s.folders.some((f) => f.id === d.id)),
+          tags: [
+            ...s.tags,
+            { id: "demo-tag-1", name: "Research",   color: "#7c3aed" },
+            { id: "demo-tag-2", name: "Product",    color: "#2563eb" },
+            { id: "demo-tag-3", name: "Philosophy", color: "#059669" },
+          ].filter((d) => !s.tags.some((t) => t.id === d.id)),
+        }));
+      },
+
+      updateFolderSynthesis: (id, synthesis) => {
+        set((s) => ({
+          folders: s.folders.map((f) => (f.id === id ? { ...f, synthesis } : f)),
+        }));
+      },
+
+      setTagFilterExclusive: (tagIds) => {
+        set({ activeTagFilters: tagIds });
+      },
 
       resetStore: () =>
         set({
