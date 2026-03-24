@@ -113,6 +113,11 @@ public class AuthService {
             user.setEmailHash(sha256(user.getEmail()));
             needsUpdate = true;
         }
+        if (user.getReferralCode() == null || user.getReferralCode().isBlank()) {
+            log.info("[LOGIN] User {} missing referralCode, generating...", user.getEmail());
+            user.setReferralCode(generateUniqueReferralCode());
+            needsUpdate = true;
+        }
         if (user.getEncryptedEmail() == null) {
             log.info("[LOGIN] User {} missing encryptedEmail, updating...", user.getEmail());
             user.setEncryptedEmail(encryptionService.encrypt(user.getEmail()));

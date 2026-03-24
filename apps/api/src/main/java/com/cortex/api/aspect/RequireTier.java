@@ -6,10 +6,11 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation to restrict access to specific API endpoints based on the user's subscription tier.
+ * Annotation to restrict access to specific API endpoints based on the user's
+ * subscription tier.
  */
 @Target(ElementType.METHOD)
 @Retention(RetentionPolicy.RUNTIME)
 public @interface RequireTier {
-    String[] value() default {"pro", "premium", "team"};
+    String[] value() default { "starter", "pro", "premium", "team" };
 }

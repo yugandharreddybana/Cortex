@@ -190,6 +190,7 @@ public class HighlightController {
         }
 
         java.util.Set<Long> incomingIds = new java.util.HashSet<>();
+        boolean hasNewHighlight = false;
 
         for (HighlightDTO dto : dtos) {
             incomingIds.add(dto.id);
@@ -197,8 +198,10 @@ public class HighlightController {
             if (h == null) {
                 // New highlight from client
                 h = fromDTO(dto, user);
+                h.setId(null); // Ensure IDENTITY auto-generation
                 applyTags(h, dto.tags, user);
                 highlightRepo.save(h);
+                hasNewHighlight = true;
             } else {
                 // Skip updating if user does not have EDITOR access to this existing highlight
                 if (!securityService.hasHighlightAccess(h.getId(), "EDITOR")) {
@@ -210,6 +213,10 @@ public class HighlightController {
                 applyTags(h, dto.tags, user);
                 highlightRepo.save(h);
             }
+        }
+
+        if (hasNewHighlight) {
+            referralService.processReferralForNewHighlight(user);
         }
 
         // Upsert only — do NOT delete server highlights missing from the payload.

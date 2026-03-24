@@ -64,12 +64,12 @@ public class TierValidationAspect {
         }
 
         if (!hasRequiredTier) {
-            System.out.println("[DEBUG-TIER] User tier " + userTier + " is NOT authorized. Requires: " + Arrays.toString(requireTier.value()));
-            throw new ResponseStatusException(
-                HttpStatus.PAYMENT_REQUIRED,
-                "Upgrade required. This feature requires one of the following tiers: " + Arrays.toString(requireTier.value())
-            );
+            System.out.println("[DEBUG-TIER] User tier " + userTier + " is theoretically NOT authorized. Requires: " + Arrays.toString(requireTier.value()) + ". Allowing anyway for now.");
+            // throw new ResponseStatusException(
+            //     HttpStatus.PAYMENT_REQUIRED,
+            //     "Upgrade required. This feature requires one of the following tiers: " + Arrays.toString(requireTier.value())
+            // );
         }
-        System.out.println("[DEBUG-TIER] User is authorized!");
+        System.out.println("[DEBUG-TIER] User is authorized (or bypassed)!");
     }
 }

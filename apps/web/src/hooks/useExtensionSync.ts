@@ -33,6 +33,7 @@ interface ExtensionHighlight {
   chatName?:       string;
   chatUrl?:        string;
   isDeleted?:      boolean;
+  resource_type?:  string;
 }
 
 interface ExtensionFolder {
@@ -56,10 +57,10 @@ function mapExtensionHighlight(ext: ExtensionHighlight) {
     text:       ext.text,
     source,
     url:        ext.url,
-    topic:      ext.isAI ? "AI Chat" : "Web",
-    topicColor: ext.isAI
-      ? "bg-purple-500/20 text-purple-300"
-      : "bg-blue-500/20 text-blue-300",
+    topic:      ext.resource_type === "YOUTUBE" || ext.resource_type === "VIDEO" ? "YouTube" : (ext.isAI ? "AI Chat" : "Web"),
+    topicColor: ext.resource_type === "YOUTUBE" || ext.resource_type === "VIDEO"
+      ? "bg-red-500/20 text-red-300"
+      : (ext.isAI ? "bg-purple-500/20 text-purple-300" : "bg-blue-500/20 text-blue-300"),
     savedAt:    ext.date ?? (ext.timestamp ? new Date(ext.timestamp).toISOString() : new Date().toISOString()),
     folder:     ext.folderName,
     folderId:   ext.folderId,

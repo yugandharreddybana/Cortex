@@ -41,14 +41,14 @@ if [[ -f "$API_DIR/.env" ]]; then
   export $(grep -v '^#' "$API_DIR/.env" | xargs)
 fi
 
-# ── 1. Build Java backend if JAR is missing or source is newer ──────────────
-if [[ ! -f "$JAR" ]]; then
-  log "JAR not found — building backend (this may take a minute)..."
-  (cd "$API_DIR" && mvn clean package -DskipTests -q)
-  log "Backend build complete."
-else
-  warn "Using existing JAR. Run 'mvn clean package -DskipTests' in apps/api to rebuild."
-fi
+# ── 1. Install Workspace Dependencies ─────────────────────────────────────────
+log "Ensuring all UI and service dependencies are installed (pnpm install)..."
+(cd "$ROOT_DIR" && pnpm install)
+
+# ── 2. Build Java backend ───────────────────────────────────────────────────
+log "Building backend and resolving Java dependencies (this may take a minute)..."
+(cd "$API_DIR" && mvn clean package -DskipTests -q)
+log "Backend build complete."
 
 # Free port 8080 if something is already using it
 if lsof -ti:8080 &>/dev/null; then
@@ -57,7 +57,7 @@ if lsof -ti:8080 &>/dev/null; then
   sleep 1
 fi
 
-# ── 2. Start Java backend ────────────────────────────────────────────────────
+# ── 3. Start Java backend ────────────────────────────────────────────────────
 # Load backend environment variables
 if [ -f "$API_DIR/.env" ]; then
   log "Loading backend environment variables from .env"
@@ -69,12 +69,6 @@ fi
 log "Starting backend on http://localhost:8080 ..."
 java -jar "$JAR" &
 API_PID=$!
-
-# ── 3. Install web dependencies if node_modules is missing ──────────────────
-if [[ ! -d "$WEB_DIR/node_modules" ]]; then
-  warn "node_modules not found — running pnpm install..."
-  (cd "$ROOT_DIR" && pnpm install)
-fi
 
 # Free port 3000 if something is already using it
 if lsof -ti:3000 &>/dev/null; then

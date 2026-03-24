@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import { CopyIcon, CheckIcon, GiftIcon, UsersIcon, AwardIcon } from "lucide-react";
-import { proxyToJava } from "@/lib/proxy";
 
 export default function ReferralsPage() {
   const [stats, setStats] = useState<{ referralCode: string; totalReferred: number; totalAccepted: number } | null>(null);
@@ -12,7 +11,7 @@ export default function ReferralsPage() {
   useEffect(() => {
     async function loadStats() {
       try {
-        const res = await proxyToJava("/api/v1/referrals", { method: "GET" });
+        const res = await fetch("/api/v1/referrals", { method: "GET" });
         if (res.ok) {
           const data = await res.json();
           setStats(data);
@@ -56,27 +55,55 @@ export default function ReferralsPage() {
           </p>
         </div>
 
-        <div className="bg-white/[0.03] border border-white/10 rounded-xl p-6 lg:p-8 space-y-6">
+        <div className="bg-white/[0.03] border border-white/10 rounded-xl p-6 lg:p-8 space-y-8">
+          {/* Distinct Referral Code Section */}
+          <div className="space-y-3">
+            <label className="text-sm font-medium text-white/80">Your Unique Code</label>
+            <div className="flex items-center gap-3">
+              <div className="flex-1 bg-gradient-to-r from-accent/20 to-accent/5 border border-accent/20 rounded-xl px-6 py-4 flex items-center justify-between">
+                <span className="text-2xl font-mono font-bold tracking-widest text-accent shadow-glow-sm">
+                  {stats?.referralCode || "------"}
+                </span>
+              </div>
+              <button
+                onClick={() => {
+                  if (stats?.referralCode) {
+                    navigator.clipboard.writeText(stats.referralCode);
+                    setCopied(true);
+                    setTimeout(() => setCopied(false), 2000);
+                  }
+                }}
+                className="h-[66px] flex flex-col items-center justify-center gap-1.5 bg-accent text-white px-6 rounded-xl font-medium hover:bg-accent/90 transition-colors shrink-0 shadow-[0_0_20px_rgba(108,99,255,0.25)]"
+              >
+                {copied ? <CheckIcon className="w-5 h-5" /> : <CopyIcon className="w-5 h-5" />}
+                <span className="text-xs uppercase tracking-widest opacity-90">{copied ? "Copied" : "Copy"}</span>
+              </button>
+            </div>
+            <p className="text-xs text-white/40">
+              Friends can enter this code during signup.
+            </p>
+          </div>
+
+          <div className="h-px w-full bg-white/[0.06]" />
+
+          {/* Full Link Section */}
           <div className="space-y-2">
-            <label className="text-sm font-medium text-white/80">Your Unique Referral Link</label>
+            <label className="text-sm font-medium text-white/60">Or share the direct link</label>
             <div className="flex items-center gap-3">
               <input
                 type="text"
                 readOnly
                 value={referralLink}
-                className="flex-1 bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-white/90 font-mono text-sm focus:outline-none focus:ring-1 focus:ring-white/20 transition-all"
+                className="flex-1 bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-white/70 font-mono text-sm focus:outline-none focus:ring-1 focus:ring-white/20 transition-all"
               />
               <button
                 onClick={handleCopy}
-                className="flex items-center gap-2 bg-white text-black px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-white/90 transition-colors"
+                className="flex items-center gap-2 bg-white/[0.05] border border-white/[0.1] text-white px-4 py-2.5 rounded-lg text-sm font-medium hover:bg-white/[0.1] transition-colors"
               >
                 {copied ? <CheckIcon className="w-4 h-4" /> : <CopyIcon className="w-4 h-4" />}
-                {copied ? "Copied!" : "Copy Link"}
+                {copied ? "Copied" : "Copy Link"}
               </button>
             </div>
-            <p className="text-xs text-white/40 pt-1">
-              Share this link directly with friends or on social media.
-            </p>
           </div>
         </div>
 

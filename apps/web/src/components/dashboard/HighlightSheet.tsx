@@ -286,6 +286,7 @@ export function HighlightSheet({ highlight, open, onOpenChange }: HighlightSheet
                     text={isAIText ? `Context: ${highlight?.aiContext}\nResponse: ${highlight?.aiResponse}` : (highlight?.fullText || highlight?.text || "")}
                     url={highlight?.url}
                     customPrompt={customPrompt}
+                    isAI={isAIText || highlight?.topic === "AI Chat"}
                     onRequireContext={needsContext ? () => handleRequireContext("connect") : undefined}
                   />
 
@@ -294,6 +295,7 @@ export function HighlightSheet({ highlight, open, onOpenChange }: HighlightSheet
                     text={isAIText ? `Context: ${highlight?.aiContext}\nResponse: ${highlight?.aiResponse}` : (highlight?.fullText || highlight?.text || "")}
                     url={highlight?.url}
                     customPrompt={customPrompt}
+                    isAI={isAIText || highlight?.topic === "AI Chat"}
                     onRequireContext={needsContext ? () => handleRequireContext("action") : undefined}
                   />
 
@@ -302,6 +304,7 @@ export function HighlightSheet({ highlight, open, onOpenChange }: HighlightSheet
                     text={isAIText ? `Context: ${highlight?.aiContext}\nResponse: ${highlight?.aiResponse}` : (highlight?.fullText || highlight?.text || "")}
                     url={highlight?.url}
                     customPrompt={customPrompt}
+                    isAI={isAIText || highlight?.topic === "AI Chat"}
                     onRequireContext={needsContext ? () => handleRequireContext("devil") : undefined}
                   />
 

@@ -222,11 +222,24 @@ export function SidebarCapture({ selectedText, onClose }: SidebarCaptureProps) {
     const isCode = isInCodeBlock();
     const currentAiCtx = getAIContext();
     const folder = folders.find((f) => f.id === selectedFolderId);
-    const baseUrl = window.location.href.split("#")[0].split("?")[0];
-    const encodedText = encodeURIComponent(finalText.slice(0, 300));
+    const urlObj = new URL(window.location.href);
+    urlObj.searchParams.set("cortex_locate", "true");
+    urlObj.searchParams.set("text", finalText.slice(0, 300));
+    
+    let existingHash = urlObj.hash;
+    const newHashFragment = `~:text=${encodeURIComponent(finalText.slice(0, 300))}`;
+    if (existingHash.includes(":~:text=")) {
+      existingHash = existingHash.replace(/:~:text=[^&]*/, newHashFragment);
+    } else if (existingHash && existingHash !== "#") {
+      existingHash = `${existingHash}:` + newHashFragment;
+    } else {
+      existingHash = "#:" + newHashFragment;
+    }
+    urlObj.hash = existingHash;
+
     const finalUrl = isYouTube
-      ? `${baseUrl}?t=${ytTimestamp}`
-      : `${baseUrl}?cortex_locate=true&text=${encodedText}#:~:text=${encodedText}`;
+      ? `${window.location.href.split("#")[0].split("?")[0]}?t=${ytTimestamp}`
+      : urlObj.toString();
 
     const payload: Record<string, unknown> = {
       id:              nextTempId(),
@@ -243,7 +256,7 @@ export function SidebarCapture({ selectedText, onClose }: SidebarCaptureProps) {
       tagIds:          selectedTagIds,
     };
     if (isYouTube) {
-      payload.resource_type   = "VIDEO";
+      payload.resource_type   = "YOUTUBE";
       payload.video_timestamp = ytTimestamp;
     }
 

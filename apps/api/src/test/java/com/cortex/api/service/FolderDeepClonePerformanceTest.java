@@ -86,6 +86,6 @@ public class FolderDeepClonePerformanceTest {
         verify(highlightRepository, never()).save(any(Highlight.class));
 
         // Verify that saveAll was called exactly once with the list of highlights
-        verify(highlightRepository, times(1)).saveAll(argThat(list -> list.size() == 5));
+        verify(highlightRepository, times(1)).saveAll(argThat(iterable -> ((java.util.Collection<?>) iterable).size() == 5));
     }
 }

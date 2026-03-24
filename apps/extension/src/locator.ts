@@ -352,8 +352,19 @@ function browserFind(text: string): boolean {
 
 // ─── Locate + highlight pipeline ─────────────────────────────────────────────
 
+function unwrapMark() {
+  const mark = document.getElementById("cortex-highlight-mark");
+  if (mark) {
+    const parent = mark.parentNode;
+    while (mark.firstChild) {
+      parent?.insertBefore(mark.firstChild, mark);
+    }
+    mark.remove();
+  }
+}
+
 function tryFindAndMark(targetText: string, searchRoot?: Node): HTMLElement | null {
-  document.getElementById("cortex-highlight-mark")?.remove();
+  unwrapMark();
 
   const roots: Node[] = searchRoot ? [searchRoot, document.body] : [document.body];
   // Deduplicate if searchRoot IS document.body
@@ -380,36 +391,30 @@ function tryFindAndMark(targetText: string, searchRoot?: Node): HTMLElement | nu
       if (mark) return mark;
     }
 
-    // Strategy 4: Normalized whitespace search — the saved text from
-    // getSelection().toString() may have different whitespace than the DOM.
-    // Collapse all whitespace in both target and accumulated text.
-    const normTarget = targetText.replace(/\\s+/g, " ").trim().toLowerCase();
-    if (normTarget !== targetText.toLowerCase().trim()) {
+    // Strategy 4: Whitespace-agnostic search (strips ALL whitespace)
+    // The saved text from getSelection() adds newlines for block elements,
+    // but the DOM text nodes might not contain whitespace between blocks.
+    const solidTarget = targetText.replace(/\s+/g, "").toLowerCase();
+    if (solidTarget !== targetText.toLowerCase()) {
       const allNodes = collectTextNodes(root, true);
       for (let i = 0; i < allNodes.length; i++) {
         let accumulated = "";
         for (let j = i; j < allNodes.length; j++) {
           accumulated += allNodes[j].textContent ?? "";
-          const normAccum = accumulated.replace(/\\s+/g, " ");
-          const idx = normAccum.toLowerCase().indexOf(normTarget);
+          const solidAccum = accumulated.replace(/\s+/g, "");
+          const idx = solidAccum.toLowerCase().indexOf(solidTarget);
           if (idx !== -1) {
-            // Found a match — create range using the original (non-normalized) offsets
-            // Map back through character positions
-            let charCount = 0;
+            // Found a match — map the solid position back to the exact text nodes
             let startNode: Text | null = null;
             let startOffset = 0;
             let endNode: Text | null = null;
             let endOffset = 0;
 
-            // Walk through nodes mapping normalized positions to real positions
-            let realPos = 0;
-            let normPos = 0;
+            let solidPos = 0;
             const rawConcat = allNodes.slice(i, j + 1).map(n => n.textContent ?? "").join("");
 
-            // Build mapping from normalized position to raw position
             for (let r = 0; r < rawConcat.length; r++) {
-              if (normPos === idx && !startNode) {
-                // Map raw position r back to the correct text node
+              if (solidPos === idx && !startNode) {
                 let nodeStart = 0;
                 for (let k = i; k <= j; k++) {
                   const len = allNodes[k].textContent?.length ?? 0;
@@ -421,7 +426,7 @@ function tryFindAndMark(targetText: string, searchRoot?: Node): HTMLElement | nu
                   nodeStart += len;
                 }
               }
-              if (normPos === idx + normTarget.length && !endNode) {
+              if (solidPos === idx + solidTarget.length && !endNode) {
                 let nodeStart = 0;
                 for (let k = i; k <= j; k++) {
                   const len = allNodes[k].textContent?.length ?? 0;
@@ -434,20 +439,13 @@ function tryFindAndMark(targetText: string, searchRoot?: Node): HTMLElement | nu
                 }
               }
 
-              const ch = rawConcat[r];
-              if (/\\s/.test(ch)) {
-                // In normalized form, consecutive whitespace is collapsed to single space
-                if (r === 0 || !/\\s/.test(rawConcat[r - 1])) {
-                  normPos++;
-                }
-              } else {
-                normPos++;
+              if (!/\s/.test(rawConcat[r])) {
+                solidPos++;
               }
-              realPos++;
             }
 
             // Handle end at the very end of the string
-            if (!endNode && normPos >= idx + normTarget.length) {
+            if (!endNode && solidPos >= idx + solidTarget.length) {
               let nodeStart = 0;
               for (let k = i; k <= j; k++) {
                 const len = allNodes[k].textContent?.length ?? 0;
@@ -470,7 +468,7 @@ function tryFindAndMark(targetText: string, searchRoot?: Node): HTMLElement | nu
               } catch { /* continue */ }
             }
           }
-          if (accumulated.length > normTarget.length * 5) break;
+          if (accumulated.length > targetText.length * 5) break;
         }
       }
     }
@@ -573,15 +571,32 @@ function findAIScrollContainer(): HTMLElement | null {
 // ─── URL helpers ─────────────────────────────────────────────────────────────
 
 function extractTargetText(): string | null {
+  // Get the original URL used to load the page (bypasses SPA routers that strip query params
+  // and Chrome's native stripping of the Text Fragment).
+  const navEntries = performance.getEntriesByType("navigation") as PerformanceNavigationTiming[];
+  const origUrlStr = navEntries.length > 0 ? navEntries[0].name : window.location.href;
+  let origUrl;
+  try {
+    origUrl = new URL(origUrlStr);
+  } catch {
+    origUrl = new URL(window.location.href);
+  }
+
   // Priority 1: Query parameter (?cortex_locate=true&text=...)
+  if (origUrl.searchParams.get("cortex_locate") === "true") {
+    const text = origUrl.searchParams.get("text");
+    if (text) return text; // Already decoded by URLSearchParams
+  }
+  
+  // Fallback to window.location.search just in case
   const params = new URLSearchParams(window.location.search);
   if (params.get("cortex_locate") === "true") {
     const text = params.get("text");
-    if (text) return text; // Already decoded by URLSearchParams
+    if (text) return text;
   }
 
-  // Priority 2: Text Fragment API (#:~:text=...) — may be stripped by Chrome
-  const hash = window.location.hash;
+  // Priority 2: Text Fragment API (#:~:text=...)
+  const hash = origUrl.hash || window.location.hash;
   const fragMatch = hash.match(/:~:text=([^&]+)/);
   if (fragMatch) {
     return decodeURIComponent(fragMatch[1]);
@@ -596,8 +611,13 @@ function cleanUrlParams() {
   url.searchParams.delete("text");
 
   let hash = url.hash;
-  if (hash.includes(":~:")) {
-    hash = hash.replace(/#:~:text=[^&]*/, "").replace(/^#$/, "");
+  if (hash.includes(":~:text=")) {
+    hash = hash.replace(/:~:text=[^&]*/, "");
+    if (hash === "#" || hash === "") {
+      hash = "";
+    } else if (hash.endsWith(":")) {
+      hash = hash.slice(0, -1);
+    }
     url.hash = hash;
   }
 
