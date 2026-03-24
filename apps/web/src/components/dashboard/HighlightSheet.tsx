@@ -86,7 +86,7 @@ export function HighlightSheet({ highlight, open, onOpenChange }: HighlightSheet
     setNote(highlight?.note ?? "");
     setPickedTags(highlight?.tags ?? []);
     setSaved(false);
-  }, [highlight?.id, highlight?.note, highlight?.tags]);
+  }, [highlight?.id, highlight?.note, highlight?.tags, highlight?.customPrompt]);
 
   // Auto-save customPrompt with 1s debounce
   React.useEffect(() => {
@@ -95,7 +95,7 @@ export function HighlightSheet({ highlight, open, onOpenChange }: HighlightSheet
       updateHighlight(highlight.id, { customPrompt });
     }, 1000);
     return () => clearTimeout(t);
-  }, [customPrompt, highlight?.id]);
+  }, [customPrompt, highlight?.id, updateHighlight]);
 
   // Auto-save note with 1.5s debounce
   React.useEffect(() => {
@@ -107,14 +107,14 @@ export function HighlightSheet({ highlight, open, onOpenChange }: HighlightSheet
       setTimeout(() => setNoteSaveStatus("idle"), 2000);
     }, 1500);
     return () => clearTimeout(t);
-  }, [note, highlight?.id]);
+  }, [note, highlight?.id, updateHighlight]);
 
   const isDirty = React.useMemo(() => {
     if (!highlight) return false;
     const noteDirty = note !== (highlight.note ?? "");
     const tagsDirty = JSON.stringify([...pickedTags].sort()) !== JSON.stringify([...(highlight.tags ?? [])].sort());
     return noteDirty || tagsDirty;
-  }, [note, pickedTags, highlight?.note, highlight?.tags]);
+  }, [note, pickedTags, highlight, highlight?.note, highlight?.tags]);
 
   const filteredTags = allTags.filter(
     (t) =>
