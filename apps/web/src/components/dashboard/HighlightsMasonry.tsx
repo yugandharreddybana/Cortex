@@ -512,13 +512,18 @@ function HighlightCard({
                     navigator.clipboard.writeText(h.text).then(() => {
                       toast("Copied to clipboard");
                     }).catch(() => {
-                      const el = document.createElement("textarea");
-                      el.value = h.text;
-                      document.body.appendChild(el);
-                      el.select();
-                      document.execCommand("copy");
-                      document.body.removeChild(el);
-                      toast("Copied to clipboard");
+                      try {
+                        const el = document.createElement("textarea");
+                        el.value = h.text;
+                        document.body.appendChild(el);
+                        el.select();
+                        const ok = document.execCommand("copy");
+                        document.body.removeChild(el);
+                        if (ok) toast("Copied to clipboard");
+                        else toast.error("Failed to copy");
+                      } catch {
+                        toast.error("Failed to copy");
+                      }
                     });
                   }}
                 >
@@ -735,7 +740,7 @@ function PinIcon({ filled }: { filled: boolean }) {
 
 function PinBadgeIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" className="text-accent drop-shadow-sm" aria-label="Pinned" role="img">
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" className="text-accent drop-shadow-sm" aria-hidden="true">
       <path d="M9.5 2.5L13.5 6.5L10 10L9 13L3 7L6 6L9.5 2.5Z" />
       <path d="M3 13L6 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" fill="none" />
     </svg>
