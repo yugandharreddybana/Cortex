@@ -8,6 +8,7 @@ import { cn } from "@cortex/ui";
 import { useDashboardStore } from "@/store/dashboard";
 import { ConnectDots } from "./ConnectDots";
 import { ActionEngine } from "./ActionEngine";
+import { DevilsAdvocate } from "./DevilsAdvocate";
 import { AIContextModal } from "./AIContextModal";
 import type { Highlight } from "@/store/dashboard";
 
@@ -22,14 +23,15 @@ const TAG_COLORS: Record<string, { bg: string; text: string; border: string }> =
 };
 
 function TagPill({ name, color, onRemove }: { name: string; color: string; onRemove?: () => void }) {
-  const c = TAG_COLORS[color] ?? TAG_COLORS.blue;
+  const isHex = color?.startsWith("#");
+  const c = isHex ? null : (TAG_COLORS[color] ?? TAG_COLORS.blue);
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1",
-        c.bg, c.text, `border ${c.border}`,
-        "rounded-md px-2 py-0.5 text-xs font-medium",
+        "inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-xs font-medium",
+        c ? `${c.bg} ${c.text} border ${c.border}` : "border border-white/10",
       )}
+      style={isHex ? { background: `${color}20`, color, borderColor: `${color}40` } : undefined}
     >
       {name}
       {onRemove && (
@@ -59,27 +61,60 @@ export function HighlightSheet({ highlight, open, onOpenChange }: HighlightSheet
   const [saved,       setSaved]       = React.useState(false);
 
   // Custom AI Instructions state
-  const [customPrompt, setCustomPrompt] = React.useState("");
+  const [customPrompt, setCustomPrompt] = React.useState(highlight?.customPrompt ?? "");
 
   // AI Context Modal State
   const [contextModalOpen, setContextModalOpen] = React.useState(false);
+  const [pendingAIAction, setPendingAIAction] = React.useState<"connect" | "action" | "devil" | null>(null);
+  const [connectOpen,  setConnectOpen]  = React.useState(false);
+  const [actionOpen,   setActionOpen]   = React.useState(false);
+
+  // Note save status indicator
+  const [noteSaveStatus, setNoteSaveStatus] = React.useState<"idle" | "saving" | "saved">("idle");
 
   const isAIText = highlight?.topic === "AI Text";
   const needsContext = isAIText && (!highlight?.aiContext || !highlight?.aiResponse);
 
-  const handleRequireContext = React.useCallback(() => {
-    if (needsContext) {
-      setContextModalOpen(true);
-    }
-  }, [needsContext]);
+  const handleRequireContext = React.useCallback((action: "connect" | "action" | "devil") => {
+    setPendingAIAction(action);
+    setContextModalOpen(true);
+  }, []);
 
   // Sync state when highlight changes
   React.useEffect(() => {
-    setCustomPrompt("");
+    setCustomPrompt(highlight?.customPrompt ?? "");
     setNote(highlight?.note ?? "");
     setPickedTags(highlight?.tags ?? []);
     setSaved(false);
   }, [highlight?.id, highlight?.note, highlight?.tags]);
+
+  // Auto-save customPrompt with 1s debounce
+  React.useEffect(() => {
+    if (!highlight || customPrompt === (highlight.customPrompt ?? "")) return;
+    const t = setTimeout(() => {
+      updateHighlight(highlight.id, { customPrompt });
+    }, 1000);
+    return () => clearTimeout(t);
+  }, [customPrompt, highlight?.id]);
+
+  // Auto-save note with 1.5s debounce
+  React.useEffect(() => {
+    if (!highlight || note === (highlight.note ?? "")) return;
+    setNoteSaveStatus("saving");
+    const t = setTimeout(() => {
+      updateHighlight(highlight.id, { note });
+      setNoteSaveStatus("saved");
+      setTimeout(() => setNoteSaveStatus("idle"), 2000);
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [note, highlight?.id]);
+
+  const isDirty = React.useMemo(() => {
+    if (!highlight) return false;
+    const noteDirty = note !== (highlight.note ?? "");
+    const tagsDirty = JSON.stringify([...pickedTags].sort()) !== JSON.stringify([...(highlight.tags ?? [])].sort());
+    return noteDirty || tagsDirty;
+  }, [note, pickedTags, highlight?.note, highlight?.tags]);
 
   const filteredTags = allTags.filter(
     (t) =>
@@ -201,8 +236,14 @@ export function HighlightSheet({ highlight, open, onOpenChange }: HighlightSheet
 
                   {/* Personal Notes */}
                   <div className="space-y-2">
-                    <label className="text-xs font-semibold uppercase tracking-widest text-white/35">
+                    <label className="text-xs font-semibold uppercase tracking-widest text-white/35 flex justify-between items-center">
                       Personal Notes
+                      {noteSaveStatus === "saving" && (
+                        <span className="text-[10px] lowercase font-normal text-white/30">Saving…</span>
+                      )}
+                      {noteSaveStatus === "saved" && (
+                        <span className="text-[10px] lowercase font-normal text-emerald-400">Saved</span>
+                      )}
                     </label>
                     <textarea
                       value={note}
@@ -245,7 +286,7 @@ export function HighlightSheet({ highlight, open, onOpenChange }: HighlightSheet
                     text={isAIText ? `Context: ${highlight?.aiContext}\nResponse: ${highlight?.aiResponse}` : (highlight?.fullText || highlight?.text || "")}
                     url={highlight?.url}
                     customPrompt={customPrompt}
-                    onRequireContext={needsContext ? handleRequireContext : undefined}
+                    onRequireContext={needsContext ? () => handleRequireContext("connect") : undefined}
                   />
 
                   {/* Action Engine */}
@@ -253,7 +294,15 @@ export function HighlightSheet({ highlight, open, onOpenChange }: HighlightSheet
                     text={isAIText ? `Context: ${highlight?.aiContext}\nResponse: ${highlight?.aiResponse}` : (highlight?.fullText || highlight?.text || "")}
                     url={highlight?.url}
                     customPrompt={customPrompt}
-                    onRequireContext={needsContext ? handleRequireContext : undefined}
+                    onRequireContext={needsContext ? () => handleRequireContext("action") : undefined}
+                  />
+
+                  {/* Devil's Advocate */}
+                  <DevilsAdvocate
+                    text={isAIText ? `Context: ${highlight?.aiContext}\nResponse: ${highlight?.aiResponse}` : (highlight?.fullText || highlight?.text || "")}
+                    url={highlight?.url}
+                    customPrompt={customPrompt}
+                    onRequireContext={needsContext ? () => handleRequireContext("devil") : undefined}
                   />
 
                   {/* Tags */}
@@ -357,23 +406,25 @@ export function HighlightSheet({ highlight, open, onOpenChange }: HighlightSheet
 
                 {/* ── Footer ── */}
                 <div className="px-6 py-4 border-t border-white/[0.07]">
-                  <button
-                    onClick={handleSave}
-                    className={cn(
-                      "w-full h-10 rounded-xl",
-                      "text-sm font-medium",
-                      "transition-all duration-200 ease-snappy",
-                      saved
-                        ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
-                        : "bg-accent hover:bg-accent/90 text-white shadow-[0_0_20px_rgba(108,99,255,0.25)]",
-                    )}
-                  >
-                    {saved ? (
-                      <span className="flex items-center justify-center gap-2"><CheckIcon /> Saved</span>
-                    ) : (
-                      "Save Changes"
-                    )}
-                  </button>
+                  {(isDirty || saved) && (
+                    <button
+                      onClick={handleSave}
+                      className={cn(
+                        "w-full h-10 rounded-xl",
+                        "text-sm font-medium",
+                        "transition-all duration-200 ease-snappy",
+                        saved
+                          ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
+                          : "bg-accent hover:bg-accent/90 text-white shadow-[0_0_20px_rgba(108,99,255,0.25)]",
+                      )}
+                    >
+                      {saved ? (
+                        <span className="flex items-center justify-center gap-2"><CheckIcon /> Saved</span>
+                      ) : (
+                        "Save Changes"
+                      )}
+                    </button>
+                  )}
                 </div>
 
                 {/* Accessibility */}
@@ -395,7 +446,11 @@ export function HighlightSheet({ highlight, open, onOpenChange }: HighlightSheet
           highlight={highlight}
           open={contextModalOpen}
           onOpenChange={setContextModalOpen}
-          onSuccess={() => {}}
+          onSuccess={() => {
+            if (pendingAIAction === "connect") setConnectOpen(true);
+            else if (pendingAIAction === "action") setActionOpen(true);
+            setPendingAIAction(null);
+          }}
         />
       )}
     </Dialog.Root>
