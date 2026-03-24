@@ -968,6 +968,13 @@ function UserProfileDropdown() {
               <CreditCardIcon /> Subscription
             </DropdownMenu.Item>
 
+            <DropdownMenu.Item
+              onSelect={() => router.push("/dashboard/referrals")}
+              className={cn(dropdownItemCls)}
+            >
+              <GiftIcon /> Refer a Friend
+            </DropdownMenu.Item>
+
             <DropdownMenu.Separator className="my-1 h-px bg-white/[0.07]" />
 
             <DropdownMenu.Item
@@ -1035,6 +1042,7 @@ function TrashIcon()      { return ic("M3 5h10M5 5V3h6v2M6 8v4M10 8v4"); }
 function CopyIcon()       { return ic("M10 2H4a1 1 0 00-1 1v9a1 1 0 001 1h8a1 1 0 001-1V5l-3-3zM9 2v3h3M3 7h8"); }
 function UserIcon()       { return ic("M8 7a3 3 0 100-6 3 3 0 000 6zM3 14a5 5 0 0110 0"); }
 function CreditCardIcon() { return ic("M1 5h14v8a1 1 0 01-1 1H2a1 1 0 01-1-1V5zM1 9h14"); }
+function GiftIcon()       { return ic("M10.833 3.5h-2.11C8.944 2.392 8.01 1.5 6.833 1.5c-1.178 0-2.11.892-2.335 2H2.5A1.5 1.5 0 0 0 1 5v2c0 .828.672 1.5 1.5 1.5h8.333c.828 0 1.5-.672 1.5-1.5V5A1.5 1.5 0 0 0 10.833 3.5ZM6.667 3.5V8.5M10.833 8.5v4.5A1.5 1.5 0 0 1 9.333 14.5H4A1.5 1.5 0 0 1 2.5 13V8.5"); }
 function LogOutIcon()     { return ic("M10 3h3a1 1 0 011 1v8a1 1 0 01-1 1h-3M7 10l3-2-3-2M1 8h9"); }
 function XTinyIcon() {
   return (

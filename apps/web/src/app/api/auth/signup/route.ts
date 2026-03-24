@@ -22,16 +22,20 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const refCodeCookie = request.cookies.get("cortex_referral_code");
+  const referralCode = refCodeCookie?.value || null;
+
   let upstream: Response;
   try {
     upstream = await fetch(`${API_BASE}/api/v1/auth/signup`, {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
       body:    JSON.stringify({
-        email:    parsed.data.email,
-        password: parsed.data.password,
-        fullName: parsed.data.fullName,
-        tier:     parsed.data.tier ?? "starter",
+        email:        parsed.data.email,
+        password:     parsed.data.password,
+        fullName:     parsed.data.fullName,
+        tier:         parsed.data.tier ?? "starter",
+        referralCode: referralCode,
       }),
     });
   } catch {
@@ -56,8 +60,13 @@ export async function POST(request: NextRequest) {
   session.user = { token: data.token };
   await session.save();
 
-  return NextResponse.json({
+  const response = NextResponse.json({
     success: true,
     user:    { email: data.user.email, tier: data.user.tier },
   });
+
+  // Clear referral code cookie upon successful signup
+  response.cookies.delete("cortex_referral_code");
+
+  return response;
 }

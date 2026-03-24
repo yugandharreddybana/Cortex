@@ -6,6 +6,8 @@ import com.cortex.api.dto.SignupRequest;
 import com.cortex.api.dto.UserResponseDTO;
 import com.cortex.api.entity.User;
 import com.cortex.api.repository.UserRepository;
+import com.cortex.api.repository.ReferralRepository;
+import com.cortex.api.entity.Referral;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
@@ -28,15 +30,18 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final JwtService jwtService;
     private final EncryptionService encryptionService;
+    private final ReferralRepository referralRepository;
 
     public AuthService(UserRepository userRepository,
                        PasswordEncoder passwordEncoder,
                        JwtService jwtService,
-                       EncryptionService encryptionService) {
+                       EncryptionService encryptionService,
+                       ReferralRepository referralRepository) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtService = jwtService;
         this.encryptionService = encryptionService;
+        this.referralRepository = referralRepository;
     }
 
     @Transactional
@@ -52,11 +57,26 @@ public class AuthService {
         user.setTier(request.tier() != null ? request.tier() : "starter");
         user.setEmailHash(sha256(request.email()));
         user.setEncryptedEmail(encryptionService.encrypt(request.email()));
+        user.setReferralCode(generateUniqueReferralCode());
 
         try {
             user = userRepository.save(user);
         } catch (DataIntegrityViolationException e) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
+        }
+
+        if (request.referralCode() != null && !request.referralCode().isBlank()) {
+            String refCode = request.referralCode().trim();
+            final User savedUser = user;
+            userRepository.findByReferralCode(refCode).ifPresent(referrer -> {
+                if (!referrer.getId().equals(savedUser.getId())) {
+                    Referral referral = new Referral();
+                    referral.setReferrer(referrer);
+                    referral.setReferred(savedUser);
+                    referral.setStatus("PENDING");
+                    referralRepository.save(referral);
+                }
+            });
         }
 
         String token = jwtService.generateToken(
@@ -121,6 +141,22 @@ public class AuthService {
 
         log.info("[LOGIN] Success for user {} (id: {})", user.getEmail(), user.getId());
         return new AuthResponse(token, toDTO(user));
+    }
+
+    private String generateUniqueReferralCode() {
+        int length = 8;
+        String characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+        StringBuilder code = new StringBuilder();
+        java.util.Random rnd = new java.security.SecureRandom();
+        while (true) {
+            code.setLength(0);
+            for (int i = 0; i < length; i++) {
+                code.append(characters.charAt(rnd.nextInt(characters.length())));
+            }
+            if (!userRepository.existsByReferralCode(code.toString())) {
+                return code.toString();
+            }
+        }
     }
 
     private static String sha256(String input) {

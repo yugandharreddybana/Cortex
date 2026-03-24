@@ -53,6 +53,9 @@ public class User {
     @Column(name = "billing_interval")
     private String billingInterval; // e.g., month, year
 
+    @Column(name = "referral_code", nullable = false, updatable = false, unique = true)
+    private String referralCode;
+
     @PrePersist
     void onCreate() {
         if (createdAt == null) {
@@ -98,4 +101,7 @@ public class User {
 
     public String getBillingInterval() { return billingInterval; }
     public void setBillingInterval(String billingInterval) { this.billingInterval = billingInterval; }
+
+    public String getReferralCode() { return referralCode; }
+    public void setReferralCode(String referralCode) { this.referralCode = referralCode; }
 }

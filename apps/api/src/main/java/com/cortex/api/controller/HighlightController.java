@@ -41,6 +41,7 @@ public class HighlightController {
     private final com.cortex.api.service.FolderService folderService;
     private final com.cortex.api.service.SecurityService securityService;
     private final OllamaService ollamaService;
+    private final com.cortex.api.service.ReferralService referralService;
 
     public HighlightController(HighlightRepository highlightRepo, UserRepository userRepo,
                                TagRepository tagRepo, HighlightTagRepository highlightTagRepo,
@@ -48,7 +49,8 @@ public class HighlightController {
                                WebSocketService webSocketService,
                                com.cortex.api.service.FolderService folderService,
                                com.cortex.api.service.SecurityService securityService,
-                               OllamaService ollamaService) {
+                               OllamaService ollamaService,
+                               com.cortex.api.service.ReferralService referralService) {
         this.highlightRepo = highlightRepo;
         this.userRepo = userRepo;
         this.tagRepo = tagRepo;
@@ -58,6 +60,7 @@ public class HighlightController {
         this.folderService = folderService;
         this.securityService = securityService;
         this.ollamaService = ollamaService;
+        this.referralService = referralService;
     }
 
     @Transactional
@@ -91,6 +94,8 @@ public class HighlightController {
         if (h.getFolderId() != null && ("pro".equals(user.getTier()) || "premium".equals(user.getTier()) || "team".equals(user.getTier()))) {
             triggerFolderSynthesis(h.getFolderId());
         }
+
+        referralService.processReferralForNewHighlight(user);
 
         // Notify the owning user's connected clients (extension, other tabs)
         webSocketService.sendToUser(auth.getName(), "/topic/highlights", saved);
