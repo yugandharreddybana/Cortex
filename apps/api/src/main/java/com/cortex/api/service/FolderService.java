@@ -451,6 +451,7 @@ public class FolderService {
 
         // ── Clone highlights in this folder ─────────────────────────────────
         List<Highlight> sourceHighlights = highlightRepository.findByFolderIdAndNotDeleted(sourceFolderId);
+        List<Highlight> clonesToSave = new ArrayList<>();
         for (Highlight src : sourceHighlights) {
             Highlight h = new Highlight();
             h.setUser(newOwner);
@@ -474,7 +475,10 @@ public class FolderService {
             h.setVideoTimestamp(src.getVideoTimestamp());
             h.setLinkAccess(LinkAccess.RESTRICTED);
             h.setDefaultLinkRole(AccessLevel.VIEWER);
-            highlightRepository.save(h);
+            clonesToSave.add(h);
+        }
+        if (!clonesToSave.isEmpty()) {
+            highlightRepository.saveAll(clonesToSave);
         }
         log.info("[Deep Clone] depth={} cloned {} highlight(s) into folder={}", depth, sourceHighlights.size(), savedClone.getId());
 
