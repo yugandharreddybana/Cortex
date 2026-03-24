@@ -18,7 +18,10 @@ function FolderIcon() {
 export default function FolderPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const folder = useDashboardStore((s) => s.folders.find((f) => f.id === id));
-  const count = useDashboardStore((s) => s.highlights.filter((h) => h.folderId === id).length);
+  const folderHighlights = useDashboardStore((s) =>
+    s.highlights.filter((h) => h.folderId === id && !h.isArchived && !h.isDeleted),
+  );
+  const count = folderHighlights.length;
 
   return (
     <div className="p-6 lg:p-8">
@@ -31,7 +34,7 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
             ? `${count} highlight${count === 1 ? "" : "s"}`
             : "No highlights in this folder"}
         </p>
-        {folder?.synthesis && <FolderSynthesis synthesis={folder.synthesis} />}
+        <FolderSynthesis folderId={id} highlights={folderHighlights} />
         {count > 0 && <AutoDraft folderId={id} />}
       </div>
 

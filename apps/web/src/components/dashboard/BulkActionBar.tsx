@@ -3,6 +3,7 @@
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
+import * as Popover from "@radix-ui/react-popover";
 import { toast } from "sonner";
 import { cn } from "@cortex/ui";
 import { useDashboardStore } from "@/store/dashboard";
@@ -17,8 +18,10 @@ export function BulkActionBar() {
   const toggleFavorite      = useDashboardStore((s) => s.toggleFavorite);
   const toggleArchive       = useDashboardStore((s) => s.toggleArchive);
   const togglePinHighlight  = useDashboardStore((s) => s.togglePinHighlight);
+  const updateHighlight     = useDashboardStore((s) => s.updateHighlight);
   const folders             = useDashboardStore((s) => s.folders);
   const highlights          = useDashboardStore((s) => s.highlights);
+  const tags                = useDashboardStore((s) => s.tags);
   const count               = selectedIds.length;
 
   // Deduplicate by string id — safety net against any sync path inserting duplicates
@@ -65,6 +68,21 @@ export function BulkActionBar() {
     ids.forEach((id) => togglePinHighlight(id));
     toast(`Toggled pin on ${ids.length} highlight${ids.length > 1 ? "s" : ""}`);
   }, [selectedIds, togglePinHighlight]);
+
+  const handleBulkTag = React.useCallback((tagId: string) => {
+    // If ALL selected highlights have this tag → remove it. Otherwise → add it.
+    const selectedHighlights = highlights.filter((h) => selectedIds.includes(h.id));
+    const allHaveTag = selectedHighlights.every((h) => h.tags?.includes(tagId));
+    selectedHighlights.forEach((h) => {
+      const currentTags = h.tags ?? [];
+      const newTags = allHaveTag
+        ? currentTags.filter((t) => t !== tagId)
+        : currentTags.includes(tagId) ? currentTags : [...currentTags, tagId];
+      updateHighlight(h.id, { tags: newTags });
+    });
+    const tag = tags.find((t) => t.id === tagId);
+    toast(allHaveTag ? `Removed tag "${tag?.name}"` : `Added tag "${tag?.name}"`);
+  }, [selectedIds, highlights, tags, updateHighlight]);
 
   const handleExport = React.useCallback(() => {
     const selected = highlights.filter((h) => selectedIds.includes(h.id));
@@ -168,6 +186,67 @@ export function BulkActionBar() {
             <BulkArchiveIcon />
             Archive
           </BulkButton>
+
+          {/* Tag */}
+          <Popover.Root>
+            <Popover.Trigger asChild>
+              <button
+                aria-label="Tag selected highlights"
+                className={cn(
+                  "inline-flex items-center gap-1.5 text-[12px] font-medium",
+                  "px-2.5 py-1 rounded-full transition-all duration-150",
+                  "text-white/65 hover:text-white/90 hover:bg-white/[0.07]",
+                )}
+              >
+                <TagIcon />
+                Tag
+              </button>
+            </Popover.Trigger>
+            <Popover.Portal>
+              <Popover.Content
+                sideOffset={8}
+                side="top"
+                align="center"
+                className={cn(
+                  "z-50 w-44 rounded-xl p-1.5",
+                  "bg-[#1c1c1c] border border-white/[0.09]",
+                  "shadow-[0_8px_32px_rgba(0,0,0,0.55)]",
+                  "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+                )}
+              >
+                {tags.length === 0 ? (
+                  <p className="text-xs text-white/30 px-2 py-1.5">No tags yet</p>
+                ) : (
+                  tags.map((tag) => {
+                    const selectedHighlights = highlights.filter((h) => selectedIds.includes(h.id));
+                    const allHave = selectedHighlights.every((h) => h.tags?.includes(tag.id));
+                    return (
+                      <button
+                        key={tag.id}
+                        onClick={() => handleBulkTag(tag.id)}
+                        className={cn(
+                          "w-full flex items-center gap-2 px-2 py-1.5 rounded-lg",
+                          "text-[12px] hover:bg-white/[0.06] transition-colors",
+                          allHave ? "text-white/90" : "text-white/55",
+                        )}
+                      >
+                        <span
+                          className="w-2 h-2 rounded-full shrink-0"
+                          style={{ background: tag.color }}
+                        />
+                        <span className="truncate flex-1 text-left">{tag.name}</span>
+                        {allHave && (
+                          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
+                            <path d="M2 5l2.5 2.5L8 2.5" />
+                          </svg>
+                        )}
+                      </button>
+                    );
+                  })
+                )}
+              </Popover.Content>
+            </Popover.Portal>
+          </Popover.Root>
 
           {/* Export */}
           <BulkButton onClick={handleExport}>

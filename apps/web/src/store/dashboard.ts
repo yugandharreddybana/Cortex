@@ -113,7 +113,7 @@ interface DashboardState {
   setFolderEmoji:      (id: string, emoji: string) => void;
   addTag:              (name: string, color: string) => void;
   deleteTag:           (id: string) => void;
-  addHighlight:        (h: Pick<Highlight, "text" | "source"> & { folderId?: string, tags?: string[] }) => Promise<boolean>;
+  addHighlight:        (h: Pick<Highlight, "text" | "source"> & { folderId?: string, tags?: string[], url?: string }) => Promise<boolean>;
   updateHighlight:     (id: string, patch: Partial<Pick<Highlight, "note" | "tags" | "highlightColor" | "aiContext" | "aiResponse" | "connectDotsResult" | "actionItemsResult" | "devilsAdvocateResult" | "customPrompt" | "source">>) => void;
   moveHighlight:       (id: string, folderId: string, folderName: string) => void;
   toggleFavorite:      (id: string) => void;
@@ -125,6 +125,7 @@ interface DashboardState {
   // Smart Collections
   addSmartCollection:    (name: string, tagIds: string[]) => void;
   deleteSmartCollection: (id: string) => void;
+  fetchSmartCollections: () => Promise<void>;
 
   // API Keys
   apiKeys: Array<{ id: string; name: string; key: string; createdAt: string }>;
@@ -496,11 +497,20 @@ export const useDashboardStore = create<DashboardState>()(
         void apiFetch(`/api/tags/${encodeURIComponent(id)}`, { method: "DELETE" });
       },
 
-      addHighlight: async ({ text, source, folderId, tags }) => {
+      addHighlight: async ({ text, source, folderId, tags, url: explicitUrl }) => {
         if (!text || text.trim().length === 0) return;
         const trimmedText = text.trim();
         const displayText = trimmedText.length > 500 ? trimmedText.slice(0, 500) : trimmedText;
         const numericFolderId = folderId && /^\d+$/.test(folderId) ? Number(folderId) : null;
+
+        // FIX 19: Auto-detect URL from source field
+        const isUrl = explicitUrl
+          ? true
+          : source.trim().startsWith("http://") || source.trim().startsWith("https://");
+        const resolvedUrl = explicitUrl ?? (isUrl ? source.trim() : "#");
+        const resolvedSource = isUrl && !explicitUrl
+          ? (() => { try { return new URL(source.trim()).hostname; } catch { return source.trim(); } })()
+          : source.trim() || "Manual entry";
 
         const { ok, data } = await apiFetch<Record<string, unknown>>(
           "/api/highlights",
@@ -509,8 +519,8 @@ export const useDashboardStore = create<DashboardState>()(
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               text: displayText,
-              source: source.trim() || "Manual entry",
-              url: "#",
+              source: resolvedSource,
+              url: resolvedUrl,
               topic: "Manual",
               topicColor: "bg-purple-500/20 text-purple-300",
               savedAt: new Date().toISOString(),
@@ -700,18 +710,55 @@ export const useDashboardStore = create<DashboardState>()(
       setNewFolderDialogOpen:    (v) => set({ newFolderDialogOpen: v }),
       setNewHighlightDialogOpen: (v) => set({ newHighlightDialogOpen: v }),
 
-      addSmartCollection: (name, tagIds) =>
+      addSmartCollection: async (name, tagIds) => {
+        const trimmedName = name.trim();
+        // Optimistic add with local ID
+        const localId = nextLocalId();
         set((s) => ({
-          smartCollections: [
-            ...s.smartCollections,
-            { id: nextLocalId(), name: name.trim(), tagIds },
-          ],
-        })),
+          smartCollections: [...s.smartCollections, { id: localId, name: trimmedName, tagIds }],
+        }));
+        const { ok, data } = await apiFetch<{ id: number | string; name: string; tagIds: string[] }>(
+          "/api/smart-collections",
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: trimmedName, tagIds }),
+          },
+        );
+        if (ok && data) {
+          // Replace local ID with server ID
+          set((s) => ({
+            smartCollections: s.smartCollections.map((c) =>
+              c.id === localId ? { ...c, id: String(data.id) } : c,
+            ),
+          }));
+        }
+      },
 
-      deleteSmartCollection: (id) =>
+      deleteSmartCollection: (id) => {
         set((s) => ({
           smartCollections: s.smartCollections.filter((c) => c.id !== id),
-        })),
+        }));
+        // Only call API for server-persisted collections (not local-only)
+        if (!id.startsWith("local-")) {
+          void apiFetch(`/api/smart-collections/${encodeURIComponent(id)}`, { method: "DELETE" });
+        }
+      },
+
+      fetchSmartCollections: async () => {
+        const { ok, data } = await apiFetch<Array<{ id: number | string; name: string; tagIds: string[] }>>(
+          "/api/smart-collections",
+        );
+        if (ok && Array.isArray(data)) {
+          set({
+            smartCollections: data.map((c) => ({
+              id: String(c.id),
+              name: c.name,
+              tagIds: Array.isArray(c.tagIds) ? c.tagIds.map(String) : [],
+            })),
+          });
+        }
+      },
 
       addApiKey: async (name) => {
         const { ok, data } = await apiFetch<{ id: number | string; name: string; key: string; createdAt: string }>(

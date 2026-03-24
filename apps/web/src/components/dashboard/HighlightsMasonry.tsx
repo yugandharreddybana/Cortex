@@ -13,6 +13,7 @@ import { HighlightSheet } from "./HighlightSheet";
 import { BulkActionBar } from "./BulkActionBar";
 import { EmptyState } from "./EmptyState";
 import { ShareDialog, ShareIcon } from "./ShareDialog";
+import { HighlightAIPanel } from "./HighlightAIPanel";
 import { useDashboardStore } from "@/store/dashboard";
 import type { Highlight, Folder } from "@/store/dashboard";
 import { DevilsAdvocate } from "./DevilsAdvocate";
@@ -288,6 +289,7 @@ function HighlightCard({
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [shareOpen, setShareOpen] = React.useState(false);
   const router = useRouter();
+  const updateHighlight = useDashboardStore((s) => s.updateHighlight);
 
   return (
     <>
@@ -641,7 +643,10 @@ function HighlightCard({
         </blockquote>
       )}
 
-      <DevilsAdvocate text={h.fullText || h.text} url={h.url} />
+      <HighlightAIPanel
+        highlight={h}
+        onResultSaved={(patch) => updateHighlight(h.id, patch)}
+      />
 
       {/* Source + folder metadata */}
       <div className="flex items-center gap-2 mt-3 flex-wrap">

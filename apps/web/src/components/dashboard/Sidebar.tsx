@@ -813,6 +813,7 @@ function FolderDropdown({
   onDuplicate,
   onCreateSubfolder,
   onPin,
+  onMove,
 }: {
   folder:   { id: string; name: string; emoji: string; isPinned?: boolean; effectiveRole?: string };
   onRename: () => void;
@@ -825,6 +826,7 @@ function FolderDropdown({
 }) {
   const isOwner = !folder.effectiveRole || folder.effectiveRole === "OWNER";
   const isSharedFolder = !isOwner;
+  const allFolders = useDashboardStore((s) => s.folders);
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -865,7 +867,38 @@ function FolderDropdown({
             <>
               <DropdownItem onSelect={onPin}><PinSmallIcon /> {folder.isPinned ? "Unpin" : "Pin"}</DropdownItem>
               <DropdownItem onSelect={onRename}><PencilIcon /> Rename</DropdownItem>
-              <DropdownItem><MoveIcon /> Move to…</DropdownItem>
+              {/* Move to… sub-menu */}
+              <DropdownMenu.Sub>
+                <DropdownMenu.SubTrigger
+                  className={cn(
+                    "flex items-center gap-2.5 px-3 py-2 rounded-lg w-full",
+                    "text-sm text-white/70 cursor-pointer select-none outline-none",
+                    "hover:bg-white/[0.06] focus:bg-white/[0.06] transition-colors duration-100",
+                    "data-[state=open]:bg-white/[0.06]",
+                  )}
+                >
+                  <MoveIcon /> Move to…
+                  <span className="ml-auto text-white/30 text-[10px]">▸</span>
+                </DropdownMenu.SubTrigger>
+                <DropdownMenu.Portal>
+                  <DropdownMenu.SubContent
+                    sideOffset={4}
+                    className={cn(
+                      "z-50 min-w-[160px] max-h-[280px] overflow-y-auto rounded-xl",
+                      "bg-[#1c1c1c] border border-white/[0.09]",
+                      "shadow-[0_8px_32px_rgba(0,0,0,0.5)]",
+                      "p-1",
+                      "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+                    )}
+                  >
+                    <FolderTreeMenu
+                      folders={allFolders}
+                      onSelect={(targetId) => onMove(targetId)}
+                      parentIdToExclude={folder.id}
+                    />
+                  </DropdownMenu.SubContent>
+                </DropdownMenu.Portal>
+              </DropdownMenu.Sub>
               <DropdownItem onSelect={onShare}><ShareIcon /> Share</DropdownItem>
             </>
           )}

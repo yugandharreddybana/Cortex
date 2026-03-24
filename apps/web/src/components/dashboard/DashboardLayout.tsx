@@ -34,20 +34,21 @@ export function DashboardLayout() {
   const setSortOrder        = useDashboardStore((s) => s.setSortOrder);
   const newHighlightOpen    = useDashboardStore((s) => s.newHighlightDialogOpen);
   const setNewHighlightOpen = useDashboardStore((s) => s.setNewHighlightDialogOpen);
-  const fetchFolders        = useDashboardStore((s) => s.fetchFolders);
-  const fetchTags           = useDashboardStore((s) => s.fetchTags);
+  const fetchFolders            = useDashboardStore((s) => s.fetchFolders);
+  const fetchTags               = useDashboardStore((s) => s.fetchTags);
+  const fetchSmartCollections   = useDashboardStore((s) => s.fetchSmartCollections);
 
   // Initial data fetch with error handling (FIX 43)
   const doFetch = React.useCallback(async () => {
     try {
-      await Promise.all([fetchFolders(), fetchTags()]);
+      await Promise.all([fetchFolders(), fetchTags(), fetchSmartCollections()]);
       setInitError(null);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to load data";
       setInitError(msg);
       toast.error("Failed to load your data. Please retry.");
     }
-  }, [fetchFolders, fetchTags]);
+  }, [fetchFolders, fetchTags, fetchSmartCollections]);
 
   React.useEffect(() => {
     void doFetch();
