@@ -37,14 +37,17 @@ export function NotificationBell() {
   const [unreadCount, setUnreadCount] = React.useState(0);
   const [loading, setLoading] = React.useState(false);
   const [respondingId, setRespondingId] = React.useState<string | null>(null);
-  const intervalRef = React.useRef<ReturnType<typeof setInterval> | null>(null);
+  const intervalRef    = React.useRef<ReturnType<typeof setInterval> | null>(null);
+  const failureCount   = React.useRef(0);
+  const [pollInterval, setPollInterval] = React.useState(15000);
 
-  // Poll unread count every 15s and on mount
+  // Poll unread count and rebuild interval when pollInterval changes
   React.useEffect(() => {
     fetchUnreadCount();
-    intervalRef.current = setInterval(fetchUnreadCount, 15000);
+    intervalRef.current = setInterval(fetchUnreadCount, pollInterval);
     return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pollInterval]);
 
   // Fetch full list when popover opens
   React.useEffect(() => {
@@ -57,12 +60,19 @@ export function NotificationBell() {
       if (res.ok) {
         const data = await res.json();
         setUnreadCount(data.count ?? 0);
+        failureCount.current = 0;
+        setPollInterval(15000);
       } else if (res.status === 401) {
-        // Session expired — stop polling to avoid endless 401s
         if (intervalRef.current) clearInterval(intervalRef.current);
+      } else {
+        failureCount.current += 1;
+        const next = Math.min(15000 * Math.pow(2, failureCount.current), 300000);
+        setPollInterval(next);
       }
     } catch {
-      // silent
+      failureCount.current += 1;
+      const next = Math.min(15000 * Math.pow(2, failureCount.current), 300000);
+      setPollInterval(next);
     }
   }
 

@@ -3,6 +3,7 @@
 import * as React from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import * as Dialog from "@radix-ui/react-dialog";
 import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { toast } from "sonner";
 import { cn } from "@cortex/ui";
@@ -12,6 +13,7 @@ import { HighlightSheet } from "./HighlightSheet";
 import { BulkActionBar } from "./BulkActionBar";
 import { EmptyState } from "./EmptyState";
 import { ShareDialog, ShareIcon } from "./ShareDialog";
+import { HighlightAIPanel } from "./HighlightAIPanel";
 import { useDashboardStore } from "@/store/dashboard";
 import type { Highlight, Folder } from "@/store/dashboard";
 import { DevilsAdvocate } from "./DevilsAdvocate";
@@ -53,6 +55,9 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
   const searchQuery           = useDashboardStore((s) => s.searchQuery);
   const sortOrder             = useDashboardStore((s) => s.sortOrder);
   const activeTagFilters      = useDashboardStore((s) => s.activeTagFilters);
+  const updateHighlight       = useDashboardStore((s) => s.updateHighlight);
+  const activeFolder          = useDashboardStore((s) => s.activeFolder);
+  const setNewHighlightOpen   = useDashboardStore((s) => s.setNewHighlightDialogOpen);
 
   // Apply filters
   const highlights = React.useMemo(() => {
@@ -105,6 +110,7 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
 
   const [activeHighlight, setActiveHighlight] = React.useState<Highlight | null>(null);
   const [sheetOpen, setSheetOpen] = React.useState(false);
+  const [renameTarget, setRenameTarget] = React.useState<Highlight | null>(null);
 
   const handleDelete = React.useCallback((id: string) => {
     deleteHighlight(id);
@@ -126,7 +132,23 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
   return (
     <>
       {highlights.length === 0 ? (
-        <EmptyState />
+        activeFolder ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-4">
+            <span className="text-4xl">📂</span>
+            <p className="text-sm font-medium text-white/50">This folder is empty</p>
+            <p className="text-xs text-white/30 text-center max-w-xs">
+              Add highlights by saving from the web or creating manually.
+            </p>
+            <button
+              onClick={() => setNewHighlightOpen(true)}
+              className="mt-2 px-4 py-2 rounded-xl text-sm font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-colors"
+            >
+              Add Highlight
+            </button>
+          </div>
+        ) : (
+          <EmptyState />
+        )
       ) : (
         <AnimatePresence mode="wait" initial={false}>
         {viewMode === "grid" ? (
@@ -152,6 +174,7 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
                 onToggleFavorite={() => toggleFavorite(h.id)}
                 onToggleArchive={() => toggleArchive(h.id)}
                 onTogglePin={() => togglePinHighlight(h.id)}
+                onRename={() => setRenameTarget(h)}
                 onMove={(folderId, folderName) => {
                   // Allow moving to root (no folderId)
                   if (!folderId || folders.some((f) => f.id === folderId)) {
@@ -206,6 +229,16 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
         onOpenChange={setSheetOpen}
       />
 
+      <RenameHighlightDialog
+        highlight={renameTarget}
+        onClose={() => setRenameTarget(null)}
+        onSave={(id, newName) => {
+          updateHighlight(id, { source: newName });
+          setRenameTarget(null);
+          toast("Highlight renamed");
+        }}
+      />
+
       <BulkActionBar />
     </>
   );
@@ -236,6 +269,7 @@ function HighlightCard({
   onToggleFavorite,
   onToggleArchive,
   onTogglePin,
+  onRename,
   onMove,
 }: {
   highlight:        Highlight;
@@ -249,11 +283,13 @@ function HighlightCard({
   onToggleFavorite: () => void;
   onToggleArchive:  () => void;
   onTogglePin:      () => void;
+  onRename:         () => void;
   onMove:           (folderId: string, folderName: string) => void;
 }) {
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [shareOpen, setShareOpen] = React.useState(false);
   const router = useRouter();
+  const updateHighlight = useDashboardStore((s) => s.updateHighlight);
 
   return (
     <>
@@ -309,6 +345,13 @@ function HighlightCard({
           )}
         </div>
       </div>
+
+      {/* Pin badge (top-right corner, visible when pinned) */}
+      {h.isPinned && (
+        <div className="absolute top-2.5 right-2.5 z-10 pointer-events-none">
+          <PinBadgeIcon />
+        </div>
+      )}
       {/* Radial accent on hover */}
       <div
         aria-hidden
@@ -382,9 +425,24 @@ function HighlightCard({
                 ? "text-yellow-400 opacity-100"
                 : "text-white/40 hover:text-yellow-400 opacity-0 group-hover/card:opacity-100",
             )}
-            aria-label={h.isFavorite ? "Unstar" : "Star"}
+            aria-label={h.isFavorite ? "Remove from favorites" : "Add to favorites"}
           >
             <StarSmallIcon filled={h.isFavorite} />
+          </button>
+
+          {/* Archive toggle */}
+          <button
+            onClick={(e) => { e.stopPropagation(); onToggleArchive(); }}
+            className={cn(
+              "w-5 h-5 rounded flex items-center justify-center",
+              "transition-all duration-150",
+              h.isArchived
+                ? "text-white/60 opacity-100"
+                : "text-white/40 hover:text-white/60 opacity-0 group-hover/card:opacity-100",
+            )}
+            aria-label={h.isArchived ? "Unarchive" : "Archive"}
+          >
+            <ArchiveSmallIcon />
           </button>
 
           {/* 3-dot menu */}
@@ -440,10 +498,39 @@ function HighlightCard({
                     "hover:bg-white/[0.06] cursor-pointer",
                     "outline-none transition-colors duration-100",
                   )}
-                  onSelect={() => {/* rename stub */}}
+                  onSelect={() => onRename()}
                 >
                   <PencilIcon />
                   Rename
+                </DropdownMenu.Item>
+                <DropdownMenu.Item
+                  className={cn(
+                    "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
+                    "text-[12px] text-white/70 hover:text-white",
+                    "hover:bg-white/[0.06] cursor-pointer",
+                    "outline-none transition-colors duration-100",
+                  )}
+                  onSelect={() => {
+                    navigator.clipboard.writeText(h.text).then(() => {
+                      toast("Copied to clipboard");
+                    }).catch(() => {
+                      try {
+                        const el = document.createElement("textarea");
+                        el.value = h.text;
+                        document.body.appendChild(el);
+                        el.select();
+                        const ok = document.execCommand("copy");
+                        document.body.removeChild(el);
+                        if (ok) toast("Copied to clipboard");
+                        else toast.error("Failed to copy");
+                      } catch {
+                        toast.error("Failed to copy");
+                      }
+                    });
+                  }}
+                >
+                  <CopyIcon />
+                  Copy text
                 </DropdownMenu.Item>
                 <DropdownMenu.Sub>
                   <DropdownMenu.SubTrigger
@@ -556,7 +643,10 @@ function HighlightCard({
         </blockquote>
       )}
 
-      <DevilsAdvocate text={h.fullText || h.text} url={h.url} />
+      <HighlightAIPanel
+        highlight={h}
+        onResultSaved={(patch) => updateHighlight(h.id, patch)}
+      />
 
       {/* Source + folder metadata */}
       <div className="flex items-center gap-2 mt-3 flex-wrap">
@@ -653,6 +743,15 @@ function PinIcon({ filled }: { filled: boolean }) {
   );
 }
 
+function PinBadgeIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor" className="text-accent drop-shadow-sm" aria-hidden="true">
+      <path d="M9.5 2.5L13.5 6.5L10 10L9 13L3 7L6 6L9.5 2.5Z" />
+      <path d="M3 13L6 10" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" fill="none" />
+    </svg>
+  );
+}
+
 function StarSmallIcon({ filled }: { filled: boolean }) {
   return (
     <svg width="12" height="12" viewBox="0 0 12 12" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -697,6 +796,15 @@ function PencilIcon() {
   return (
     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M8.5 1.5l2 2L4 10H2v-2l6.5-6.5z" />
+    </svg>
+  );
+}
+
+function CopyIcon() {
+  return (
+    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <rect x="4" y="4" width="7" height="7" rx="1" />
+      <path d="M2 8H1.5A1.5 1.5 0 010 6.5v-5A1.5 1.5 0 011.5 0h5A1.5 1.5 0 018 1.5V2" />
     </svg>
   );
 }
@@ -1059,5 +1167,87 @@ function HighlightListRow({
 
     <ShareDialog open={shareOpen} onOpenChange={setShareOpen} type="h" id={h.id} title={h.text.slice(0, 60)} />
     </>
+  );
+}
+
+// ─── Rename Highlight Dialog ──────────────────────────────────────────────────
+function RenameHighlightDialog({
+  highlight,
+  onClose,
+  onSave,
+}: {
+  highlight: Highlight | null;
+  onClose:   () => void;
+  onSave:    (id: string, newName: string) => void;
+}) {
+  const [value, setValue] = React.useState("");
+
+  React.useEffect(() => {
+    if (highlight) setValue(highlight.source);
+  }, [highlight]);
+
+  function handleSave() {
+    if (highlight && value.trim()) {
+      onSave(highlight.id, value.trim());
+    }
+  }
+
+  return (
+    <Dialog.Root open={!!highlight} onOpenChange={(open) => { if (!open) onClose(); }}>
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0" />
+        <Dialog.Content
+          className={cn(
+            "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2",
+            "w-full max-w-sm rounded-2xl p-6",
+            "bg-[#1a1a1a] border border-white/[0.09]",
+            "shadow-[0_24px_64px_rgba(0,0,0,0.6)]",
+            "data-[state=open]:animate-in data-[state=closed]:animate-out",
+            "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
+            "data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95",
+          )}
+        >
+          <Dialog.Title className="text-sm font-semibold text-white/90 mb-1">
+            Rename highlight
+          </Dialog.Title>
+          <Dialog.Description className="text-xs text-white/40 mb-4">
+            Edit the source name for this highlight.
+          </Dialog.Description>
+          <input
+            autoFocus
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") onClose(); }}
+            placeholder="Source name…"
+            className={cn(
+              "w-full rounded-xl px-3 py-2 text-sm",
+              "bg-white/[0.06] border border-white/[0.10]",
+              "text-white placeholder:text-white/30",
+              "outline-none focus:ring-1 focus:ring-accent/50 focus:border-accent/40",
+              "transition-all duration-150",
+            )}
+          />
+          <div className="flex justify-end gap-2 mt-4">
+            <button
+              onClick={onClose}
+              className="px-3 py-1.5 rounded-lg text-xs text-white/50 hover:text-white/80 hover:bg-white/[0.06] transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleSave}
+              disabled={!value.trim()}
+              className={cn(
+                "px-4 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                "bg-accent/90 text-white hover:bg-accent",
+                "disabled:opacity-40 disabled:cursor-not-allowed",
+              )}
+            >
+              Save
+            </button>
+          </div>
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 }

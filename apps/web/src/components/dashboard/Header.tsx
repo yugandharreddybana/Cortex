@@ -23,6 +23,28 @@ export function DashboardHeader() {
   const setNewHighlightOpen = useDashboardStore((s) => s.setNewHighlightDialogOpen);
   const user                = useAuthStore((s) => s.user);
 
+  const [isOnline, setIsOnline] = React.useState(
+    typeof navigator !== "undefined" ? navigator.onLine : true
+  );
+  React.useEffect(() => {
+    const onOnline  = () => setIsOnline(true);
+    const onOffline = () => setIsOnline(false);
+    window.addEventListener("online",  onOnline);
+    window.addEventListener("offline", onOffline);
+    return () => {
+      window.removeEventListener("online",  onOnline);
+      window.removeEventListener("offline", onOffline);
+    };
+  }, []);
+
+  const activeFolder    = useDashboardStore((s) => s.activeFolder);
+  const folders         = useDashboardStore((s) => s.folders);
+  const setActiveFolder = useDashboardStore((s) => s.setActiveFolder);
+
+  const activeFolderObj = activeFolder
+    ? folders.find((f) => f.id === activeFolder) ?? null
+    : null;
+
   const avatarInitial = user?.fullName
     ? user.fullName[0].toUpperCase()
     : user?.email?.[0]?.toUpperCase() ?? "U";
@@ -44,17 +66,34 @@ export function DashboardHeader() {
             Cortex
           </Link>
           <ChevronRightIcon />
-          <span className="text-xs font-medium text-white/80 truncate">Highlights</span>
+          {activeFolderObj ? (
+            <>
+              <button
+                onClick={() => setActiveFolder(null)}
+                className="text-xs text-white/50 hover:text-white/80 transition-colors"
+              >
+                Highlights
+              </button>
+              <ChevronRightIcon />
+              <span className="text-xs font-medium text-white/80 truncate">
+                {activeFolderObj.emoji} {activeFolderObj.name}
+              </span>
+            </>
+          ) : (
+            <span className="text-xs font-medium text-white/80 truncate">Highlights</span>
+          )}
 
           {/* Online indicator */}
           <span
             className={cn(
               "ml-2 inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-medium transition-all duration-300",
-              "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
+              isOnline
+                ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
+                : "bg-red-500/10 text-red-400 border border-red-500/20",
             )}
           >
-            <span className={cn("w-1.5 h-1.5 rounded-full", "bg-emerald-400")} />
-            Synced
+            <span className={cn("w-1.5 h-1.5 rounded-full", isOnline ? "bg-emerald-400" : "bg-red-400")} />
+            {isOnline ? "Synced" : "Offline"}
           </span>
         </div>
 

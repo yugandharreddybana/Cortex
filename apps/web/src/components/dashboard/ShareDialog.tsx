@@ -63,9 +63,11 @@ function isAIUrl(url?: string | null): boolean {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export function ShareDialog({ open, onOpenChange, type, id, title }: ShareDialogProps) {
-  const [copied, setCopied]     = React.useState(false);
-  const [shareUrl, setShareUrl] = React.useState("");
-  const [creating, setCreating] = React.useState(false);
+  const [copied, setCopied]           = React.useState(false);
+  const [shareUrl, setShareUrl]       = React.useState("");
+  const [creating, setCreating]       = React.useState(false);
+  const [linkGenerated, setLinkGenerated] = React.useState(false);
+  const [isGenerating, setIsGenerating]   = React.useState(false);
   const [exporting, setExporting] = React.useState<"doc" | "excel" | null>(null);
   const [accessOpen, setAccessOpen] = React.useState(false);
 
@@ -92,50 +94,42 @@ export function ShareDialog({ open, onOpenChange, type, id, title }: ShareDialog
     typeof window !== "undefined" ? window.location.origin : "https://cortex.app";
   const shareText = title.length > 80 ? title.slice(0, 80) + "…" : title;
 
-  // Create a real share link via the API when dialog opens (skip for AI highlights)
+    // Reset state on close
   React.useEffect(() => {
     if (!open) {
       setCopied(false);
-      return;
-    }
-
-    // AI highlights cannot be shared publicly — skip link creation entirely
-    if (isAIHighlight) {
+      setLinkGenerated(false);
+      setIsGenerating(false);
       setShareUrl("");
-      setCreating(false);
-      return;
     }
+  }, [open]);
 
-    let cancelled = false;
-    setCreating(true);
-
-    fetch("/api/share", {
-      method:  "POST",
-      headers: { "Content-Type": "application/json" },
-      body:    JSON.stringify({
-        resourceType: type === "f" ? "FOLDER" : "HIGHLIGHT",
-        resourceId:   Number(id),
-      }),
-    })
-      .then((r) => (r.ok ? r.json() : null) as Promise<{ hash: string } | null>)
-      .then((data) => {
-        if (!cancelled) {
-          if (data?.hash) {
-            setShareUrl(`${origin}/share/${data.hash}`);
-          } else {
-            setShareUrl(`${origin}/share/${type}/${id}`);
-          }
-        }
-      })
-      .catch(() => {
-        if (!cancelled) setShareUrl(`${origin}/share/${type}/${id}`);
-      })
-      .finally(() => {
-        if (!cancelled) setCreating(false);
+  async function handleGenerateLink() {
+    if (isAIHighlight) return;
+    setIsGenerating(true);
+    try {
+      const res = await fetch("/api/share", {
+        method:  "POST",
+        headers: { "Content-Type": "application/json" },
+        body:    JSON.stringify({
+          resourceType: type === "f" ? "FOLDER" : "HIGHLIGHT",
+          resourceId:   Number(id),
+        }),
       });
-
-    return () => { cancelled = true; };
-  }, [open, type, id, origin, isAIHighlight]);
+      const data: { hash: string } | null = res.ok ? await res.json() : null;
+      if (data?.hash) {
+        setShareUrl(`${origin}/share/${data.hash}`);
+      } else {
+        setShareUrl(`${origin}/share/${type}/${id}`);
+      }
+      setLinkGenerated(true);
+    } catch {
+      setShareUrl(`${origin}/share/${type}/${id}`);
+      setLinkGenerated(true);
+    } finally {
+      setIsGenerating(false);
+    }
+  }
 
   async function handleExport(format: "doc" | "excel") {
     setExporting(format);
@@ -302,11 +296,25 @@ export function ShareDialog({ open, onOpenChange, type, id, title }: ShareDialog
                   This is an AI-generated highlight from a private chat session and cannot be shared publicly.
                 </p>
               </div>
+            ) : !linkGenerated && !webSourceUrl ? (
+              <div className="mt-4">
+                <button
+                  onClick={handleGenerateLink}
+                  disabled={isGenerating}
+                  className={cn(
+                    "w-full h-10 rounded-xl text-sm font-medium",
+                    "bg-accent hover:bg-accent/80 text-white",
+                    "transition-all duration-200 disabled:opacity-50",
+                  )}
+                >
+                  {isGenerating ? "Generating…" : "Generate Public Link"}
+                </button>
+              </div>
             ) : (
               <div className="flex items-center gap-2 p-1 pl-3 bg-black/50 border border-white/10 rounded-xl mt-4">
                 <input
                   readOnly
-                  value={creating ? "Generating link…" : (webSourceUrl ?? shareUrl)}
+                  value={webSourceUrl ?? shareUrl}
                   className={cn(
                     "flex-1 min-w-0 bg-transparent text-sm text-white/60",
                     "outline-none truncate select-all",
@@ -315,18 +323,15 @@ export function ShareDialog({ open, onOpenChange, type, id, title }: ShareDialog
                 />
                 <button
                   onClick={handleCopy}
-                  disabled={creating}
                   className={cn(
                     "shrink-0 rounded-lg px-4 py-2 text-sm font-medium",
                     "transition-all duration-200",
-                    creating
-                      ? "bg-white/[0.06] text-white/40 cursor-not-allowed"
-                      : copied
-                        ? "bg-emerald-500/20 text-emerald-400"
-                        : "bg-accent text-white hover:bg-accent/80",
+                    copied
+                      ? "bg-emerald-500/20 text-emerald-400"
+                      : "bg-accent text-white hover:bg-accent/80",
                   )}
                 >
-                  {creating ? "…" : copied ? "Copied!" : "Copy"}
+                  {copied ? "Copied!" : "Copy"}
                 </button>
               </div>
             )}
