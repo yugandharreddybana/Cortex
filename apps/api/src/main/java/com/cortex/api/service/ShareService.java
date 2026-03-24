@@ -276,9 +276,14 @@ public class ShareService {
         Folder savedCopy = folderRepo.save(copy);
 
         // Copy highlights in this folder
-        highlightRepo.findByUserIdOrderByCreatedAtDesc(ownerId).stream()
+        List<Highlight> highlightsToClone = highlightRepo.findByUserIdOrderByCreatedAtDesc(ownerId).stream()
                 .filter(h -> src.getId().equals(h.getFolderId()))
-                .forEach(h -> cloneHighlight(h, receiver, savedCopy.getId(), savedCopy.getName()));
+                .map(h -> prepareHighlightClone(h, receiver, savedCopy.getId(), savedCopy.getName()))
+                .toList();
+
+        if (!highlightsToClone.isEmpty()) {
+            highlightRepo.saveAll(highlightsToClone);
+        }
 
         // Recurse sub-folders
         folderRepo.findByUserId(ownerId).stream()
@@ -286,8 +291,8 @@ public class ShareService {
                 .forEach(f -> deepCopyFolder(f, savedCopy.getId(), receiver, ownerId));
     }
 
-    /** Clone a single highlight for a different user */
-    private void cloneHighlight(Highlight src, User receiver, Long folderId, String folderName) {
+    /** Prepare a single highlight for cloning for a different user */
+    private Highlight prepareHighlightClone(Highlight src, User receiver, Long folderId, String folderName) {
         Highlight copy = new Highlight();
         copy.setUser(receiver);
         copy.setText(src.getText());
@@ -315,6 +320,6 @@ public class ShareService {
         copy.setAI(src.isAI());
         copy.setChatName(src.getChatName());
         copy.setChatUrl(src.getChatUrl());
-        highlightRepo.save(copy);
+        return copy;
     }
 }
