@@ -228,6 +228,7 @@ public class NotificationEngineIntegrationTest {
         u.setPasswordHash("hashed-password");
         u.setEmailHash(email.hashCode() + "");
         u.setEncryptedEmail(email);
+        u.setReferralCode("ref-" + email.hashCode());
         return userRepo.save(u);
     }
 

@@ -54,7 +54,7 @@ class AuthControllerTest {
     @Test
     @DisplayName("POST /api/v1/auth/signup - Success")
     void testSignupSuccess() throws Exception {
-        SignupRequest request = new SignupRequest("test@example.com", "password123", "Test User", "starter");
+        SignupRequest request = new SignupRequest("test@example.com", "password123", "Test User", "starter", null);
         UserResponseDTO userResponse = new UserResponseDTO(1L, "test@example.com", "Test User", "", "starter", Instant.now());
         AuthResponse response = new AuthResponse("token123", userResponse);
 
@@ -72,7 +72,7 @@ class AuthControllerTest {
     @Test
     @DisplayName("POST /api/v1/auth/signup - Validation Failure")
     void testSignupValidationFailure() throws Exception {
-        SignupRequest request = new SignupRequest("invalid-email", "pass", "", "starter");
+        SignupRequest request = new SignupRequest("invalid-email", "pass", "", "starter", null);
 
         mockMvc.perform(post("/api/v1/auth/signup")
                 .contentType(MediaType.APPLICATION_JSON)

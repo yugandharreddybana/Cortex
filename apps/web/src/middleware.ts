@@ -18,29 +18,49 @@ const SESSION_COOKIE = "cortex_session";
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  const refCode = request.nextUrl.searchParams.get("ref");
+
+  let response = NextResponse.next();
+
+  if (refCode) {
+    response.cookies.set("cortex_referral_code", refCode, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30, // 30 days
+      httpOnly: false, // need to read it in signup api or client
+    });
+  }
 
   const isProtected = PROTECTED_PREFIXES.some(
     (prefix) => pathname === prefix || pathname.startsWith(prefix + "/"),
   );
 
-  if (!isProtected) return NextResponse.next();
+  if (!isProtected) return response;
 
   const sessionCookie = request.cookies.get(SESSION_COOKIE);
 
   if (!sessionCookie?.value) {
-    return redirectToLogin(request, pathname);
+    return redirectToLogin(request, pathname, refCode);
   }
 
-  return NextResponse.next();
+  return response;
 }
 
-function redirectToLogin(request: NextRequest, pathname: string): NextResponse {
+function redirectToLogin(request: NextRequest, pathname: string, refCode: string | null): NextResponse {
   const loginUrl = new URL("/login", request.url);
   const search   = request.nextUrl.search;
   loginUrl.searchParams.set("returnTo", pathname + search);
-  return NextResponse.redirect(loginUrl);
+
+  const response = NextResponse.redirect(loginUrl);
+  if (refCode) {
+    response.cookies.set("cortex_referral_code", refCode, {
+      path: "/",
+      maxAge: 60 * 60 * 24 * 30,
+      httpOnly: false,
+    });
+  }
+  return response;
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/welcome/:path*"],
+  matcher: ["/dashboard/:path*", "/welcome/:path*", "/", "/signup"],
 };
