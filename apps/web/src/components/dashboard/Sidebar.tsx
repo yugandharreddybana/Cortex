@@ -43,6 +43,7 @@ const NAV_ITEMS = [
   { href: "/dashboard",           label: "All Highlights", icon: <GridIcon /> },
   { href: "/dashboard/favorites", label: "Favorites",      icon: <StarIcon /> },
   { href: "/dashboard/archive",   label: "Archive",        icon: <ArchiveIcon /> },
+  { href: "/dashboard/trash",     label: "Trash",          icon: <TrashNavIcon /> },
   { href: "/dashboard/temporal-replay", label: "Temporal Replay", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
 ] as const;
 
@@ -71,6 +72,7 @@ export function Sidebar({ onCmdK }: SidebarProps) {
   const deleteSmartCollection = useDashboardStore((s) => s.deleteSmartCollection);
   const activeTagFilters   = useDashboardStore((s) => s.activeTagFilters);
   const toggleTagFilter    = useDashboardStore((s) => s.toggleTagFilter);
+  const setTagFilterExclusive = useDashboardStore((s) => s.setTagFilterExclusive);
 
   const pinnedFolders = React.useMemo(() => {
     const seen = new Set<string>();
@@ -374,11 +376,7 @@ export function Sidebar({ onCmdK }: SidebarProps) {
                   <div key={sc.id} className="flex items-center group/sc">
                     <button
                       onClick={() => {
-                        // Toggle all tags for this collection
-                        const store = useDashboardStore.getState();
-                        // Clear existing, then set these
-                        store.activeTagFilters.forEach((t) => store.toggleTagFilter(t));
-                        sc.tagIds.forEach((t) => store.toggleTagFilter(t));
+                        setTagFilterExclusive(sc.tagIds);
                       }}
                       className={cn(
                         "flex-1 flex items-center gap-2 px-3 py-1.5 rounded-xl",
@@ -461,6 +459,7 @@ export function Sidebar({ onCmdK }: SidebarProps) {
             })} */}
 
             {tags.map((tag) => {
+  const resolved = resolveTagColor(tag.color);
   const isActive = activeTagFilters.includes(tag.id);
   return (
     <div key={tag.id} className="group/tag relative">
@@ -468,9 +467,12 @@ export function Sidebar({ onCmdK }: SidebarProps) {
         onClick={() => toggleTagFilter(tag.id)}
         className={cn(
           "inline-flex items-center gap-1 border rounded-md px-2 py-1 text-xs font-medium cursor-pointer transition-all duration-150",
+          resolved
+            ? `${resolved.bg} ${resolved.text} border ${resolved.border}`
+            : undefined,
           isActive && "ring-1 ring-accent/50 shadow-[0_0_8px_rgba(108,99,255,0.2)]",
         )}
-        style={{ background: tag.color, color: '#fff', borderColor: tag.color + '80' }}
+        style={resolved ? {} : { background: `${tag.color}20`, color: tag.color, borderColor: `${tag.color}40` }}
       >
         {tag.name}
         <button
@@ -867,7 +869,13 @@ function FolderDropdown({
               <DropdownItem onSelect={onShare}><ShareIcon /> Share</DropdownItem>
             </>
           )}
-          {/* Duplicate — only for shared (non-owned) folders */}
+          {/* Duplicate — for owner folders and shared folders */}
+          {isOwner && (
+            <>
+              <DropdownMenu.Separator className="my-1 h-px bg-white/[0.07]" />
+              <DropdownItem onSelect={onDuplicate}><CopyIcon /> Duplicate</DropdownItem>
+            </>
+          )}
           {isSharedFolder && (
             <>
               <DropdownMenu.Separator className="my-1 h-px bg-white/[0.07]" />
@@ -998,6 +1006,11 @@ function UserProfileDropdown() {
 }
 
 // ─── Tag color map ────────────────────────────────────────────────────────────
+function resolveTagColor(color: string): { bg: string; text: string; border: string } | null {
+  if (color?.startsWith("#")) return null;
+  return TAG_COLOR_MAP[color] ?? TAG_COLOR_MAP.blue;
+}
+
 const TAG_COLOR_MAP: Record<string, { bg: string; text: string; border: string }> = {
   blue:    { bg: "bg-blue-500/10",    text: "text-blue-400",    border: "border-blue-500/20" },
   violet:  { bg: "bg-violet-500/10",  text: "text-violet-400",  border: "border-violet-500/20" },
@@ -1188,5 +1201,16 @@ function FolderTreeMenu({
         );
       })}
     </>
+  );
+}
+
+function TrashNavIcon() {
+  return (
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <polyline points="3 6 5 6 21 6" />
+      <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
+      <path d="M10 11v6M14 11v6" />
+      <path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" />
+    </svg>
   );
 }
