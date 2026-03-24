@@ -1210,10 +1210,10 @@ async function syncHighlightToServer(highlight: Highlight, base = DASHBOARD_DEV)
     text:       highlight.text,
     source:     highlight.title,
     url:        highlight.url,
-    topic:      (highlight as Record<string, unknown>).isAI ? "AI Chat" : "Web",
-    topicColor: (highlight as Record<string, unknown>).isAI
-      ? "bg-purple-500/20 text-purple-300"
-      : "bg-blue-500/20 text-blue-300",
+    topic:      resourceType === "YOUTUBE" || resourceType === "VIDEO" ? "YouTube" : ((highlight as Record<string, unknown>).isAI ? "AI Chat" : "Web"),
+    topicColor: resourceType === "YOUTUBE" || resourceType === "VIDEO"
+      ? "bg-red-500/20 text-red-300"
+      : ((highlight as Record<string, unknown>).isAI ? "bg-purple-500/20 text-purple-300" : "bg-blue-500/20 text-blue-300"),
     savedAt:    highlight.date,
     tags:       highlight.tags,
     folderId:   folderId ?? null,

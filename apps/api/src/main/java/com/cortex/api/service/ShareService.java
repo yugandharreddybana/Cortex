@@ -119,7 +119,8 @@ public class ShareService {
         if (link.getResourceType() == SharedLink.ResourceType.HIGHLIGHT) {
             Highlight src = highlightRepo.findById(link.getResourceId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
-            cloneHighlight(src, receiver, null, null);
+            Highlight copy = prepareHighlightClone(src, receiver, null, null);
+            highlightRepo.save(copy);
         } else {
             Long ownerId = link.getCreatedBy().getId();
             Folder root = folderRepo.findByIdAndUserId(link.getResourceId(), ownerId)

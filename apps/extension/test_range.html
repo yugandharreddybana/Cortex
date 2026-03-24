@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<body>
+  <p id="target">Cluster in the room</p>
+  <script>
+    const p = document.getElementById("target");
+    const textNode = p.firstChild;
+    const range = document.createRange();
+    range.setStart(textNode, 1);
+    range.setEnd(textNode, 19);
+    
+    try {
+      const mark = document.createElement("mark");
+      range.surroundContents(mark);
+      document.body.innerHTML += "<br>SUCCESS surroundContents: " + p.innerHTML;
+    } catch (e) {
+      document.body.innerHTML += "<br>ERROR surroundContents: " + e.message;
+    }
+  </script>
+</body>
+</html>
