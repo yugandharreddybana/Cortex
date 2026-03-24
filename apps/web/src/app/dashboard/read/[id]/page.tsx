@@ -70,24 +70,7 @@ export default function ReadingModePage() {
   const router  = useRouter();
   const id      = params.id as string;
 
-  const highlight      = useDashboardStore((s) => s.highlights.find((h) => h.id === id));
-  const tags           = useDashboardStore((s) => s.tags);
-  const toggleFavorite = useDashboardStore((s) => s.toggleFavorite);
-  const updateHighlight = useDashboardStore((s) => s.updateHighlight);
-
-  const [fontIdx,  setFontIdx]  = React.useState(0);
-  const [sizeIdx,  setSizeIdx]  = React.useState(1);
-  const [themeIdx, setThemeIdx] = React.useState(0);
-  const [noteText, setNoteText] = React.useState("");
-
-  // Sync note text when highlight loads
-  React.useEffect(() => {
-    if (highlight) setNoteText(highlight.note ?? "");
-  }, [highlight?.id]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const scrollRef = React.useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ container: scrollRef });
-  const scaleX = useSpring(scrollYProgress, { stiffness: 200, damping: 30 });
+  const highlight = useDashboardStore((s) => s.highlights.find((h) => h.id === id));
 
   if (!highlight) {
     return (
@@ -104,6 +87,29 @@ export default function ReadingModePage() {
       </div>
     );
   }
+
+  return <ReadingModeContent highlight={highlight} />;
+}
+
+function ReadingModeContent({ highlight }: { highlight: any }) {
+  const router  = useRouter();
+  const tags           = useDashboardStore((s) => s.tags);
+  const toggleFavorite = useDashboardStore((s) => s.toggleFavorite);
+  const updateHighlight = useDashboardStore((s) => s.updateHighlight);
+
+  const [fontIdx,  setFontIdx]  = React.useState(0);
+  const [sizeIdx,  setSizeIdx]  = React.useState(1);
+  const [themeIdx, setThemeIdx] = React.useState(0);
+  const [noteText, setNoteText] = React.useState(highlight.note ?? "");
+
+  // Sync note text when highlight loads
+  React.useEffect(() => {
+    setNoteText(highlight.note ?? "");
+  }, [highlight.id, highlight.note]);
+
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ container: scrollRef });
+  const scaleX = useSpring(scrollYProgress, { stiffness: 200, damping: 30 });
 
   const theme = THEME_OPTIONS[themeIdx];
   const font  = FONT_OPTIONS[fontIdx];
@@ -247,7 +253,7 @@ export default function ReadingModePage() {
               <h1 className={cn("text-lg font-semibold", theme.text)}>{highlight.source}</h1>
               {/* Favorite toggle */}
               <button
-                onClick={() => toggleFavorite(id)}
+                onClick={() => toggleFavorite(highlight.id)}
                 className="shrink-0 p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors"
                 aria-label={highlight.isFavorite ? "Remove from favorites" : "Add to favorites"}
               >
@@ -354,7 +360,7 @@ export default function ReadingModePage() {
               onChange={(e) => setNoteText(e.target.value)}
               onBlur={() => {
                 if (noteText !== (highlight.note ?? "")) {
-                  updateHighlight(id, { note: noteText });
+                  updateHighlight(highlight.id, { note: noteText });
                 }
               }}
               placeholder="Add a note…"
