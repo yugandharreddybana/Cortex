@@ -9,13 +9,12 @@ import { toast } from "sonner";
 import { cn } from "@cortex/ui";
 import { Badge } from "@cortex/ui";
 import { useHotkeys } from "@/hooks/useHotkeys";
-import { HighlightSheet } from "./HighlightSheet";
 import { BulkActionBar } from "./BulkActionBar";
 import { EmptyState } from "./EmptyState";
 import { ShareDialog, ShareIcon } from "./ShareDialog";
 import { HighlightAIPanel } from "./HighlightAIPanel";
 import { useDashboardStore } from "@/store/dashboard";
-import type { Highlight, Folder } from "@/store/dashboard";
+import type { Highlight, Folder, Tag } from "@/store/dashboard";
 import { DevilsAdvocate } from "./DevilsAdvocate";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -39,7 +38,9 @@ function extractYouTubeId(url: string): string | null {
 
 // ─── Component ────────────────────────────────────────────────────────────────
 export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => boolean } = {}) {
+  const router                = useRouter();
   const allHighlights         = useDashboardStore((s) => s.highlights);
+  const tags                  = useDashboardStore((s) => s.tags);
   const viewMode              = useDashboardStore((s) => s.viewMode);
   const selectedHighlightIds  = useDashboardStore((s) => s.selectedHighlightIds);
   const toggleHighlightSelect = useDashboardStore((s) => s.toggleHighlightSelect);
@@ -109,23 +110,18 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
   }, [allHighlights, filterFn, searchQuery, activeTagFilters, sortOrder]);
 
   const [activeHighlight, setActiveHighlight] = React.useState<Highlight | null>(null);
-  const [sheetOpen, setSheetOpen] = React.useState(false);
   const [renameTarget, setRenameTarget] = React.useState<Highlight | null>(null);
 
   const handleDelete = React.useCallback((id: string) => {
     deleteHighlight(id);
-    toast("Highlight moved to trash", {
+    toast.success("Moved to trash", {
+      description: "The highlight has been relocated to the trash for 30 days.",
       action: { label: "Undo", onClick: () => restoreHighlight(id) },
       duration: 5000,
     });
   }, [deleteHighlight, restoreHighlight]);
 
   useHotkeys(handleDelete);
-
-  function openSheet(h: Highlight) {
-    setActiveHighlight(h);
-    setSheetOpen(true);
-  }
 
   if (isLoading) return <SkeletonGrid />;
 
@@ -168,8 +164,9 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
                 isSelected={selectedHighlightIds.includes(h.id)}
                 isFocused={i === focusedIdx}
                 folders={folders}
+                tags={tags}
                 onSelect={() => toggleHighlightSelect(h.id)}
-                onOpen={() => openSheet(h)}
+                onOpen={() => router.push(`/dashboard/read/${h.id}`)}
                 onDelete={handleDelete}
                 onToggleFavorite={() => toggleFavorite(h.id)}
                 onToggleArchive={() => toggleArchive(h.id)}
@@ -179,9 +176,13 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
                   // Allow moving to root (no folderId)
                   if (!folderId || folders.some((f) => f.id === folderId)) {
                     moveHighlight(h.id, folderId, folderName);
-                    toast("Highlight moved", { description: `Moved to ${folderName}` });
+                    toast.success("Highlight moved", { 
+                      description: `Relocated to the "${folderName}" folder successfully.` 
+                    });
                   } else {
-                    toast("Cannot move highlight", { description: "Target folder does not exist." });
+                    toast.error("Move failed", { 
+                      description: "The target folder could not be found." 
+                    });
                   }
                 }}
               />
@@ -204,15 +205,18 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
                 isSelected={selectedHighlightIds.includes(h.id)}
                 isFocused={i === focusedIdx}
                 folders={folders}
+                tags={tags}
                 onSelect={() => toggleHighlightSelect(h.id)}
-                onOpen={() => openSheet(h)}
+                onOpen={() => router.push(`/dashboard/read/${h.id}`)}
                 onDelete={handleDelete}
                 onToggleFavorite={() => toggleFavorite(h.id)}
                 onToggleArchive={() => toggleArchive(h.id)}
                 onTogglePin={() => togglePinHighlight(h.id)}
                 onMove={(folderId, folderName) => {
                   moveHighlight(h.id, folderId, folderName);
-                  toast("Highlight moved", { description: `Moved to ${folderName}` });
+                  toast.success("Highlight moved", { 
+                    description: `Relocated to the "${folderName}" folder successfully.` 
+                  });
                 }}
               />
             ))}
@@ -221,21 +225,15 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
       </AnimatePresence>
       )}
 
-
-
-      <HighlightSheet
-        highlight={activeHighlight}
-        open={sheetOpen}
-        onOpenChange={setSheetOpen}
-      />
-
       <RenameHighlightDialog
         highlight={renameTarget}
         onClose={() => setRenameTarget(null)}
         onSave={(id, newName) => {
           updateHighlight(id, { source: newName });
           setRenameTarget(null);
-          toast("Highlight renamed");
+          toast.success("Highlight renamed", {
+            description: `The source name has been updated to "${newName}".`,
+          });
         }}
       />
 
@@ -263,6 +261,7 @@ function HighlightCard({
   isSelected,
   isFocused,
   folders,
+  tags,
   onSelect,
   onOpen,
   onDelete,
@@ -277,6 +276,7 @@ function HighlightCard({
   isSelected:       boolean;
   isFocused:        boolean;
   folders:          Folder[];
+  tags:             Tag[];
   onSelect:         () => void;
   onOpen:           () => void;
   onDelete:         (id: string) => void;
@@ -486,18 +486,6 @@ function HighlightCard({
                     "hover:bg-white/[0.06] cursor-pointer",
                     "outline-none transition-colors duration-100",
                   )}
-                  onSelect={() => router.push(`/dashboard/read/${h.id}`)}
-                >
-                  <ReadIcon />
-                  Read
-                </DropdownMenu.Item>
-                <DropdownMenu.Item
-                  className={cn(
-                    "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
-                    "text-[12px] text-white/70 hover:text-white",
-                    "hover:bg-white/[0.06] cursor-pointer",
-                    "outline-none transition-colors duration-100",
-                  )}
                   onSelect={() => onRename()}
                 >
                   <PencilIcon />
@@ -647,6 +635,29 @@ function HighlightCard({
         highlight={h}
         onResultSaved={(patch) => updateHighlight(h.id, patch)}
       />
+
+      {/* Tags */}
+      {h.tags && h.tags.length > 0 && (
+        <div className="flex flex-wrap gap-1.5 mt-3">
+          {h.tags.map((tagId) => {
+            const tag = tags.find((t) => t.id === tagId);
+            if (!tag) return null;
+            return (
+              <span
+                key={tag.id}
+                className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
+                style={{
+                  backgroundColor: tag.color.startsWith("#") ? `${tag.color}15` : `color-mix(in srgb, ${tag.color} 15%, transparent)`,
+                  color: tag.color,
+                  border: `1px solid ${tag.color.startsWith("#") ? `${tag.color}30` : `color-mix(in srgb, ${tag.color} 30%, transparent)`}`,
+                }}
+              >
+                {tag.name}
+              </span>
+            );
+          })}
+        </div>
+      )}
 
       {/* Source + folder metadata */}
       <div className="flex items-center gap-2 mt-3 flex-wrap">
@@ -953,6 +964,7 @@ function HighlightListRow({
   isSelected,
   isFocused,
   folders,
+  tags,
   onSelect,
   onOpen,
   onDelete,
@@ -966,6 +978,7 @@ function HighlightListRow({
   isSelected:       boolean;
   isFocused:        boolean;
   folders:          Folder[];
+  tags:             Tag[];
   onSelect:         () => void;
   onOpen:           () => void;
   onDelete:         (id: string) => void;
@@ -1021,6 +1034,29 @@ function HighlightListRow({
       <Badge className={cn("text-[10px] font-medium border-0 shrink-0", h.topicColor)}>
         {h.topic}
       </Badge>
+
+      {/* Tags */}
+      {h.tags && h.tags.length > 0 && (
+        <div className="flex items-center gap-1.5 shrink-0">
+          {h.tags.map(tagId => {
+            const tag = tags.find(t => t.id === tagId);
+            if (!tag) return null;
+            return (
+              <span
+                  key={tag.id}
+                  className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
+                  style={{
+                    backgroundColor: tag.color.startsWith("#") ? `${tag.color}15` : `color-mix(in srgb, ${tag.color} 15%, transparent)`,
+                    color: tag.color,
+                    border: `1px solid ${tag.color.startsWith("#") ? `${tag.color}30` : `color-mix(in srgb, ${tag.color} 30%, transparent)`}`,
+                  }}
+                >
+                {tag.name}
+              </span>
+            );
+          })}
+        </div>
+      )}
 
       {/* Text (single line, truncated) */}
       <p className="flex-1 min-w-0 text-sm text-white/70 truncate">

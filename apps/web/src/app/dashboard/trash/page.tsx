@@ -8,7 +8,7 @@ import { useDashboardStore } from "@/store/dashboard";
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
 
-function TrashPageIcon() {
+function TrashIcon() {
   return (
     <svg width="28" height="28" viewBox="0 0 28 28" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <polyline points="4 7 6 7 24 7" />
@@ -39,7 +39,7 @@ function DeletePermanentlyIcon() {
 // ─── Page Component ───────────────────────────────────────────────────────────
 
 export default function TrashPage() {
-  const trash           = useDashboardStore((s) => s.trash);
+  const { trash, isLoading } = useDashboardStore();
   const restoreHighlight = useDashboardStore((s) => s.restoreHighlight);
   const [deletingId, setDeletingId] = React.useState<string | null>(null);
   const [emptyingTrash, setEmptyingTrash] = React.useState(false);
@@ -49,21 +49,31 @@ export default function TrashPage() {
     useDashboardStore.setState((s) => ({
       trash: s.trash.filter((h) => h.id !== id),
     }));
-    toast("Permanently deleted");
+    toast.success("Permanently deleted", {
+      description: "The selected highlight has been purged from your storage.",
+    });
   }, []);
 
-  const emptyTrash = React.useCallback(() => {
+  const _emptyTrash = React.useCallback(() => {
     setEmptyingTrash(true);
     useDashboardStore.setState({ trash: [] });
-    toast("Trash emptied");
     setEmptyingTrash(false);
   }, []);
+
+  const handleEmptyTrash = React.useCallback(() => {
+    _emptyTrash();
+    toast.success("Trash emptied", {
+      description: "All items have been permanently removed from your trash.",
+    });
+  }, [_emptyTrash]);
 
   const handleRestore = React.useCallback(async (id: string) => {
     setDeletingId(id);
     await restoreHighlight(id);
     setDeletingId(null);
-    toast.success("Highlight restored");
+    toast.success("Highlight restored", {
+      description: "The selected item has been moved back to your dashboard.",
+    });
   }, [restoreHighlight]);
 
   function truncate(text: string, max = 120): string {
@@ -77,7 +87,7 @@ export default function TrashPage() {
         <div>
           <h1 className="text-xl font-semibold tracking-tight text-white/90 flex items-center gap-3">
             <span className="text-white/40">
-              <TrashPageIcon />
+              <TrashIcon />
             </span>
             Trash
           </h1>
@@ -90,24 +100,30 @@ export default function TrashPage() {
 
         {trash.length > 0 && (
           <button
-            onClick={emptyTrash}
-            disabled={emptyingTrash}
+            onClick={handleEmptyTrash}
             className={cn(
-              "h-9 px-4 rounded-xl text-sm font-medium",
-              "bg-red-500/10 text-red-400 border border-red-500/20",
-              "hover:bg-red-500/20 transition-colors disabled:opacity-50",
+              "h-8 px-3 rounded-lg flex items-center gap-1.5",
+              "text-xs font-medium bg-red-500/10 text-red-400",
+              "hover:bg-red-500/20 transition-all duration-150 active:scale-95",
             )}
           >
+            <DeletePermanentlyIcon />
             Empty Trash
           </button>
         )}
       </div>
 
-      {/* Empty state */}
-      {trash.length === 0 ? (
+      {/* Content */}
+      {isLoading ? (
+        <div className="space-y-4">
+          {[1,2,3].map(i => (
+            <div key={i} className="h-20 w-full animate-pulse bg-white/[0.03] border border-white/[0.06] rounded-xl" />
+          ))}
+        </div>
+      ) : trash.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24 gap-4">
           <span className="text-white/10">
-            <TrashPageIcon />
+            <TrashIcon />
           </span>
           <p className="text-sm font-medium text-white/30">Trash is empty</p>
           <p className="text-xs text-white/20 text-center max-w-xs">

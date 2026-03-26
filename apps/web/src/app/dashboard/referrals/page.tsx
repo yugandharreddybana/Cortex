@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { CopyIcon, CheckIcon, GiftIcon, UsersIcon, AwardIcon } from "lucide-react";
+import { CopyIcon, CheckIcon, GiftIcon, UsersIcon, AwardIcon, Loader2 } from "lucide-react";
 
 export default function ReferralsPage() {
   const [stats, setStats] = useState<{ referralCode: string; totalReferred: number; totalAccepted: number } | null>(null);
@@ -38,8 +38,8 @@ export default function ReferralsPage() {
 
   if (loading) {
     return (
-      <div className="flex-1 p-8 text-white/50 text-center animate-pulse mt-20">
-        Loading referral data...
+      <div className="flex-1 flex items-center justify-center min-h-[40vh]">
+        <Loader2 className="w-8 h-8 animate-spin text-white/20" />
       </div>
     );
   }

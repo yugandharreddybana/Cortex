@@ -12,6 +12,7 @@ export default function DashboardPage() {
   const setSearchQuery       = useDashboardStore((s) => s.setSearchQuery);
   const highlights           = useDashboardStore((s) => s.highlights);
   const selectedIds          = useDashboardStore((s) => s.selectedHighlightIds);
+  const isLoading            = useDashboardStore((s) => s.isLoading);
   const selectAll            = useDashboardStore((s) => s.selectAllHighlights);
   const clearSelection       = useDashboardStore((s) => s.clearHighlightSelection);
   const activeCount          = highlights.filter((h) => !h.isArchived).length;
@@ -46,7 +47,7 @@ export default function DashboardPage() {
             Highlights
           </h1>
           <p className="mt-1 text-sm text-white/40">
-            {activeCount} saved &middot; last updated 2 hours ago
+            {isLoading ? "Loading your brain…" : `${activeCount} saved · last updated 2 hours ago`}
           </p>
         </div>
 
@@ -82,7 +83,7 @@ export default function DashboardPage() {
         </div>
 
         {/* Select all bar */}
-        {visibleIds.length > 0 && (
+        {!isLoading && visibleIds.length > 0 && (
           <div className="mb-4 flex items-center gap-3">
             <div
               onClick={handleSelectAll}
@@ -122,7 +123,7 @@ export default function DashboardPage() {
         )}
 
         {/* ── Pinned Highlights section ── */}
-        {pinnedCount > 0 && (
+        {!isLoading && pinnedCount > 0 && (
           <section className="mb-10">
             <motion.div
               initial={{ opacity: 0, y: 8 }}

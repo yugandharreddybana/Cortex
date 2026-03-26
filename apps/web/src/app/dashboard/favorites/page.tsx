@@ -13,7 +13,7 @@ function StarIcon() {
 }
 
 export default function FavoritesPage() {
-  const highlights = useDashboardStore((s) => s.highlights);
+  const { highlights, isLoading } = useDashboardStore();
   const favorites = highlights.filter((h) => h.isFavorite);
 
   return (
@@ -27,7 +27,7 @@ export default function FavoritesPage() {
         </p>
       </div>
 
-      {favorites.length === 0 ? (
+      {!isLoading && favorites.length === 0 ? (
         <EmptyState
           icon={<StarIcon />}
           title="No favorites yet"

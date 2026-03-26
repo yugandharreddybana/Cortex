@@ -32,17 +32,20 @@ public class CommentService {
     private final HighlightRepository highlightRepo;
     private final UserRepository userRepo;
     private final EmailService emailService;
+    private final SecurityService securityService;
 
     public CommentService(
             CommentRepository commentRepo,
             HighlightRepository highlightRepo,
             UserRepository userRepo,
-            EmailService emailService
+            EmailService emailService,
+            SecurityService securityService
     ) {
         this.commentRepo = commentRepo;
         this.highlightRepo = highlightRepo;
         this.userRepo = userRepo;
         this.emailService = emailService;
+        this.securityService = securityService;
     }
 
     /**
@@ -70,12 +73,12 @@ public class CommentService {
         Long highlightOwnerId = highlight.getUser().getId();
         
         if (!highlightOwnerId.equals(authorId)) {
-            // For now, only the owner or someone with explicit EDITOR role can comment
-            log.warn("[RBAC] User {} attempted comment on highlight {} they don't own", 
-                    authorId, highlightId);
-            // In production, check the permissions table here
-            // For MVP: allow same-user comments only
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You cannot comment on this highlight");
+            // Check if user has at least COMMENTER access
+            if (!securityService.hasHighlightAccess(highlightId, "COMMENTER")) {
+                log.warn("[RBAC] User {} attempted comment on highlight {} they don't have access to", 
+                        authorId, highlightId);
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You must have commenter or editor access to add comments to this highlight.");
+            }
         }
 
         // 4. Create comment
@@ -116,7 +119,27 @@ public class CommentService {
     }
 
     /**
-     * Delete a comment (owner only).
+     * Update an existing comment.
+     * Only the author can update their comment.
+     */
+    @Transactional
+    public Comment updateComment(Long commentId, Long requesterId, String newText) {
+        Comment comment = commentRepo.findById(commentId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Comment not found"));
+
+        if (!comment.getAuthor().getId().equals(requesterId)) {
+            log.warn("[RBAC] User {} attempted unauthorized comment update on comment {}", requesterId, commentId);
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You can only edit your own comments");
+        }
+
+        comment.setText(newText);
+        Comment saved = commentRepo.save(comment);
+        log.info("[Comment] Updated comment {} by author {}", commentId, requesterId);
+        return saved;
+    }
+
+    /**
+     * Delete a comment (author or highlight owner only).
      */
     @Transactional
     public void deleteComment(Long commentId, Long requesterId) {

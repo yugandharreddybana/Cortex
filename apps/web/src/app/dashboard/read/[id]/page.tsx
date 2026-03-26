@@ -4,8 +4,24 @@ import * as React from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion, useScroll, useSpring } from "framer-motion";
 import * as Popover from "@radix-ui/react-popover";
+import * as Dialog from "@radix-ui/react-dialog";
+import { toast } from "sonner";
 import { cn } from "@cortex/ui";
 import { useDashboardStore } from "@/store/dashboard";
+import { useAuthStore } from "@/store/authStore";
+import { FolderCreateDialog } from "@/components/dashboard/FolderCreateDialog";
+import { NewTagDialog } from "@/components/dashboard/NewTagDialog";
+import { Loader2 } from "lucide-react";
+
+export interface CommentType {
+  id: number;
+  highlightId: number;
+  authorId: number;
+  authorEmail: string;
+  authorFullName: string | null;
+  text: string;
+  createdAt: string;
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -41,7 +57,7 @@ function formatRelativeDate(value: string | undefined): string {
   if (mins  < 60) return `${mins}m ago`;
   if (hours < 24) return `${hours}h ago`;
   if (days  < 7)  return `${days}d ago`;
-  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -64,6 +80,40 @@ const THEME_OPTIONS = [
   { label: "Sepia", bg: "bg-[#1a1712]", text: "text-[#d4c5a0]" },
   { label: "Light", bg: "bg-[#fafaf9]", text: "text-[#1a1a1a]" },
 ];
+
+const TAG_COLORS: Record<string, { bg: string; text: string; border: string }> = {
+  blue:    { bg: "bg-blue-500/10",    text: "text-blue-400",    border: "border-blue-500/20" },
+  violet:  { bg: "bg-violet-500/10",  text: "text-violet-400",  border: "border-violet-500/20" },
+  emerald: { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20" },
+  amber:   { bg: "bg-amber-500/10",   text: "text-amber-400",   border: "border-amber-500/20" },
+  pink:    { bg: "bg-pink-500/10",    text: "text-pink-400",    border: "border-pink-500/20" },
+  teal:    { bg: "bg-teal-500/10",    text: "text-teal-400",    border: "border-teal-500/20" },
+};
+
+function TagPill({ name, color, onRemove }: { name: string; color: string; onRemove?: () => void }) {
+  const isHex = color?.startsWith("#");
+  const c = isHex ? null : (TAG_COLORS[color] ?? TAG_COLORS.blue);
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium",
+        c ? `${c.bg} ${c.text} border ${c.border}` : "border border-white/10",
+      )}
+      style={isHex ? { background: `${color}20`, color, borderColor: `${color}40` } : undefined}
+    >
+      {name}
+      {onRemove && (
+        <button onClick={onRemove} className="ml-1 opacity-60 hover:opacity-100 transition-opacity">
+          <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+            <path d="M2 2l6 6M8 2L2 8" />
+          </svg>
+        </button>
+      )}
+    </span>
+  );
+}
+
+// ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ReadingModePage() {
   const params  = useParams();
@@ -94,18 +144,176 @@ export default function ReadingModePage() {
 function ReadingModeContent({ highlight }: { highlight: any }) {
   const router  = useRouter();
   const tags           = useDashboardStore((s) => s.tags);
+  const folders        = useDashboardStore((s) => s.folders);
   const toggleFavorite = useDashboardStore((s) => s.toggleFavorite);
   const updateHighlight = useDashboardStore((s) => s.updateHighlight);
+  const moveHighlight = useDashboardStore((s) => s.moveHighlight);
+  const currentUser = useAuthStore((s) => s.user);
 
+  // Permissions
+  const currentFolder = React.useMemo(() => folders.find((f) => f.id === highlight.folderId), [folders, highlight.folderId]);
+  const role = currentFolder?.effectiveRole;
+  const isViewer = role === "VIEWER";
+
+  // Comments State
+  const [comments, setComments] = React.useState<CommentType[]>([]);
+  const [isFetchingComments, setIsFetchingComments] = React.useState(true);
+  const [newComment, setNewComment] = React.useState("");
+  const [isAddingComment, setIsAddingComment] = React.useState(false);
+  const [editingCommentId, setEditingCommentId] = React.useState<number | null>(null);
+  const [editCommentText, setEditCommentText] = React.useState("");
+
+  React.useEffect(() => {
+    if (highlight?.id) {
+      setIsFetchingComments(true);
+      fetch(`/api/v1/highlights/${highlight.id}/comments`, { credentials: "include" })
+        .then(res => res.json())
+        .then(data => {
+          setComments(Array.isArray(data) ? data : []);
+          setIsFetchingComments(false);
+        })
+        .catch((e) => {
+          console.error(e);
+          setIsFetchingComments(false);
+        });
+    }
+  }, [highlight?.id]);
+
+  const handlePostComment = async () => {
+    if (!newComment.trim()) return;
+    try {
+      const res = await fetch(`/api/v1/highlights/${highlight.id}/comments`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: newComment }),
+      });
+      if (res.ok) {
+        const added = await res.json();
+        setComments([...comments, added]);
+        setNewComment("");
+        setIsAddingComment(false);
+      } else {
+        toast.error("Failed to add comment.");
+      }
+    } catch {
+      toast.error("Network error.");
+    }
+  };
+
+  const handleUpdateComment = async (commentId: number) => {
+    if (!editCommentText.trim()) return;
+    try {
+      const res = await fetch(`/api/v1/highlights/${highlight.id}/comments/${commentId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: editCommentText }),
+      });
+      if (res.ok) {
+        const updated = await res.json();
+        setComments(comments.map(c => c.id === commentId ? updated : c));
+        setEditingCommentId(null);
+      } else {
+        toast.error("Failed to update comment.");
+      }
+    } catch {
+      toast.error("Network error.");
+    }
+  };
+
+  // Layout State
   const [fontIdx,  setFontIdx]  = React.useState(0);
   const [sizeIdx,  setSizeIdx]  = React.useState(1);
   const [themeIdx, setThemeIdx] = React.useState(0);
-  const [noteText, setNoteText] = React.useState(highlight.note ?? "");
 
-  // Sync note text when highlight loads
+  // Edit Modal State
+  const [editOpen, setEditOpen] = React.useState(false);
+  const [editFolderId, setEditFolderId] = React.useState<string | null>(highlight.folderId ?? null);
+  const [editTags, setEditTags] = React.useState<string[]>(highlight.tags ?? []);
+  const [tagQuery, setTagQuery] = React.useState("");
+  const [tagPopoverOpen, setTagPopoverOpen] = React.useState(false);
+  const [folderPopoverOpen, setFolderPopoverOpen] = React.useState(false);
+
+  // Dialog State
+  const [folderDialogOpen, setFolderDialogOpen] = React.useState(false);
+  const [subfolderParentId, setSubfolderParentId] = React.useState<string | undefined>(undefined);
+  const [tagDialogOpen, setTagDialogOpen] = React.useState(false);
+
+  // Sync state when modal opens
   React.useEffect(() => {
-    setNoteText(highlight.note ?? "");
-  }, [highlight.id, highlight.note]);
+    if (editOpen) {
+      setEditFolderId(highlight.folderId ?? null);
+      setEditTags(highlight.tags ?? []);
+    }
+  }, [editOpen, highlight]);
+
+  const handleSaveEdit = () => {
+    const folder = folders.find(f => f.id === editFolderId);
+    
+    // Process folder move if it changed
+    if (editFolderId !== (highlight.folderId ?? null)) {
+      moveHighlight(highlight.id, editFolderId ?? undefined as any, folder ? folder.name : undefined as any);
+    }
+    
+    updateHighlight(highlight.id, {
+      tags: editTags
+    });
+    setEditOpen(false);
+    toast.success("Highlight updated successfully");
+  };
+
+  // Build recursive folder hierarchy matching the sidebar exact UI
+  const renderFolderList = (allFolders: typeof folders, parentId: string | null = null, depth = 0): React.ReactNode[] => {
+    return allFolders
+      .filter(f => (f as any).parentId === parentId || (!parentId && !(f as any).parentId))
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .flatMap(f => [
+        <div key={f.id} className="group flex items-center w-full mb-0.5 relative">
+          {/* Depth indentation */}
+          <div style={{ width: depth * 16, flexShrink: 0 }} />
+          
+          {/* Depth left border indicator */}
+          {depth > 0 && (
+            <div
+              className="absolute top-[-4px] bottom-[-4px] w-px bg-white/[0.06]"
+              style={{ left: depth * 16 - 8 }}
+            />
+          )}
+
+          <button
+            onClick={() => {
+              setEditFolderId(f.id);
+              setFolderPopoverOpen(false);
+            }}
+            className={cn(
+              "flex-1 flex items-center justify-start gap-2.5 px-3 py-1.5 rounded-xl",
+              "text-sm transition-all duration-150 ease-snappy min-w-0 text-left",
+              editFolderId === f.id
+                ? "bg-white/[0.09] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
+                : "text-white/60 hover:bg-white/[0.05] hover:text-white"
+            )}
+          >
+            <span className="text-base leading-none shrink-0">{f.emoji || "📁"}</span>
+            <span className="flex-1 truncate">{f.name}</span>
+          </button>
+          
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setSubfolderParentId(f.id);
+              setFolderDialogOpen(true);
+              setFolderPopoverOpen(false);
+            }}
+            className="opacity-0 group-hover:opacity-100 p-1.5 mx-1 text-white/40 hover:text-white/80 hover:bg-white/10 rounded-md transition-all shrink-0"
+            title="Create Subfolder"
+          >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M6 2v8M2 6h8" strokeLinecap="round"/>
+            </svg>
+          </button>
+        </div>,
+        ...renderFolderList(allFolders, f.id, depth + 1)
+      ]);
+  };
 
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ container: scrollRef });
@@ -114,6 +322,12 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
   const theme = THEME_OPTIONS[themeIdx];
   const font  = FONT_OPTIONS[fontIdx];
   const size  = SIZE_OPTIONS[sizeIdx];
+
+  const filteredTags = tags.filter(
+    (t: any) =>
+      t.name.toLowerCase().includes(tagQuery.toLowerCase()) &&
+      !editTags.some(id => String(id) === String(t.id)),
+  );
 
   return (
     <div className={cn("h-screen flex flex-col", theme.bg)}>
@@ -126,14 +340,14 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
       {/* Top toolbar */}
       <div className={cn(
         "sticky top-0 z-40 shrink-0",
-        "h-12 flex items-center justify-between px-4",
+        "h-14 flex items-center justify-between px-6",
         "border-b border-white/[0.06]",
         theme.bg,
       )}>
         {/* Back button */}
         <button
           onClick={() => router.push("/dashboard")}
-          className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors"
+          className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors bg-white/[0.03] px-3 py-1.5 rounded-lg border border-white/[0.06] hover:bg-white/[0.06]"
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
             <path d="M9 3L5 7l4 4" />
@@ -141,94 +355,118 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
           Back
         </button>
 
-        {/* Source info */}
-        <div className="text-center min-w-0">
-          <p className="text-xs text-white/50 truncate max-w-[200px]">{highlight.source}</p>
+        {/* Source info (Optional visual balance) */}
+        <div className="text-center min-w-0 hidden md:block">
+          <p className="text-xs text-white/50 truncate max-w-[300px]">{highlight.source}</p>
         </div>
 
-        {/* Typography controls */}
-        <Popover.Root>
-          <Popover.Trigger asChild>
-            <button className={cn(
-              "w-8 h-8 rounded-lg flex items-center justify-center",
-              "text-white/40 hover:text-white/70 hover:bg-white/[0.06]",
+        <div className="flex items-center gap-2">
+          {/* Edit Button */}
+          <button 
+            onClick={() => {
+              if (role === "VIEWER" || role === "COMMENTER") {
+                toast.error("You must have editor access to edit highlight details.");
+                return;
+              }
+              setEditOpen(true);
+            }}
+            aria-label="Edit Highlight"
+            className={cn(
+              "w-9 h-9 rounded-lg flex items-center justify-center",
+              "bg-white/[0.03] border border-white/[0.06]",
+              "text-white/70 hover:text-white hover:bg-white/[0.08]",
               "transition-all duration-150",
             )}>
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
-                <path d="M2 11h10M4 3h6M7 3v8" />
-              </svg>
-            </button>
-          </Popover.Trigger>
-          <Popover.Portal>
-            <Popover.Content
-              sideOffset={8}
-              align="end"
-              className={cn(
-                "z-50 w-56 rounded-xl p-3",
-                "bg-[#1c1c1c] border border-white/[0.09]",
-                "shadow-[0_12px_40px_rgba(0,0,0,0.55)]",
-                "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
-              )}
-            >
-              {/* Font */}
-              <p className="text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-2">Font</p>
-              <div className="flex gap-1 mb-3">
-                {FONT_OPTIONS.map((f, i) => (
-                  <button
-                    key={f.label}
-                    onClick={() => setFontIdx(i)}
-                    className={cn(
-                      "flex-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-150",
-                      fontIdx === i
-                        ? "bg-white/[0.10] text-white"
-                        : "text-white/40 hover:text-white/70 hover:bg-white/[0.05]",
-                    )}
-                  >
-                    {f.label}
-                  </button>
-                ))}
-              </div>
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10 2l2 2-8 8H2v-2l8-8z" />
+            </svg>
+          </button>
 
-              {/* Size */}
-              <p className="text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-2">Size</p>
-              <div className="flex gap-1 mb-3">
-                {SIZE_OPTIONS.map((s, i) => (
-                  <button
-                    key={s.label}
-                    onClick={() => setSizeIdx(i)}
-                    className={cn(
-                      "flex-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-150",
-                      sizeIdx === i
-                        ? "bg-white/[0.10] text-white"
-                        : "text-white/40 hover:text-white/70 hover:bg-white/[0.05]",
-                    )}
-                  >
-                    {s.label}
-                  </button>
-                ))}
-              </div>
+          {/* Typography controls */}
+          <Popover.Root>
+            <Popover.Trigger asChild>
+              <button className={cn(
+                "w-9 h-9 rounded-lg flex items-center justify-center",
+                "bg-white/[0.03] border border-white/[0.06]",
+                "text-white/70 hover:text-white hover:bg-white/[0.08]",
+                "transition-all duration-150",
+              )}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
+                  <path d="M2 11h10M4 3h6M7 3v8" />
+                </svg>
+              </button>
+            </Popover.Trigger>
+            <Popover.Portal>
+              <Popover.Content
+                sideOffset={8}
+                align="end"
+                className={cn(
+                  "z-50 w-64 rounded-xl p-4",
+                  "bg-[#1c1c1c] border border-white/[0.09]",
+                  "shadow-[0_12px_40px_rgba(0,0,0,0.55)]",
+                  "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+                )}
+              >
+                {/* Font */}
+                <p className="text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-2">Font</p>
+                <div className="flex gap-1 mb-4">
+                  {FONT_OPTIONS.map((f, i) => (
+                    <button
+                      key={f.label}
+                      onClick={() => setFontIdx(i)}
+                      className={cn(
+                        "flex-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-150",
+                        fontIdx === i
+                          ? "bg-white/[0.10] text-white border border-white/10"
+                          : "text-white/40 hover:text-white/70 hover:bg-white/[0.05] border border-transparent",
+                      )}
+                    >
+                      {f.label}
+                    </button>
+                  ))}
+                </div>
 
-              {/* Theme */}
-              <p className="text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-2">Theme</p>
-              <div className="flex gap-1">
-                {THEME_OPTIONS.map((t, i) => (
-                  <button
-                    key={t.label}
-                    onClick={() => setThemeIdx(i)}
-                    className={cn(
-                      "flex-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-150",
-                      themeIdx === i
-                        ? "bg-white/[0.10] text-white"
-                        : "text-white/40 hover:text-white/70 hover:bg-white/[0.05]",
-                    )}
-                  >
-                    {t.label}
-                  </button>
-                ))}
-              </div>
-            </Popover.Content>
-          </Popover.Portal>
-        </Popover.Root>
+                {/* Size */}
+                <p className="text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-2">Size</p>
+                <div className="flex gap-1 mb-4">
+                  {SIZE_OPTIONS.map((s, i) => (
+                    <button
+                      key={s.label}
+                      onClick={() => setSizeIdx(i)}
+                      className={cn(
+                        "flex-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-150",
+                        sizeIdx === i
+                          ? "bg-white/[0.10] text-white border border-white/10"
+                          : "text-white/40 hover:text-white/70 hover:bg-white/[0.05] border border-transparent",
+                      )}
+                    >
+                      {s.label}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Theme */}
+                <p className="text-[10px] font-semibold text-white/40 uppercase tracking-widest mb-2">Theme</p>
+                <div className="flex gap-1">
+                  {THEME_OPTIONS.map((t, i) => (
+                    <button
+                      key={t.label}
+                      onClick={() => setThemeIdx(i)}
+                      className={cn(
+                        "flex-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-150",
+                        themeIdx === i
+                          ? "bg-white/[0.10] text-white border border-white/10"
+                          : "text-white/40 hover:text-white/70 hover:bg-white/[0.05] border border-transparent",
+                      )}
+                    >
+                      {t.label}
+                    </button>
+                  ))}
+                </div>
+              </Popover.Content>
+            </Popover.Portal>
+          </Popover.Root>
+        </div>
       </div>
 
       {/* Reading area */}
@@ -237,9 +475,19 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
         className="flex-1 overflow-y-auto"
       >
         <article
-          className="max-w-2xl mx-auto px-6 py-12"
+          className="max-w-3xl mx-auto px-6 py-12"
           style={{ fontFamily: font.value }}
         >
+          {/* Viewer Banner */}
+          {isViewer && (
+            <div className="mb-6 flex items-center gap-2 px-4 py-3 rounded-xl bg-blue-500/[0.08] border border-blue-500/20 text-blue-200/80 text-sm">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-blue-400">
+                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+              </svg>
+              <span>This is a shared highlight with <strong>View-only</strong> access. You cannot edit it or add new comments.</span>
+            </div>
+          )}
+
           {/* Topic badge */}
           <div className="mb-6">
             <span className={cn("inline-block px-2.5 py-1 rounded-md text-[11px] font-medium", highlight.topicColor)}>
@@ -250,16 +498,16 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
           {/* Source & metadata */}
           <div className="mb-8">
             <div className="flex items-start justify-between gap-3 mb-2">
-              <h1 className={cn("text-lg font-semibold", theme.text)}>{highlight.source}</h1>
+              <h1 className={cn("text-2xl font-bold tracking-tight", theme.text)}>{highlight.source}</h1>
               {/* Favorite toggle */}
               <button
                 onClick={() => toggleFavorite(highlight.id)}
-                className="shrink-0 p-1.5 rounded-lg hover:bg-white/[0.06] transition-colors"
+                className="shrink-0 p-2 rounded-lg hover:bg-white/[0.06] transition-colors"
                 aria-label={highlight.isFavorite ? "Remove from favorites" : "Add to favorites"}
               >
                 <svg
-                  width="18"
-                  height="18"
+                  width="20"
+                  height="20"
                   viewBox="0 0 24 24"
                   fill={highlight.isFavorite ? "#F59E0B" : "none"}
                   stroke={highlight.isFavorite ? "#F59E0B" : "currentColor"}
@@ -270,16 +518,16 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                 </svg>
               </button>
             </div>
-            <div className="flex items-center gap-3 text-xs text-white/30 flex-wrap">
-              <span className="flex items-center gap-1">
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" className="text-white/25">
+            <div className="flex items-center gap-4 text-xs text-white/40 flex-wrap">
+              <span className="flex items-center gap-1.5">
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
                   <circle cx="6" cy="6" r="4.5" /><path d="M6 3.5v3l2 1" />
                 </svg>
                 {formatRelativeDate(highlight.savedAt)}
               </span>
               {highlight.folder && (
-                <span className="flex items-center gap-1">
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" className="text-white/25">
+                <span className="flex items-center gap-1.5">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
                     <path d="M1.5 3.5V9.5C1.5 10.05 1.95 10.5 2.5 10.5H9.5C10.05 10.5 10.5 10.05 10.5 9.5V4.5C10.5 3.95 10.05 3.5 9.5 3.5H6L5 2H2.5C1.95 2 1.5 2.45 1.5 3V3.5Z" />
                   </svg>
                   {highlight.folder}
@@ -290,15 +538,28 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                   href={highlight.url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="flex items-center gap-1 text-accent/60 hover:text-accent transition-colors"
+                  className="flex items-center gap-1.5 text-accent/80 hover:text-accent transition-colors"
                 >
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
                     <path d="M9 3L3 9M9 3H5M9 3v4" />
                   </svg>
-                  Source
+                  Read original source
                 </a>
               )}
             </div>
+            
+            {/* Display Tags cleanly on the page */}
+            {highlight.tags && highlight.tags.length > 0 && (
+              <div className="mt-4 flex flex-wrap gap-1.5">
+                {highlight.tags.map((tid: string) => {
+                  const t = tags.find((x: any) => String(x.id) === String(tid));
+                  if (!t) return null;
+                  return (
+                    <TagPill key={tid} name={t.name} color={t.color} />
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* YouTube video embed */}
@@ -307,7 +568,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
             if (!videoId) return null;
             const src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}${highlight.videoTimestamp ? `?start=${Math.floor(highlight.videoTimestamp)}` : ""}`;
             return (
-              <div className="mb-8">
+              <div className="mb-10">
                 <div className="relative w-full rounded-xl overflow-hidden border border-white/[0.08] shadow-2xl" style={{ aspectRatio: "16/9" }}>
                   <iframe
                     src={src}
@@ -318,8 +579,8 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                   />
                 </div>
                 {highlight.videoTimestamp != null && (
-                  <p className="mt-2 text-[11px] text-white/30 flex items-center gap-1.5">
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" className="text-red-400/60">
+                  <p className="mt-2 text-[11px] text-white/40 flex items-center gap-1.5">
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" className="text-red-400">
                       <circle cx="6" cy="6" r="4.5" /><path d="M6 3.5v3l2 1" />
                     </svg>
                     Captured at {formatVideoTime(highlight.videoTimestamp)}
@@ -330,69 +591,391 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
           })()}
 
           {/* Highlight text */}
-          {highlight.isCode ? (
-            <pre className={cn(
-              "font-mono text-sm whitespace-pre-wrap",
-              "p-6 rounded-xl",
-              "bg-white/[0.03] border border-white/[0.08]",
-              theme.text,
-            )}>
-              {highlight.text}
-            </pre>
-          ) : (
-            <blockquote className={cn(
-              size.value,
-              theme.text,
-              "border-l-2 border-accent/30 pl-6",
-            )}>
-              &ldquo;{highlight.text}&rdquo;
-            </blockquote>
-          )}
-
-          {/* Note — editable */}
-          <div className={cn(
-            "mt-8 p-4 rounded-xl",
-            "bg-white/[0.03] border border-white/[0.06]",
-          )}>
-            <p className="text-[10px] font-semibold text-white/30 uppercase tracking-widest mb-2">Your Notes</p>
-            <textarea
-              value={noteText}
-              onChange={(e) => setNoteText(e.target.value)}
-              onBlur={() => {
-                if (noteText !== (highlight.note ?? "")) {
-                  updateHighlight(highlight.id, { note: noteText });
-                }
-              }}
-              placeholder="Add a note…"
-              className={cn(
-                "w-full min-h-[80px] bg-transparent border-none outline-none resize-y text-sm",
+          <div className="mb-14">
+            {highlight.isCode ? (
+              <pre className={cn(
+                "font-mono text-sm whitespace-pre-wrap",
+                "p-6 rounded-xl",
+                "bg-white/[0.03] border border-white/[0.08]",
                 theme.text,
-                "opacity-70 placeholder:text-white/20",
-              )}
-            />
+              )}>
+                {highlight.fullText || highlight.text}
+              </pre>
+            ) : (
+              <blockquote className={cn(
+                size.value,
+                theme.text,
+                "border-l-4 border-accent/40 pl-6 leading-relaxed relative",
+              )}>
+                {highlight.fullText || highlight.text}
+              </blockquote>
+            )}
           </div>
 
-          {/* Tags — resolved to display names */}
-          {highlight.tags && highlight.tags.length > 0 && (
-            <div className="mt-6 flex items-center gap-2 flex-wrap">
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" className="text-white/25 shrink-0">
-                <path d="M7.5 1.5l5 5-6 6-5-5v-6h6z" /><circle cx="4.5" cy="4.5" r="1" />
-              </svg>
-              {highlight.tags.map((tagId) => {
-                const tag = tags.find((t) => t.id === tagId);
+          {/* Comments Section */}
+          <div className="pt-8 border-t border-white/[0.08]">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-[10px] font-semibold text-white/40 uppercase tracking-widest">Comments</h3>
+              {(() => {
+                if (isViewer) {
+                  return (
+                    <span className="text-xs text-white/40 italic">
+                      Viewers can only view comments
+                    </span>
+                  );
+                }
+
+                if (!isAddingComment) {
+                  return (
+                    <button
+                      onClick={() => setIsAddingComment(true)}
+                      className="text-xs text-accent hover:text-accent/80 font-medium"
+                    >
+                      + Add Comment
+                    </button>
+                  );
+                }
+                
+                return null;
+              })()}
+            </div>
+            
+            <div className="space-y-4">
+              {isFetchingComments ? (
+                <div className="flex justify-center py-6">
+                  <Loader2 className="animate-spin text-white/30" />
+                </div>
+              ) : comments.map((comment) => {
+                const isMyComment = currentUser && String(currentUser.id) === String(comment.authorId);
+                const isEditingThis = editingCommentId === comment.id;
+                const authorName = isMyComment ? "You" : (comment.authorFullName || comment.authorEmail.split("@")[0]);
+                const avatarInitial = authorName.charAt(0).toUpperCase();
+
                 return (
-                  <span
-                    key={tagId}
-                    className="px-2.5 py-0.5 rounded-md text-[11px] font-medium bg-white/[0.06] text-white/50 border border-white/[0.08]"
-                  >
-                    {tag?.name ?? tagId}
-                  </span>
+                  <div key={comment.id} className="flex gap-4">
+                    <div className="w-10 h-10 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center shrink-0">
+                      <span className="text-accent text-sm font-bold">{avatarInitial}</span>
+                    </div>
+                    <div className="flex-1 bg-white/[0.03] border border-white/[0.06] rounded-xl rounded-tl-sm p-4">
+                      <div className="flex items-baseline justify-between mb-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-sm font-medium text-white/80">{authorName}</span>
+                          <span className="text-[10px] text-white/30">{formatRelativeDate(comment.createdAt)}</span>
+                        </div>
+                        {isMyComment && !isEditingThis && (
+                          <button
+                            onClick={() => {
+                              setEditCommentText(comment.text);
+                              setEditingCommentId(comment.id);
+                            }}
+                            aria-label="Edit Comment"
+                            className="p-1.5 rounded-md text-white/40 hover:text-white/80 hover:bg-white/[0.06] transition-colors"
+                          >
+                            <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                              <path d="M10 2l2 2-8 8H2v-2l8-8z" />
+                            </svg>
+                          </button>
+                        )}
+                      </div>
+
+                      {isEditingThis ? (
+                        <div className="mt-2 text-right">
+                          <textarea
+                            autoFocus
+                            value={editCommentText}
+                            onChange={(e) => setEditCommentText(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === "Enter" && !e.shiftKey) {
+                                  e.preventDefault();
+                                  handleUpdateComment(comment.id);
+                                } else if (e.key === "Escape") {
+                                  setEditingCommentId(null);
+                                }
+                            }}
+                            className={cn(
+                              "w-full text-sm bg-black/40 border border-white/10 rounded-md p-3",
+                              "text-white/90 placeholder:text-white/20 focus:outline-none focus:border-accent/40",
+                              "resize-none overflow-hidden transition-all duration-200"
+                            )}
+                            rows={3}
+                          />
+                          <div className="mt-2 flex justify-end gap-2">
+                            <button
+                              onClick={() => setEditingCommentId(null)}
+                              className="px-3 py-1.5 text-xs font-medium text-white/50 hover:text-white/90 transition-colors"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              onClick={() => handleUpdateComment(comment.id)}
+                              className="px-3 py-1.5 text-xs font-medium bg-white/10 hover:bg-white/15 text-white/90 rounded border border-white/[0.05] transition-all"
+                            >
+                              Save
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className={cn("text-sm whitespace-pre-wrap", themeIdx === 0 ? "text-white/70" : themeIdx === 1 ? "text-[#E8E6E3]/70" : "text-white/70", "opacity-90")}>
+                          {comment.text}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 );
               })}
+
+              {isAddingComment && (
+                <div className="flex gap-4">
+                  <div className="w-10 h-10 rounded-full bg-accent/20 border border-accent/30 flex items-center justify-center shrink-0">
+                    <span className="text-accent text-sm font-bold">You</span>
+                  </div>
+                  <div className="flex-1 space-y-3">
+                    <textarea
+                      autoFocus
+                      placeholder="Add a comment..."
+                      value={newComment}
+                      onChange={(e) => setNewComment(e.target.value)}
+                      onKeyDown={(e) => {
+                          if (e.key === "Enter" && !e.shiftKey) {
+                            e.preventDefault();
+                            handlePostComment();
+                          } else if (e.key === "Escape") {
+                            setIsAddingComment(false);
+                          }
+                      }}
+                      className={cn(
+                        "w-full text-sm bg-black/40 border border-white/10 rounded-xl rounded-tl-sm p-4",
+                        "text-white/90 placeholder:text-white/20 focus:outline-none focus:border-accent/40 focus:ring-1 focus:ring-accent/40",
+                        "resize-none overflow-hidden transition-all duration-200"
+                      )}
+                      rows={3}
+                    />
+                    <div className="flex justify-end gap-2">
+                      <button
+                        onClick={() => setIsAddingComment(false)}
+                        className="px-4 py-2 text-xs font-medium text-white/50 hover:text-white/90 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handlePostComment}
+                        className="px-4 py-2 text-xs font-medium bg-accent hover:bg-accent/90 text-white rounded-lg shadow-[0_0_15px_rgba(var(--accent-rgb),0.3)] transition-all"
+                      >
+                        Post
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </article>
       </div>
+
+      {/* ─── Edit Modal ────────────────────────────────────────────── */}
+      <Dialog.Root open={editOpen} onOpenChange={setEditOpen}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
+          <Dialog.Content className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-white/10 bg-[#121212] p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 sm:rounded-2xl">
+            <div className="flex flex-col space-y-1.5 text-center sm:text-left">
+              <Dialog.Title className="text-lg font-semibold leading-none tracking-tight">Edit Highlight Details</Dialog.Title>
+              <Dialog.Description className="text-sm text-white/50">
+                Make changes to your highlight's organization and comments.
+              </Dialog.Description>
+            </div>
+
+            <div className="grid gap-6 py-4">
+              {/* Folder Selection Custom UI */}
+              <div className="flex flex-col gap-2 relative">
+                <label className="text-xs font-semibold uppercase tracking-widest text-white/40">Folder</label>
+                
+                <Popover.Root open={folderPopoverOpen} onOpenChange={setFolderPopoverOpen}>
+                  <Popover.Trigger asChild>
+                    <button className="w-full flex items-center justify-between bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.06] rounded-xl px-3 py-2 text-sm text-white/80 outline-none focus:border-accent/50 transition-all">
+                      <span className="flex items-center gap-2 truncate">
+                        {editFolderId ? (
+                          <>
+                            <span>{folders.find(f => f.id === editFolderId)?.emoji || "📁"}</span>
+                            <span>{folders.find(f => f.id === editFolderId)?.name}</span>
+                          </>
+                        ) : (
+                          "Root (No Folder)"
+                        )}
+                      </span>
+                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                        <path d="M2.5 4.5l3.5 3.5 3.5-3.5" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    </button>
+                  </Popover.Trigger>
+                  
+                  <Popover.Portal>
+                    <Popover.Content align="start" sideOffset={6} className="z-[70] w-[450px] flex flex-col rounded-xl bg-[#1e1e1e] border border-white/[0.09] shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] p-2">
+                      {/* Create Folder (Pinned to top) */}
+                      <div className="pb-2 mb-2 border-b border-white/[0.08]">
+                        <button
+                          onClick={() => {
+                            setSubfolderParentId(undefined);
+                            setFolderDialogOpen(true);
+                            setFolderPopoverOpen(false);
+                          }}
+                          className="w-full flex items-center justify-start gap-2 px-3 py-1.5 rounded-xl text-sm text-accent hover:bg-accent/10 transition-colors"
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                            <line x1="12" y1="11" x2="12" y2="17"></line>
+                            <line x1="9" y1="14" x2="15" y2="14"></line>
+                          </svg>
+                          <span className="flex-1 text-left">Create New Folder</span>
+                        </button>
+                      </div>
+
+                      <div className="max-h-[300px] overflow-y-auto pr-1">
+                        <button
+                          onClick={() => {
+                            setEditFolderId(null);
+                            setFolderPopoverOpen(false);
+                          }}
+                          className={cn(
+                            "w-full flex items-center justify-start gap-2.5 px-3 py-1.5 rounded-xl mb-1",
+                            "text-sm transition-all duration-150 ease-snappy min-w-0 text-left",
+                            editFolderId === null
+                              ? "bg-white/[0.09] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
+                              : "text-white/60 hover:bg-white/[0.05] hover:text-white"
+                          )}
+                        >
+                          <span className="text-base leading-none shrink-0 opacity-50">📂</span>
+                          <span className="flex-1 truncate">Root (No Folder)</span>
+                        </button>
+                        <div className="space-y-0.5">
+                          {renderFolderList(folders)}
+                        </div>
+                      </div>
+                    </Popover.Content>
+                  </Popover.Portal>
+                </Popover.Root>
+              </div>
+
+              {/* Tags Selection */}
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold uppercase tracking-widest text-white/40">Tags</label>
+                <div className="flex flex-wrap gap-2 mb-1">
+                  {editTags.map((tid) => {
+                    const tag = tags.find((t: any) => String(t.id) === String(tid));
+                    if (!tag) return null;
+                    return (
+                      <TagPill
+                        key={tag.id}
+                        name={tag.name}
+                        color={tag.color}
+                        onRemove={() => setEditTags(editTags.filter(id => String(id) !== String(tag.id)))}
+                      />
+                    );
+                  })}
+                </div>
+                
+                <Popover.Root open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
+                  <Popover.Trigger asChild>
+                    <button className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-white/50 hover:text-white/80 hover:bg-white/[0.06] transition-all w-max">
+                      <svg width="12" height="12" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5"><circle cx="7" cy="7" r="5.5" /><path d="M7 4.5v5M4.5 7h5" /></svg>
+                      Add tag...
+                    </button>
+                  </Popover.Trigger>
+                  <Popover.Portal>
+                    <Popover.Content align="start" sideOffset={6} className="z-[70] w-[240px] rounded-xl overflow-hidden bg-[#1c1c1c] border border-white/[0.09] shadow-2xl p-0">
+                      <div className="px-3 py-2 border-b border-white/[0.06]">
+                        <input
+                          autoFocus
+                          value={tagQuery}
+                          onChange={(e) => setTagQuery(e.target.value)}
+                          placeholder="Search tags..."
+                          className="w-full bg-transparent text-sm text-white/80 placeholder:text-white/25 outline-none"
+                        />
+                      </div>
+                      <div className="p-1 max-h-48 overflow-y-auto">
+                        {filteredTags.length === 0 ? (
+                          <div className="px-3 py-3 text-center border-t border-white/[0.06] mt-1">
+                            <p className="text-xs text-white/30 mb-2">No tags found for "{tagQuery}"</p>
+                            <button
+                              onClick={() => {
+                                setTagDialogOpen(true);
+                                setTagPopoverOpen(false);
+                              }}
+                              className="text-xs text-accent hover:text-accent/80 transition-colors"
+                            >
+                              + Create New Tag
+                            </button>
+                          </div>
+                        ) : (
+                          <>
+                            {filteredTags.map((tag: any) => (
+                              <button
+                                key={tag.id}
+                                onClick={() => {
+                                  setEditTags([...editTags, tag.id]);
+                                  setTagQuery("");
+                                  setTagPopoverOpen(false);
+                                }}
+                                className="w-full flex justify-start px-2 py-1.5 rounded-lg text-sm text-white/70 hover:text-white hover:bg-white/[0.06]"
+                              >
+                                {tag.name}
+                              </button>
+                            ))}
+                            <div className="p-1 border-t border-white/[0.06] mt-1">
+                              <button
+                                onClick={() => {
+                                  setTagDialogOpen(true);
+                                  setTagPopoverOpen(false);
+                                }}
+                                className="w-full flex items-center justify-center gap-2 px-2 py-1.5 text-xs text-white/40 hover:text-white/80 hover:bg-white/[0.06] rounded-lg transition-colors"
+                              >
+                                + Create New Tag
+                              </button>
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </Popover.Content>
+                  </Popover.Portal>
+                </Popover.Root>
+              </div>
+
+
+            </div>
+
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
+              <button 
+                onClick={() => setEditOpen(false)}
+                className="mt-2 sm:mt-0 px-4 py-2 rounded-xl text-sm font-medium text-white/50 hover:text-white hover:bg-white/[0.05] transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleSaveEdit}
+                className="px-4 py-2 rounded-xl text-sm font-medium bg-accent hover:bg-accent/90 text-white shadow-lg shadow-accent/20 transition-all"
+              >
+                Save Changes
+              </button>
+            </div>
+            
+            <Dialog.Close className="absolute right-4 top-4 rounded-sm opacity-70 border-none transition-opacity hover:opacity-100 focus:outline-none">
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68688L4.03164 3.21846C3.80708 2.99391 3.44301 2.99391 3.21846 3.21846C2.99391 3.44301 2.99391 3.80708 3.21846 4.03164L6.68688 7.50005L3.21846 10.9685C2.99391 11.193 2.99391 11.5571 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31322L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.5571 12.0062 11.193 11.7816 10.9685L8.31322 7.50005L11.7816 4.03157Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>
+              </svg>
+            </Dialog.Close>
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
+
+      <FolderCreateDialog
+        open={folderDialogOpen}
+        onOpenChange={(v) => {
+          setFolderDialogOpen(v);
+          if (!v) setSubfolderParentId(undefined);
+        }}
+        parentId={subfolderParentId}
+      />
+      <NewTagDialog open={tagDialogOpen} onOpenChange={setTagDialogOpen} />
+
     </div>
   );
 }

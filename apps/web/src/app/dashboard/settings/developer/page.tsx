@@ -32,7 +32,9 @@ export default function DeveloperSettingsPage() {
 
   const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
-    toast("Copied to clipboard");
+    toast.success("Copied to clipboard", {
+      description: "You can now paste your API key into your integration code.",
+    });
   };
 
   return (
@@ -130,7 +132,9 @@ export default function DeveloperSettingsPage() {
                       <button
                         onClick={() => {
                           deleteApiKey(key.id);
-                          toast("API key revoked");
+                          toast.success("API key revoked", {
+                            description: "The selected key will no longer be valid for API requests.",
+                          });
                         }}
                         className="text-xs text-red-400/70 hover:text-red-400 transition-colors"
                       >

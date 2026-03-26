@@ -22,7 +22,9 @@ export function EmptyState({ icon, title, body, action }: EmptyStateProps) {
   function handlePopulate() {
     populateDemoData();
     setPopulated(true);
-    toast.success("Demo data added — explore your highlights!");
+    toast.success("Demo data added", {
+      description: "We've populated your brain with structured examples to get you started.",
+    });
   }
 
   return (

@@ -25,7 +25,9 @@ export function ViewControlBar() {
       .map((t) => t.name);
     const name = selectedNames.join(" + ");
     addSmartCollection(name, [...activeTagFilters]);
-    toast("Smart Collection saved", { description: name });
+    toast.success("Smart Collection created", {
+      description: `Filtering by: ${name}`,
+    });
   }, [activeTagFilters, tags, addSmartCollection]);
 
   return (

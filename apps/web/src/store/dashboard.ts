@@ -106,12 +106,12 @@ interface DashboardState {
   toggleHighlightSelect:    (id: string) => void;
   selectAllHighlights:      (ids: string[]) => void;
   clearHighlightSelection:  () => void;
-  addFolder:           (name: string, parentId?: string) => void;
+  addFolder:           (name: string, parentId?: string) => Promise<void>;
   deleteFolder:        (id: string) => void;
   renameFolder:        (id: string, name: string) => void;
   moveFolder:          (id: string, newParentId: string | undefined) => void;
   setFolderEmoji:      (id: string, emoji: string) => void;
-  addTag:              (name: string, color: string) => void;
+  addTag:              (name: string, color: string) => Promise<void>;
   deleteTag:           (id: string) => void;
   addHighlight:        (h: Pick<Highlight, "text" | "source"> & { folderId?: string, tags?: string[], url?: string }) => Promise<boolean>;
   updateHighlight:     (id: string, patch: Partial<Pick<Highlight, "note" | "tags" | "highlightColor" | "aiContext" | "aiResponse" | "connectDotsResult" | "actionItemsResult" | "devilsAdvocateResult" | "customPrompt" | "source">>) => void;
@@ -342,7 +342,7 @@ export const useDashboardStore = create<DashboardState>()(
         if (!trimmedName) return;
         const emoji = nextEmoji();
         const numericParentId = parentId && /^\d+$/.test(parentId) ? Number(parentId) : null;
-        const { ok, data } = await apiFetch<{ id: number; name: string; emoji: string; parentId: number | null; isPinned: boolean }>(
+        const { ok, data, status } = await apiFetch<{ id: number; name: string; emoji: string; parentId: number | null; isPinned: boolean }>(
           "/api/folders",
           {
             method: "POST",
@@ -350,7 +350,11 @@ export const useDashboardStore = create<DashboardState>()(
             body: JSON.stringify({ name: trimmedName, emoji, parentId: numericParentId, isPinned: false }),
           },
         );
-        if (!ok || !data) return;
+        if (!ok || !data) {
+          if (status === 409) throw new Error("A folder with this name already exists.");
+          if (status === 403) throw new Error("You don't have permission to create folders here.");
+          throw new Error("Failed to create folder. Please try again.");
+        }
         const newFolder = {
           id:       String(data.id),
           name:     data.name,
@@ -469,7 +473,7 @@ export const useDashboardStore = create<DashboardState>()(
       addTag: async (name, color) => {
         const trimmedName = name.trim().slice(0, 50);
         if (!trimmedName) return;
-        const { ok, data } = await apiFetch<{ id: number; name: string; color: string }>(
+        const { ok, data, status } = await apiFetch<{ id: number; name: string; color: string }>(
           "/api/tags",
           {
             method: "POST",
@@ -477,7 +481,10 @@ export const useDashboardStore = create<DashboardState>()(
             body: JSON.stringify({ name: trimmedName, color }),
           },
         );
-        if (!ok || !data) return;
+        if (!ok || !data) {
+          if (status === 409) throw new Error("Tag already exists.");
+          throw new Error("Failed to create tag.");
+        }
         const newTag = { id: String(data.id), name: data.name, color: data.color };
         set((s) => {
           if (s.tags.some((t) => t.id === newTag.id)) return s;

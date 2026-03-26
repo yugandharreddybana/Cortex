@@ -4,6 +4,7 @@ import * as React from "react";
 import * as AlertDialog from "@radix-ui/react-alert-dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@cortex/ui";
+import { Loader2 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -160,7 +161,14 @@ export function DuplicateFolderModal({
                         "disabled:opacity-60 disabled:cursor-not-allowed"
                       )}
                     >
-                      {isPending ? "Duplicating…" : "Yes, duplicate & lose access"}
+                      {isPending ? (
+                        <span className="flex items-center justify-center gap-2">
+                          <Loader2 className="w-4 h-4 animate-spin text-neutral-400" />
+                          Duplicating…
+                        </span>
+                      ) : (
+                        "Yes, duplicate & lose access"
+                      )}
                     </button>
                   </AlertDialog.Action>
                 </div>

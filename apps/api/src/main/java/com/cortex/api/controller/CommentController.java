@@ -64,6 +64,29 @@ public class CommentController {
     }
 
     /**
+     * PUT /api/v1/highlights/{highlightId}/comments/{commentId}
+     * Update an existing comment.
+     */
+    @PutMapping("/{commentId}")
+    public ResponseEntity<CommentDTO> updateComment(
+            Authentication auth,
+            @PathVariable Long highlightId,
+            @PathVariable Long commentId,
+            @RequestBody CommentRequest request
+    ) {
+        Long userId = Long.parseLong(auth.getName());
+        log.info("[Comment] User {} updating comment {}", userId, commentId);
+
+        try {
+            Comment updated = commentService.updateComment(commentId, userId, request.text);
+            return ResponseEntity.ok(toDTO(updated));
+        } catch (Exception e) {
+            log.error("[Comment] Error updating comment", e);
+            throw e;
+        }
+    }
+
+    /**
      * DELETE /api/v1/highlights/{highlightId}/comments/{commentId}
      * Delete a comment (author or highlight owner only).
      */
@@ -88,6 +111,7 @@ public class CommentController {
         dto.highlightId = c.getHighlight().getId();
         dto.authorId = c.getAuthor().getId();
         dto.authorEmail = c.getAuthor().getEmail();
+        dto.authorFullName = c.getAuthor().getFullName();
         dto.text = c.getText();
         dto.createdAt = c.getCreatedAt();
         return dto;
@@ -104,6 +128,7 @@ public class CommentController {
         public Long highlightId;
         public Long authorId;
         public String authorEmail;
+        public String authorFullName;
         public String text;
         public Instant createdAt;
     }

@@ -12,6 +12,7 @@ import * as DropdownMenu from "@radix-ui/react-dropdown-menu";
 import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { cn } from "@cortex/ui";
+import { Loader2 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -62,6 +63,7 @@ export function DocsShareModal({
   const [emails, setEmails] = React.useState("");
   const [inviteRole, setInviteRole] = React.useState<AccessLevel>("VIEWER");
   const [permissions, setPermissions] = React.useState<Permission[]>([]);
+  const [isLoadingPermissions, setIsLoadingPermissions] = React.useState(true);
   const [linkAccess, setLinkAccess] = React.useState<LinkAccess>("RESTRICTED");
   const [defaultLinkRole, setDefaultLinkRole] = React.useState<AccessLevel>("VIEWER");
   const [loading, setLoading] = React.useState(false);
@@ -76,10 +78,14 @@ export function DocsShareModal({
     // Don't fetch if resourceId is empty or not yet a server-assigned numeric ID
     if (!resourceId || !Number.isFinite(Number(resourceId)) || Number(resourceId) <= 0) return;
 
+    setIsLoadingPermissions(true);
     fetch(`/api/permissions/${resourceId}?type=${resourceType}`)
       .then((r) => (r.ok ? r.json() : []))
-      .then((data) => setPermissions(Array.isArray(data) ? data : []))
-      .catch(() => setPermissions([]));
+      .then((data) => {
+        setPermissions(Array.isArray(data) ? data : []);
+      })
+      .catch(() => setPermissions([]))
+      .finally(() => setIsLoadingPermissions(false));
 
     // Fetch link access settings
     fetch(`/api/permissions/access-level?resourceId=${resourceId}&type=${resourceType}`)
@@ -313,7 +319,14 @@ export function DocsShareModal({
                           "disabled:opacity-40 disabled:cursor-not-allowed",
                         )}
                       >
-                        {sending ? "Sending…" : "Send"}
+                        {sending ? (
+                          <span className="flex items-center gap-2">
+                            <Loader2 className="w-4 h-4 animate-spin text-black/50" />
+                            Sending…
+                          </span>
+                        ) : (
+                          "Send"
+                        )}
                       </button>
                     </div>
                   </div>
@@ -335,23 +348,31 @@ export function DocsShareModal({
                       )}
 
                       {/* Invited users */}
-                      {permissions.map((p) => (
-                        <PersonRow
-                          key={p.id}
-                          email={p.email}
-                          role={ROLE_LABELS[p.accessLevel]}
-                          accessLevel={p.accessLevel}
-                          onRoleChange={(role) =>
-                            handleRoleChange(p.id, role)
-                          }
-                          onRemove={() => handleRemove(p.id)}
-                        />
-                      ))}
+                      {isLoadingPermissions ? (
+                        <div className="flex justify-center py-6">
+                          <Loader2 className="animate-spin text-white/30" size={20} />
+                        </div>
+                      ) : (
+                        <>
+                          {permissions.map((p) => (
+                            <PersonRow
+                              key={p.id}
+                              email={p.email}
+                              role={ROLE_LABELS[p.accessLevel]}
+                              accessLevel={p.accessLevel}
+                              onRoleChange={(role) =>
+                                handleRoleChange(p.id, role)
+                              }
+                              onRemove={() => handleRemove(p.id)}
+                            />
+                          ))}
 
-                      {permissions.length === 0 && !ownerEmail && (
-                        <p className="text-sm text-white/30 py-2">
-                          No one has been invited yet
-                        </p>
+                          {permissions.length === 0 && !ownerEmail && (
+                            <p className="text-sm text-white/30 py-2">
+                              No one has been invited yet
+                            </p>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>

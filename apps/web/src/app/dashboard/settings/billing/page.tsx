@@ -278,14 +278,13 @@ export default function BillingPage() {
                     <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.03] p-3 mb-5">
                       <div className="w-8 h-5 rounded bg-gradient-to-br from-[#252525] to-[#1a1a1a] border border-white/10 text-[8px] text-white/30 flex items-center justify-center font-mono">VISA</div>
                       <span className="text-sm text-white/40 font-mono tracking-wider">•••• •••• •••• 4242</span>
-                      <span className="ml-auto text-xs text-white/30">12/27</span>
                     </div>
 
                     <button
                       onClick={() => {
                         setTeamsOpen(false);
-                        toast.info("Stripe checkout coming soon", {
-                          description: "Payment integration is not yet configured.",
+                        toast.info("Stripe checkout pending", {
+                          description: "The payment gateway for team subscriptions is currently in the integration phase.",
                         });
                       }}
                       className={cn(

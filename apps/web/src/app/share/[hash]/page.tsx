@@ -5,6 +5,8 @@ import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { cn } from "@cortex/ui";
 import { toast } from "sonner";
+import { premiumToast } from "@/lib/premium-feedback";
+import { Loader2 } from "lucide-react";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -89,11 +91,16 @@ export default function SharePage() {
   async function handleView() {
     setActing(true);
     try {
-      await fetch(`/api/share/${encodeURIComponent(hash)}/view`, { method: "POST" });
-      toast.success("Saved to \"Shared with me\"");
+      const res = await fetch(`/api/share/${encodeURIComponent(hash)}/view`, { method: "POST" });
+      if (!res.ok) throw new Error("Could not save to shared collection.");
+      
+      toast.success("Content saved", {
+        description: "You can find this in your \"Shared with me\" collection.",
+      });
       router.push("/dashboard");
-    } catch {
-      toast.error("Something went wrong");
+    } catch (err: any) {
+      // Global interceptor handles API errors, but we catch network/unexpected here
+      console.error(err);
     } finally {
       setActing(false);
     }
@@ -103,11 +110,15 @@ export default function SharePage() {
     setActing(true);
     try {
       const res = await fetch(`/api/share/${encodeURIComponent(hash)}/clone`, { method: "POST" });
-      if (!res.ok) throw new Error();
-      toast.success("Added to your library!");
+      if (!res.ok) throw new Error("Failed to clone content.");
+      
+      const type = payload?.resourceType === "FOLDER" ? "Folder" : "Highlight";
+      toast.success(`${type} added`, {
+        description: "The content has been successfully added to your private library.",
+      });
       router.push("/dashboard");
-    } catch {
-      toast.error("Failed to add to library");
+    } catch (err: any) {
+      console.error(err);
     } finally {
       setActing(false);
     }
@@ -118,9 +129,7 @@ export default function SharePage() {
     return (
       <div className="min-h-screen bg-bg flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-8 h-8 rounded-xl bg-accent flex items-center justify-center shadow-[0_0_20px_rgba(108,99,255,0.4)] animate-pulse">
-            <CortexMark />
-          </div>
+          <Loader2 className="w-8 h-8 animate-spin text-accent" />
           <p className="text-sm text-white/40">Loading shared content…</p>
         </div>
       </div>

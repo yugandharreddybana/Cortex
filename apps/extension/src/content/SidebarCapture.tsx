@@ -43,8 +43,7 @@ const HIGHLIGHT_COLORS = [
   { id: "red",    value: "#EF4444", label: "Red"    },
 ];
 
-const TAG_COLORS = ["blue", "violet", "emerald", "amber", "pink", "teal"];
-
+const TAG_COLORS = ["#ef4444", "#3b82f6", "#22c55e", "#eab308"];
 const TAG_COLOR_MAP: Record<string, string> = {
   blue:    "#3B82F6",
   violet:  "#8B5CF6",
@@ -88,6 +87,15 @@ function isInCodeBlock(): boolean {
   return false;
 }
 
+function getContrastColor(hexColor: string) {
+  const hex = (hexColor || "#ffffff").replace("#", "");
+  if (hex.length !== 6) return "#ffffff";
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+  return (r * 299 + g * 587 + b * 114) / 1000 >= 128 ? "#000000" : "#ffffff";
+}
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function SidebarCapture({ selectedText, onClose }: SidebarCaptureProps) {
@@ -97,8 +105,10 @@ export function SidebarCapture({ selectedText, onClose }: SidebarCaptureProps) {
   const [selectedFolderId, setSelectedFolderId] = useState<string | null>(null);
   const [selectedTagIds, setSelectedTagIds] = useState<string[]>([]);
   const [selectedColor, setSelectedColor] = useState(HIGHLIGHT_COLORS[0]);
+  const [selectedTagColor, setSelectedTagColor] = useState(TAG_COLORS[0]);
   const [saved, setSaved] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [folderPickerOpen, setFolderPickerOpen] = useState(false);
   const [tagQuery, setTagQuery] = useState("");
   const [newFolderName, setNewFolderName] = useState("");
@@ -155,7 +165,7 @@ export function SidebarCapture({ selectedText, onClose }: SidebarCaptureProps) {
       (response) => {
         if (!chrome.runtime.lastError && response) {
           setFolders(response.folders ?? []);
-          setTags(response.tags ?? []);
+          setTags(response.tags ? response.tags.map((t: any) => ({ ...t, id: String(t.id) })) : []);
           setToken(response.token ?? null);
           if (response.authState) setAuthState(response.authState as AuthState);
         }
@@ -172,8 +182,8 @@ export function SidebarCapture({ selectedText, onClose }: SidebarCaptureProps) {
             setFolders(Array.isArray(folders) ? (folders as LocalFolder[]) : []);
           }
           if ("tags" in data) {
-            const tags = data.tags as unknown[];
-            setTags(Array.isArray(tags) ? (tags as LocalTag[]) : []);
+            const tags = data.tags as any[];
+            setTags(Array.isArray(tags) ? tags.map(t => ({ ...t, id: String(t.id) })) : []);
           }
           if ("token" in data) setToken((data.token as string | null) ?? null);
           // Phase 16.1 — update auth state from broadcast
@@ -207,13 +217,17 @@ export function SidebarCapture({ selectedText, onClose }: SidebarCaptureProps) {
   const handleSave = useCallback(() => {
     if (savingRef.current || isSaving) return;
 
+    setError(null); // Clear previous errors
     const trimmedText = text.trim();
     const finalText = trimmedText
       ? trimmedText
       : isYouTube
         ? `📍 Video Bookmark at ${ytFormattedTime}`
         : "";
-    if (!finalText) return;
+    if (!finalText) {
+      setError("Cannot save an empty highlight.");
+      return;
+    }
 
     savingRef.current = true;
     setIsSaving(true);
@@ -368,8 +382,7 @@ export function SidebarCapture({ selectedText, onClose }: SidebarCaptureProps) {
   }, []);
 
   const handleCreateTag = useCallback((name: string) => {
-    const color = TAG_COLORS[tags.length % TAG_COLORS.length];
-    const newTag: LocalTag = { id: nextTempId(), name: name.trim(), color };
+    const newTag: LocalTag = { id: nextTempId(), name: name.trim(), color: selectedTagColor };
     // Optimistic UI update
     setTags((prev) => [...prev, newTag]);
     setSelectedTagIds((prev) => [...prev, newTag.id]);
@@ -838,30 +851,72 @@ export function SidebarCapture({ selectedText, onClose }: SidebarCaptureProps) {
             }}>
               🔒 Timestamp and metadata captured securely.
             </div>
-          )}
+          )}          {/* Error banner */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.2 }}
+                style={{
+                  display: "flex", alignItems: "center", gap: "10px",
+                  padding: "10px 14px", borderRadius: "10px",
+                  background: "rgba(239,68,68,0.12)", border: "1px solid rgba(239,68,68,0.25)",
+                  fontSize: "12px", fontWeight: 500, color: "rgba(252,165,165,1)",
+                }}
+              >
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                  <circle cx="12" cy="12" r="10"></circle>
+                  <line x1="12" y1="8" x2="12" y2="12"></line>
+                  <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                </svg>
+                <span style={{ flex: 1 }}>{error}</span>
+                <button
+                  onClick={() => setError(null)}
+                  style={{ all: "unset", cursor: "pointer", opacity: 0.6, padding: "2px" }}
+                >
+                  <svg width="10" height="10" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M2 2l10 10M12 2L2 12"/></svg>
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
 
-          {/* ── Content preview ── */}
-          <div>
-            <div style={s.label}>Content</div>
-            <textarea
-              ref={textareaRef}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              onKeyDown={stopProp}
-              placeholder={isYouTube ? `📍 Video Bookmark at ${ytFormattedTime}` : ""}
-              style={s.textarea}
-              spellCheck={false}
-            />
-          </div>
 
-          {/* ── Folder selector ── */}
-          <div>
-            <div style={s.label}>Folder</div>
+          {/* ── Folder selection ── */}
+          <div style={{ position: "relative" }}>
+            <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "6px" }}>
+              <div style={s.label}>Folder</div>
+              <button
+                onClick={(e) => { e.stopPropagation(); setShowNewFolder(true); }}
+                style={{
+                  all: "unset",
+                  width: "18px",
+                  height: "18px",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  borderRadius: "4px",
+                  cursor: "pointer",
+                  color: "rgba(108,99,255,0.7)",
+                  background: "rgba(108,99,255,0.08)",
+                  border: "1px solid rgba(108,99,255,0.15)",
+                  transition: "all 0.15s",
+                }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(108,99,255,0.15)"; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = "rgba(108,99,255,0.08)"; }}
+                title="Create new folder"
+              >
+                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+              </button>
+            </div>
             <button
-              style={s.folderBtn}
-              onClick={() => setFolderPickerOpen((v) => !v)}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.18)"; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = "rgba(255,255,255,0.08)"; }}
+              onClick={() => setFolderPickerOpen(!folderPickerOpen)}
+              style={{
+                ...s.folderBtn,
+                borderColor: folderPickerOpen ? "rgba(108,99,255,0.5)" : "rgba(255,255,255,0.08)",
+                boxShadow: folderPickerOpen ? "0 0 0 2px rgba(108,99,255,0.15)" : "none",
+              }}
             >
               <span>{selectedFolder?.emoji ?? "📂"}</span>
               <span style={{ flex: 1, textAlign: "left" }}>
@@ -887,9 +942,112 @@ export function SidebarCapture({ selectedText, onClose }: SidebarCaptureProps) {
                     background: "#1a1a1a",
                     border: "1px solid rgba(255,255,255,0.07)",
                     padding: "4px",
-                    maxHeight: "200px",
-                    overflowY: "auto",
+                    display: "flex",
+                    flexDirection: "column",
                   }}>
+                    {/* Pinned "Create Folder" at the top — Ultra Prominent */}
+                    <div style={{ borderBottom: "1px solid rgba(255,255,255,0.12)", margin: "4px", paddingBottom: "10px", marginBottom: "10px" }}>
+                      <button
+                        onClick={() => setShowNewFolder(true)}
+                        style={{
+                          ...s.folderItem,
+                          background: "linear-gradient(135deg, rgba(108,99,255,0.2) 0%, rgba(108,99,255,0.05) 100%)",
+                          color: "#8b85ff",
+                          fontWeight: 700,
+                          border: "1px solid rgba(108,99,255,0.3)",
+                          padding: "8px 12px",
+                          letterSpacing: "0.01em",
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = "linear-gradient(135deg, rgba(108,99,255,0.3) 0%, rgba(108,99,255,0.1) 100%)"; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = "linear-gradient(135deg, rgba(108,99,255,0.2) 0%, rgba(108,99,255,0.05) 100%)"; }}
+                      >
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ marginRight: "8px" }}><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path><line x1="12" y1="11" x2="12" y2="17"></line><line x1="9" y1="14" x2="15" y2="14"></line></svg>
+                        Create New Folder
+                      </button>
+                    </div>
+                    {/* Create folder section */}
+                    <div style={{ borderBottom: "1px solid rgba(255,255,255,0.06)", margin: "4px", paddingBottom: "8px" }}>
+                      {!showNewFolder ? (
+                        <button
+                          style={{ ...s.folderItem, color: "rgba(108,99,255,0.80)", display: "none" }} // Hidden since we have the prominent one above
+                          onClick={() => setShowNewFolder(true)}
+                        >
+                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                            <path d="M6 2v8M2 6h8" />
+                          </svg>
+                          Create Folder
+                        </button>
+                      ) : (
+                        <div style={{ padding: "8px", display: "flex", flexDirection: "column", gap: "10px" }}>
+                          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                            <input
+                              autoFocus
+                              value={newFolderName}
+                              onChange={(e) => setNewFolderName(e.target.value)}
+                              onKeyDown={(e) => { stopProp(e); if (e.key === "Enter") handleCreateFolder(); }}
+                              placeholder="Folder name..."
+                              style={{ ...s.newFolderInput, flex: 1, padding: "8px 10px" }}
+                            />
+                            <div style={{ display: "flex", gap: "4px" }}>
+                              <button
+                                onClick={handleCreateFolder}
+                                style={{
+                                  all: "unset",
+                                  padding: "8px 12px",
+                                  borderRadius: "8px",
+                                  background: "#6C63FF",
+                                  color: "#fff",
+                                  fontSize: "12px",
+                                  fontWeight: 600,
+                                  cursor: "pointer",
+                                  boxShadow: "0 2px 8px rgba(108,99,255,0.3)",
+                                }}
+                              >
+                                Create
+                              </button>
+                              <button
+                                onClick={() => setShowNewFolder(false)}
+                                style={{
+                                  all: "unset",
+                                  padding: "8px",
+                                  borderRadius: "8px",
+                                  background: "rgba(255,255,255,0.05)",
+                                  color: "rgba(255,255,255,0.4)",
+                                  cursor: "pointer",
+                                }}
+                              >
+                                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+                              </button>
+                            </div>
+                          </div>
+                          {/* Flat Parent Folder Selection — Not buried */}
+                          <div>
+                            <div style={{ ...s.label, marginBottom: "8px", fontSize: "10px", opacity: 0.5 }}>Select Parent Folder</div>
+                            <div style={{
+                              maxHeight: "150px",
+                              overflowY: "auto",
+                              background: "rgba(0,0,0,0.2)",
+                              borderRadius: "8px",
+                              padding: "4px",
+                              border: "1px solid rgba(255,255,255,0.05)",
+                            }}>
+                              <ParentFolderFlatList
+                                folders={folders}
+                                value={newFolderParent}
+                                onChange={setNewFolderParent}
+                              />
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
+                    <div style={{
+                      maxHeight: "200px",
+                      overflowY: "auto",
+                      paddingTop: "4px",
+                    }}>
+
                     {/* Unassigned option */}
                     <button
                       style={{
@@ -914,61 +1072,25 @@ export function SidebarCapture({ selectedText, onClose }: SidebarCaptureProps) {
                         itemStyle={s.folderItem}
                       />
                     ))}
-
-                    {/* Create folder */}
-                    <div style={{ borderTop: "1px solid rgba(255,255,255,0.06)", marginTop: "4px", paddingTop: "4px" }}>
-                      {!showNewFolder ? (
-                        <button
-                          style={{ ...s.folderItem, color: "rgba(108,99,255,0.80)" }}
-                          onClick={() => setShowNewFolder(true)}
-                          onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(108,99,255,0.08)"; }}
-                          onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-                        >
-                          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                            <path d="M6 2v8M2 6h8" />
-                          </svg>
-                          Create Folder
-                        </button>
-                      ) : (
-                        <div style={{ padding: "6px 8px", display: "flex", flexDirection: "column", gap: "6px" }}>
-                          <div style={{ display: "flex", gap: "6px" }}>
-                            <input
-                              autoFocus
-                              value={newFolderName}
-                              onChange={(e) => setNewFolderName(e.target.value)}
-                              onKeyDown={(e) => { stopProp(e); if (e.key === "Enter") handleCreateFolder(); }}
-                              placeholder="Folder name"
-                              style={s.newFolderInput}
-                            />
-                            <button
-                              onClick={handleCreateFolder}
-                              style={{
-                                all: "unset",
-                                padding: "4px 10px",
-                                borderRadius: "6px",
-                                background: "rgba(108,99,255,0.25)",
-                                color: "#6C63FF",
-                                fontSize: "11px",
-                                fontWeight: 600,
-                                cursor: "pointer",
-                              }}
-                            >
-                              Add
-                            </button>
-                          </div>
-                          {/* Parent folder selector — custom dropdown (native <select> has unstyled white bg in Shadow DOM) */}
-                          <ParentFolderPicker
-                            folders={folders}
-                            value={newFolderParent}
-                            onChange={setNewFolderParent}
-                          />
-                        </div>
-                      )}
-                    </div>
                   </div>
-                </motion.div>
-              )}
+                </div>
+              </motion.div>
+            )}
             </AnimatePresence>
+          </div>
+
+          {/* ── Content preview ── */}
+          <div>
+            <div style={s.label}>Content</div>
+            <textarea
+              ref={textareaRef}
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={stopProp}
+              placeholder={isYouTube ? `📍 Video Bookmark at ${ytFormattedTime}` : ""}
+              style={s.textarea}
+              spellCheck={false}
+            />
           </div>
 
           {/* ── Color picker ── */}
@@ -987,14 +1109,43 @@ export function SidebarCapture({ selectedText, onClose }: SidebarCaptureProps) {
                     borderRadius: "50%",
                     background: c.value,
                     cursor: "pointer",
-                    border: selectedColor.id === c.id ? "2.5px solid #fff" : "2.5px solid transparent",
-                    transform: selectedColor.id === c.id ? "scale(1.15)" : "scale(1)",
+                    border: selectedColor.value === c.value ? "2.5px solid #fff" : "2.5px solid transparent",
+                    transform: selectedColor.value === c.value ? "scale(1.15)" : "scale(1)",
                     transition: "all 0.15s",
                     flexShrink: 0,
                     boxSizing: "border-box",
                   }}
                 />
               ))}
+              {/* Custom color picker */}
+              <label style={{ position: "relative", cursor: "pointer", display: "flex", alignItems: "center", justifyContent: "center" }}>
+                <input
+                  type="color"
+                  value={HIGHLIGHT_COLORS.some(c => c.value === selectedColor.value) ? "#6C63FF" : selectedColor.value}
+                  onChange={(e) => setSelectedColor({ id: "custom", value: e.target.value, label: "Custom" })}
+                  style={{ position: "absolute", opacity: 0, width: "100%", height: "100%", cursor: "pointer" }}
+                />
+                <span
+                  style={{
+                    width: "22px",
+                    height: "22px",
+                    borderRadius: "50%",
+                    background: HIGHLIGHT_COLORS.some(c => c.value === selectedColor.value) ? "linear-gradient(135deg,#a855f7,#3b82f6,#10b981)" : selectedColor.value,
+                    border: !HIGHLIGHT_COLORS.some(c => c.value === selectedColor.value) ? "2.5px solid #fff" : "2.5px solid transparent",
+                    transform: !HIGHLIGHT_COLORS.some(c => c.value === selectedColor.value) ? "scale(1.15)" : "scale(1)",
+                    boxSizing: "border-box",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    transition: "all 0.15s",
+                  }}
+                  title="Custom color"
+                >
+                  {HIGHLIGHT_COLORS.some(c => c.value === selectedColor.value) && (
+                    <span style={{ width: "6px", height: "6px", borderRadius: "50%", background: "#fff", opacity: 0.8 }} />
+                  )}
+                </span>
+              </label>
             </div>
           </div>
 
@@ -1048,17 +1199,49 @@ export function SidebarCapture({ selectedText, onClose }: SidebarCaptureProps) {
                 </div>
               )}
               {showCreateTag && (
-                <button
-                  onClick={() => handleCreateTag(tagQuery)}
-                  style={{ ...s.folderItem, color: "rgba(108,99,255,0.80)", borderTop: filteredTags.length > 0 ? "1px solid rgba(255,255,255,0.06)" : "none", marginTop: filteredTags.length > 0 ? "2px" : "0" }}
-                  onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(108,99,255,0.08)"; }}
-                  onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
-                >
-                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                    <path d="M5 1v8M1 5h8" />
-                  </svg>
-                  Create &ldquo;{tagQuery.trim()}&rdquo;
-                </button>
+                <div style={{ borderTop: filteredTags.length > 0 ? "1px solid rgba(255,255,255,0.06)" : "none", marginTop: filteredTags.length > 0 ? "4px" : "0", padding: "8px 4px 4px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "6px", marginBottom: "8px" }}>
+                    <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", marginRight: "4px" }}>Color:</span>
+                    {TAG_COLORS.map((c) => (
+                      <button
+                        key={c}
+                        onClick={() => setSelectedTagColor(c)}
+                        style={{
+                          all: "unset", width: "16px", height: "16px", borderRadius: "50%", background: c,
+                          cursor: "pointer", border: selectedTagColor === c ? "2px solid #fff" : "2px solid transparent",
+                          boxSizing: "border-box", transition: "all 0.1s",
+                        }}
+                      />
+                    ))}
+                    <label style={{ position: "relative", cursor: "pointer", display: "flex", alignItems: "center" }}>
+                      <input
+                        type="color"
+                        value={selectedTagColor}
+                        onChange={(e) => setSelectedTagColor(e.target.value)}
+                        style={{ position: "absolute", opacity: 0, width: "100%", height: "100%", cursor: "pointer" }}
+                      />
+                      <span style={{
+                        width: "16px", height: "16px", borderRadius: "50%",
+                        background: TAG_COLORS.includes(selectedTagColor) ? "linear-gradient(135deg,#a855f7,#3b82f6,#10b981)" : selectedTagColor,
+                        border: !TAG_COLORS.includes(selectedTagColor) ? "2px solid #fff" : "2px solid transparent",
+                        boxSizing: "border-box", display: "flex", alignItems: "center", justifyContent: "center"
+                      }}>
+                        {TAG_COLORS.includes(selectedTagColor) && <span style={{ width: "4px", height: "4px", borderRadius: "50%", background: "#fff" }} />}
+                      </span>
+                    </label>
+                  </div>
+                  <button
+                    onClick={() => handleCreateTag(tagQuery)}
+                    style={{ ...s.folderItem, color: "rgba(108,99,255,0.80)" }}
+                    onMouseEnter={(e) => { e.currentTarget.style.background = "rgba(108,99,255,0.08)"; }}
+                    onMouseLeave={(e) => { e.currentTarget.style.background = "transparent"; }}
+                  >
+                    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                      <path d="M5 1v8M1 5h8" />
+                    </svg>
+                    Create &ldquo;{tagQuery.trim()}&rdquo;
+                  </button>
+                </div>
               )}
             </div>
 
@@ -1133,9 +1316,9 @@ export function SidebarCapture({ selectedText, onClose }: SidebarCaptureProps) {
   );
 }
 
-// ─── Custom Parent Folder Picker (replaces unstyled <select>) ─────────────────
+// ─── Custom Parent Folder Selector (Flat list version) ─────────────────────────
 
-function ParentFolderPicker({
+function ParentFolderFlatList({
   folders,
   value,
   onChange,
@@ -1144,119 +1327,69 @@ function ParentFolderPicker({
   value:    string | null;
   onChange: (v: string | null) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const selected = folders.find((f) => f.id === value);
-
-  // Build a set of all ancestor IDs to prevent selecting descendants as parents
-  const getAncestors = (id: string): Set<string> => {
-    const ancestors = new Set<string>();
-    let current = folders.find((f) => f.id === id);
-    while (current && current.parentId) {
-      ancestors.add(current.parentId);
-      current = folders.find((f) => f.id === current!.parentId);
-    }
-    return ancestors;
-  };
-
-  const ancestors = value ? getAncestors(value) : new Set();
-
-  const renderFolderOptions = (parentId: string | null = null, depth = 0): React.ReactNode[] => {
+  const renderOptions = (parentId: string | null = null, depth = 0): React.ReactNode[] => {
     return folders
-      .filter((f) => (f.parentId === parentId || (parentId === null && !f.parentId)) && f.id !== value && !ancestors.has(f.id))
+      .filter((f) => (parentId ? f.parentId === parentId : !f.parentId))
       .map((f) => [
         <button
           key={f.id}
-          onClick={() => { onChange(f.id); setOpen(false); }}
+          onClick={() => onChange(f.id)}
           style={{
             all: "unset",
             display: "flex",
             alignItems: "center",
-            gap: "6px",
+            gap: "8px",
             width: "100%",
-            padding: "5px 8px",
-            paddingLeft: `${8 + depth * 12}px`,
+            padding: "6px 10px",
+            paddingLeft: `${10 + depth * 14}px`,
             borderRadius: "6px",
-            fontSize: "11px",
-            color: value === f.id ? "#6C63FF" : "rgba(255,255,255,0.60)",
-            background: value === f.id ? "rgba(108,99,255,0.10)" : "#171717",
+            fontSize: "12px",
+            color: value === f.id ? "#fff" : "rgba(255,255,255,0.5)",
+            background: value === f.id ? "rgba(108,99,255,0.3)" : "transparent",
             cursor: "pointer",
             boxSizing: "border-box",
+            transition: "all 0.1s",
+            border: value === f.id ? "1px solid rgba(108,99,255,0.4)" : "1px solid transparent",
           }}
-          onMouseEnter={(e) => { if (value !== f.id) e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
-          onMouseLeave={(e) => { if (value !== f.id) e.currentTarget.style.background = "#171717"; }}
+          onMouseEnter={(e) => { if (value !== f.id) e.currentTarget.style.background = "rgba(255,255,255,0.05)"; }}
+          onMouseLeave={(e) => { if (value !== f.id) e.currentTarget.style.background = "transparent"; }}
         >
-          {f.emoji} {f.name}
+          <span style={{ fontSize: "14px" }}>{f.emoji}</span>
+          <span style={{ flex: 1, textAlign: "left", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.name}</span>
+          {value === f.id && (
+            <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2">
+              <path d="M2 5l2.5 2.5L8 3" />
+            </svg>
+          )}
         </button>,
-        ...renderFolderOptions(f.id, depth + 1),
+        ...renderOptions(f.id, depth + 1),
       ]);
   };
 
   return (
-    <div style={{ position: "relative" }}>
+    <div style={{ display: "flex", flexDirection: "column", gap: "2px" }}>
       <button
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => onChange(null)}
         style={{
           all: "unset",
-          width: "100%",
           display: "flex",
           alignItems: "center",
-          justifyContent: "space-between",
-          padding: "5px 8px",
+          gap: "8px",
+          width: "100%",
+          padding: "6px 10px",
           borderRadius: "6px",
-          background: "rgba(255,255,255,0.04)",
-          border: "1px solid rgba(255,255,255,0.08)",
-          fontSize: "11px",
-          color: "rgba(255,255,255,0.60)",
-          boxSizing: "border-box",
+          fontSize: "12px",
+          color: !value ? "#fff" : "rgba(255,255,255,0.5)",
+          background: !value ? "rgba(108,99,255,0.3)" : "transparent",
           cursor: "pointer",
+          boxSizing: "border-box",
+          border: !value ? "1px solid rgba(108,99,255,0.4)" : "1px solid transparent",
         }}
       >
-        <span>{selected ? `${selected.emoji} ${selected.name}` : "No parent (root)"}</span>
-        <svg width="8" height="8" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"
-          style={{ transform: open ? "rotate(180deg)" : "rotate(0)", transition: "transform 0.15s" }}>
-          <path d="M2 3.5L5 6.5L8 3.5" />
-        </svg>
+        <span>📂</span>
+        <span>No parent (root)</span>
       </button>
-      {open && (
-        <div style={{
-          position: "absolute",
-          top: "100%",
-          left: 0,
-          right: 0,
-          marginTop: "4px",
-          borderRadius: "8px",
-          background: "#171717",
-          border: "1px solid rgba(255,255,255,0.10)",
-          boxShadow: "0 8px 24px rgba(0,0,0,0.6)",
-          zIndex: 2147483650,
-          maxHeight: "140px",
-          overflowY: "auto",
-          padding: "3px",
-        }}>
-          <button
-            onClick={() => { onChange(null); setOpen(false); }}
-            style={{
-              all: "unset",
-              display: "flex",
-              alignItems: "center",
-              gap: "6px",
-              width: "100%",
-              padding: "5px 8px",
-              borderRadius: "6px",
-              fontSize: "11px",
-              color: !value ? "#6C63FF" : "rgba(255,255,255,0.60)",
-              background: !value ? "rgba(108,99,255,0.10)" : "#171717",
-              cursor: "pointer",
-              boxSizing: "border-box",
-            }}
-            onMouseEnter={(e) => { if (value) e.currentTarget.style.background = "rgba(255,255,255,0.08)"; }}
-            onMouseLeave={(e) => { if (value) e.currentTarget.style.background = "#171717"; }}
-          >
-            No parent (root)
-          </button>
-          {renderFolderOptions()}
-        </div>
-      )}
+      {renderOptions()}
     </div>
   );
 }

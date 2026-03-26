@@ -6,6 +6,7 @@ import { motion } from "framer-motion";
 import { cn } from "@cortex/ui";
 import { toast } from "sonner";
 import { Client } from "@stomp/stompjs";
+import { Loader2 } from "lucide-react";
 
 type AccessLevel = "VIEWER" | "COMMENTER" | "EDITOR" | "OWNER";
 
@@ -176,10 +177,15 @@ export default function SharedCollaborationPage() {
         body: JSON.stringify({ note: noteValue }),
       });
       if (!res.ok) throw new Error();
-      toast.success("Note saved");
-    } catch {
-      toast.error("Failed to save note");
-    } finally {
+      toast.success("Note saved", {
+        description: "Your comments have been securely updated.",
+      });
+    } catch (err: any) {
+      toast.error("Failed to save note", {
+        description: err.message || "Something went wrong while saving your changes.",
+      });
+    }
+ finally {
       setSaving(false);
     }
   }
@@ -189,11 +195,7 @@ export default function SharedCollaborationPage() {
   if (loading) {
     return (
       <div className="flex-1 flex items-center justify-center min-h-[60vh]">
-        <motion.div
-          className="w-8 h-8 rounded-full border-2 border-white/20 border-t-white"
-          animate={{ rotate: 360 }}
-          transition={{ repeat: Infinity, duration: 0.8, ease: "linear" }}
-        />
+        <Loader2 className="w-8 h-8 animate-spin text-white/40" />
       </div>
     );
   }

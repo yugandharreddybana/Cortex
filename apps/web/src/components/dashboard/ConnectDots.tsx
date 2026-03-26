@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Link2 } from "lucide-react";
+import { Link2, Loader2 } from "lucide-react";
 
 export function ConnectDots({ text, url, customPrompt, isAI, onRequireContext }: { text: string; url?: string; customPrompt?: string; isAI?: boolean; onRequireContext?: () => void }) {
   const [loading, setLoading] = useState(false);
@@ -42,7 +42,14 @@ export function ConnectDots({ text, url, customPrompt, isAI, onRequireContext }:
             disabled={loading || isAI}
             className={`text-xs font-medium px-3 py-1.5 rounded-lg transition-colors ${isAI ? 'bg-white/[0.02] text-white/30 cursor-not-allowed' : 'bg-white/[0.05] hover:bg-white/[0.1] text-white/70'}`}
           >
-            {loading ? "Analyzing..." : "Find semantic links"}
+            {loading ? (
+              <span className="flex items-center gap-2 text-white/50">
+                <Loader2 className="w-3 h-3 animate-spin" />
+                Analyzing...
+              </span>
+            ) : (
+              "Find semantic links"
+            )}
           </button>
           {/* Tooltip */}
           {isAI ? (

@@ -34,7 +34,8 @@ export function BulkActionBar() {
     const ids = [...selectedIds];
     ids.forEach((id) => deleteHighlight(id));
     clearSelection();
-    toast(`${ids.length} highlight${ids.length > 1 ? "s" : ""} deleted`, {
+    toast.success(`${ids.length} highlight${ids.length > 1 ? "s" : ""} deleted`, {
+      description: "Items have been moved to your trash.",
       action: {
         label: "Undo",
         onClick: () => ids.forEach((id) => restoreHighlight(id)),
@@ -47,26 +48,34 @@ export function BulkActionBar() {
     const ids = [...selectedIds];
     ids.forEach((id) => moveHighlight(id, folderId, folderName));
     clearSelection();
-    toast(`Moved ${ids.length} highlight${ids.length > 1 ? "s" : ""} to ${folderName}`);
+    toast.success(`Moved ${ids.length} highlights`, {
+      description: `Successfully relocated to the "${folderName}" folder.`,
+    });
   }, [selectedIds, moveHighlight, clearSelection]);
 
   const handleBulkFavorite = React.useCallback(() => {
     const ids = [...selectedIds];
     ids.forEach((id) => toggleFavorite(id));
-    toast(`Toggled favorite on ${ids.length} highlight${ids.length > 1 ? "s" : ""}`);
+    toast.success("Favorites updated", {
+      description: `Toggled favorite status for ${ids.length} highlights.`,
+    });
   }, [selectedIds, toggleFavorite]);
 
   const handleBulkArchive = React.useCallback(() => {
     const ids = [...selectedIds];
     ids.forEach((id) => toggleArchive(id));
     clearSelection();
-    toast(`Archived ${ids.length} highlight${ids.length > 1 ? "s" : ""}`);
+    toast.success("Highlights archived", {
+      description: `Moved ${ids.length} highlights to your archive.`,
+    });
   }, [selectedIds, toggleArchive, clearSelection]);
 
   const handleBulkPin = React.useCallback(() => {
     const ids = [...selectedIds];
     ids.forEach((id) => togglePinHighlight(id));
-    toast(`Toggled pin on ${ids.length} highlight${ids.length > 1 ? "s" : ""}`);
+    toast.success("Pinned highlights updated", {
+      description: `Toggled pin status for ${ids.length} highlights.`,
+    });
   }, [selectedIds, togglePinHighlight]);
 
   const handleBulkTag = React.useCallback((tagId: string) => {
@@ -81,7 +90,15 @@ export function BulkActionBar() {
       updateHighlight(h.id, { tags: newTags });
     });
     const tag = tags.find((t) => t.id === tagId);
-    toast(allHaveTag ? `Removed tag "${tag?.name}"` : `Added tag "${tag?.name}"`);
+    if (allHaveTag) {
+      toast.success("Tag removed", {
+        description: `"${tag?.name}" was removed from ${selectedHighlights.length} highlights.`,
+      });
+    } else {
+      toast.success("Tag added", {
+        description: `"${tag?.name}" was added to ${selectedHighlights.length} highlights.`,
+      });
+    }
   }, [selectedIds, highlights, tags, updateHighlight]);
 
   const handleExport = React.useCallback(() => {
@@ -95,7 +112,9 @@ export function BulkActionBar() {
     a.click();
     URL.revokeObjectURL(url);
     clearSelection();
-    toast.success(`Exported ${selected.length} highlight${selected.length > 1 ? "s" : ""}`);
+    toast.success(`Export complete`, {
+      description: `Successfully exported ${selected.length} highlight${selected.length > 1 ? "s" : ""}.`,
+    });
   }, [selectedIds, highlights, clearSelection]);
 
   return (

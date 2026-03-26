@@ -256,9 +256,10 @@ function PricingCard({ plan, annual, index }: PricingCardProps) {
 }
 
 // ─── CTA Component ────────────────────────────────────────────────────────────
+import { toast } from "sonner";
+
 function PricingCTA({ plan, annual }: { plan: typeof PLANS[number], annual: boolean }) {
   const { user } = useAuthStore();
-  const { addToast } = useToastStore();
   const [loading, setLoading] = React.useState(false);
 
   const handleCheckout = async () => {
@@ -289,7 +290,9 @@ function PricingCTA({ plan, annual }: { plan: typeof PLANS[number], annual: bool
       const { url } = await res.json();
       window.location.href = url;
     } catch (err: any) {
-      addToast({ title: "Error", description: err.message || "An error occurred" });
+      toast.error("Checkout failed", {
+        description: err.message || "An unexpected error occurred during the checkout process. Please try again.",
+      });
       setLoading(false);
     }
   };

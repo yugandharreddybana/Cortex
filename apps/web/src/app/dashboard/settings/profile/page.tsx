@@ -97,10 +97,14 @@ export default function ProfilePage() {
       avatarUrl: avatarPreview ?? undefined,
     });
     if (ok) {
-      toast.success("Profile updated");
+      toast.success("Profile updated", {
+        description: "Your personal information has been successfully synchronized.",
+      });
       setEditing(false);
     } else {
-      toast.error("Failed to save profile");
+      toast.error("Update failed", {
+        description: "We couldn't save your profile changes. Please try again.",
+      });
     }
   }
 
@@ -115,10 +119,14 @@ export default function ProfilePage() {
   async function onPasswordSave(values: PasswordValues) {
     const result = await changePassword(values.currentPassword, values.newPassword);
     if (result.ok) {
-      toast.success("Password changed successfully");
+      toast.success("Password changed", {
+        description: "Your security credentials have been updated successfully.",
+      });
       resetPwd();
     } else {
-      toast.error(result.error ?? "Failed to change password");
+      toast.error("Change failed", {
+        description: result.error ?? "The current password you entered is incorrect.",
+      });
     }
   }
 

@@ -72,15 +72,20 @@ export function NewHighlightDialog({ open, onOpenChange }: NewHighlightDialogPro
       });
 
       if (!saved) {
-        toast.error("Failed to save highlight. Please try again.");
+        toast.error("Failed to save highlight", {
+          description: "Please check your network connection and try again.",
+        });
         return;
       }
 
-      toast.success("Highlight saved");
+      const { premiumToast } = await import("@/lib/premium-feedback");
+      premiumToast.highlightCreated();
       onOpenChange(false);
       reset();
-    } catch {
-      toast.error("Failed to save highlight. Please try again.");
+    } catch (err: any) {
+      toast.error("Creation failed", {
+        description: err.message || "An unexpected error occurred while saving the highlight.",
+      });
     } finally {
       setSaving(false);
     }

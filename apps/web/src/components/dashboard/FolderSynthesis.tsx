@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Sparkles } from "lucide-react";
+import { Sparkles, Loader2 } from "lucide-react";
 import { cn } from "@cortex/ui";
 import { useDashboardStore } from "@/store/dashboard";
 import type { Highlight } from "@/store/dashboard";
@@ -64,7 +64,16 @@ export function FolderSynthesis({ folderId, highlights }: FolderSynthesisProps) 
                 "hover:bg-purple-500/30 transition-colors disabled:opacity-50",
               )}
             >
-              {loading ? "Generating…" : synthesis ? "✦ Regenerate" : "✦ Generate Literature Review"}
+              {loading ? (
+                <span className="flex items-center gap-2">
+                  <Loader2 className="w-3 h-3 animate-spin" />
+                  Generating…
+                </span>
+              ) : synthesis ? (
+                "✦ Regenerate"
+              ) : (
+                "✦ Generate Literature Review"
+              )}
             </button>
           )}
         </div>
@@ -83,7 +92,7 @@ export function FolderSynthesis({ folderId, highlights }: FolderSynthesisProps) 
 
         {loading && (
           <div className="flex items-center gap-2 text-xs text-purple-300/60">
-            <div className="w-3 h-3 border border-purple-400/40 border-t-purple-400 rounded-full animate-spin" />
+            <Loader2 className="w-3 h-3 animate-spin" />
             Analyzing highlights…
           </div>
         )}

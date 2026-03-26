@@ -11,6 +11,7 @@ import { z } from "zod/v4";
 import { toast } from "sonner";
 import { sendExtensionToken } from "@/lib/extension-auth";
 import { premiumToast } from "@/lib/premium-feedback";
+import { Loader2 } from "lucide-react";
 
 const ease = [0.16, 1, 0.3, 1] as const;
 
@@ -69,7 +70,11 @@ function SignupContent() {
   }, [router, returnTo]);
 
   if (!authChecked) {
-    return <div className="min-h-screen bg-bg" />;  // auth check in progress
+    return (
+      <div className="min-h-screen bg-bg flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-accent" />
+      </div>
+    );
   }
 
   async function onSubmit(values: SignupValues) {
@@ -288,12 +293,7 @@ function CortexMark() {
 }
 
 function SpinnerIcon() {
-  return (
-    <svg className="animate-spin" width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-      <circle cx="7" cy="7" r="5.5" stroke="currentColor" strokeOpacity="0.3" strokeWidth="2" />
-      <path d="M7 1.5A5.5 5.5 0 0112.5 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
-    </svg>
-  );
+  return <Loader2 className="w-4 h-4 animate-spin" />;
 }
 
 function GoogleIcon() {

@@ -4,7 +4,7 @@ import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import { z } from "zod/v4";
 import { secureIdbStorage } from "@/lib/secure-vault";
-import { toast } from "@/store/useToastStore";
+import { toast } from "sonner";
 
 const MutationSchema = z.object({
   id: z.string().min(1),
@@ -237,21 +237,28 @@ export const useSyncQueueStore = create<SyncQueueState>()(
                   if (!authPaused) {
                     authPaused = true;
                     set({ pausedByAuth: true });
-                    toast({ title: "Session expired", description: "Sync paused until re-authentication." });
+                    toast.error("Session expired", {
+                      description: "Synchronization has been paused. Please sign in again to resume your work.",
+                      duration: Infinity, // keep until action
+                    });
                   }
                   nextQueue.push(item);
                   return;
                 }
 
                 if (statusType === "conflict") {
-                  toast({ title: "Conflict detected", description: "Server version retained." });
+                  toast.warning("Sync conflict", {
+                    description: "A conflict was detected. The server version has been retained to prevent data loss.",
+                  });
                   await refreshAfterConflict(item.endpoint);
                   return;
                 }
 
                 if (statusType === "client") {
                   dead.push(item);
-                  toast({ title: "Sync rejected", description: "Queued action moved to dead-letter queue." });
+                  toast.error("Action rejected", {
+                    description: "The requested update was invalid and has been moved to the dead-letter queue.",
+                  });
                   return;
                 }
 
@@ -259,120 +266,124 @@ export const useSyncQueueStore = create<SyncQueueState>()(
                   const bumped = { ...item, retryCount: item.retryCount + 1 };
                   if (bumped.retryCount >= 3) {
                     dead.push(bumped);
-                    toast({ title: "Repeated sync failure", description: "Queued action moved to dead-letter queue." });
-                  } else {
-                    nextQueue.push(bumped);
-                  }
+                  toast.error("Persistent failure", {
+                    description: "Synchronization failed repeatedly. The action has been quarantined for review.",
+                  });
+                } else {
+                  nextQueue.push(bumped);
                 }
-              } catch {
-                nextQueue.push({ ...item, retryCount: item.retryCount + 1 });
               }
-            })
-          );
-        }
+            } catch {
+              nextQueue.push({ ...item, retryCount: item.retryCount + 1 });
+            }
+          })
+        );
+      }
 
-        set({ syncQueue: nextQueue, deadLetterQueue: dead, tempIdMap: tempMap });
-      },
-
-      clearQueues: () => set({ syncQueue: [], deadLetterQueue: [], tempIdMap: {}, pausedByAuth: false }),
-      setPausedByAuth: (paused) => set({ pausedByAuth: paused }),
-    }),
-    {
-      name: "cortex:sync-queue",
-      version: 2,
-      storage: createJSONStorage(() => secureIdbStorage),
-      migrate: () => ({ syncQueue: [], deadLetterQueue: [], tempIdMap: {}, pausedByAuth: false }),
+      set({ syncQueue: nextQueue, deadLetterQueue: dead, tempIdMap: tempMap });
     },
-  ),
+
+    clearQueues: () => set({ syncQueue: [], deadLetterQueue: [], tempIdMap: {}, pausedByAuth: false }),
+    setPausedByAuth: (paused) => set({ pausedByAuth: paused }),
+  }),
+  {
+    name: "cortex:sync-queue",
+    version: 2,
+    storage: createJSONStorage(() => secureIdbStorage),
+    migrate: () => ({ syncQueue: [], deadLetterQueue: [], tempIdMap: {}, pausedByAuth: false }),
+  },
+),
 );
 
 export async function mutateOrQueue(input: {
-  endpoint: string;
-  method: "POST" | "PUT" | "PATCH" | "DELETE";
-  body?: Record<string, unknown> | null;
-  offlineFallback?: Omit<QueuedMutation, "id" | "retryCount" | "clientUpdatedAt">;
-  rollback?: () => void;
-  /** Called with the parsed JSON response body on a successful (2xx) request. */
-  onSuccess?: (data: unknown) => void;
+endpoint: string;
+method: "POST" | "PUT" | "PATCH" | "DELETE";
+body?: Record<string, unknown> | null;
+offlineFallback?: Omit<QueuedMutation, "id" | "retryCount" | "clientUpdatedAt">;
+rollback?: () => void;
+/** Called with the parsed JSON response body on a successful (2xx) request. */
+onSuccess?: (data: unknown) => void;
 }) {
-  const offline = typeof navigator !== "undefined" && !navigator.onLine;
+const offline = typeof navigator !== "undefined" && !navigator.onLine;
 
-  // Never hard-delete while offline. Tombstone using PATCH for safety.
-  if (offline && input.method === "DELETE") {
-    useSyncQueueStore.getState().enqueue({
-      endpoint: input.endpoint,
-      method: "PATCH",
-      body: { is_deleted: true },
-      entityType: input.offlineFallback?.entityType,
-      tempId: input.offlineFallback?.tempId,
-    });
-    return;
-  }
+// Never hard-delete while offline. Tombstone using PATCH for safety.
+if (offline && input.method === "DELETE") {
+  useSyncQueueStore.getState().enqueue({
+    endpoint: input.endpoint,
+    method: "PATCH",
+    body: { is_deleted: true },
+    entityType: input.offlineFallback?.entityType,
+    tempId: input.offlineFallback?.tempId,
+  });
+  return;
+}
 
-  if (offline) {
-    useSyncQueueStore.getState().enqueue({
-      endpoint: input.offlineFallback?.endpoint ?? input.endpoint,
-      method: input.offlineFallback?.method ?? input.method,
-      body: input.offlineFallback?.body ?? input.body,
-      entityType: input.offlineFallback?.entityType,
-      tempId: input.offlineFallback?.tempId,
-    });
-    return;
-  }
+if (offline) {
+  useSyncQueueStore.getState().enqueue({
+    endpoint: input.offlineFallback?.endpoint ?? input.endpoint,
+    method: input.offlineFallback?.method ?? input.method,
+    body: input.offlineFallback?.body ?? input.body,
+    entityType: input.offlineFallback?.entityType,
+    tempId: input.offlineFallback?.tempId,
+  });
+  return;
+}
 
-  // Attempt a silent token refresh before giving up on a potential auth failure
-  async function attemptRefresh(): Promise<boolean> {
-    try {
-      const r = await fetch("/api/auth/refresh", { method: "POST", credentials: "include" });
-      return r.ok;
-    } catch {
-      return false;
-    }
-  }
-
-  async function doFetch() {
-    return fetch(input.endpoint, {
-      method: input.method,
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: input.body ? JSON.stringify({ ...input.body, client_updated_at: nowIso() }) : undefined,
-    });
-  }
-
+// Attempt a silent token refresh before giving up on a potential auth failure
+async function attemptRefresh(): Promise<boolean> {
   try {
-    let res = await doFetch();
-
-    // On 401: silently refresh the token once and retry
-    if (res.status === 401) {
-      const refreshed = await attemptRefresh();
-      if (refreshed) {
-        res = await doFetch();
-      }
-    }
-
-    if (res.ok) {
-      if (input.onSuccess) {
-        const data = await res.json().catch(() => null);
-        input.onSuccess(data);
-      }
-    } else {
-      if (res.status === 401) {
-        useSyncQueueStore.getState().setPausedByAuth(true);
-      }
-      if (res.status === 409) {
-        toast({ title: "Conflict detected", description: "Server version retained." });
-        await refreshAfterConflict(input.endpoint);
-      } else {
-        input.rollback?.();
-      }
-    }
+    const r = await fetch("/api/auth/refresh", { method: "POST", credentials: "include" });
+    return r.ok;
   } catch {
-    useSyncQueueStore.getState().enqueue({
-      endpoint: input.offlineFallback?.endpoint ?? input.endpoint,
-      method: input.offlineFallback?.method ?? input.method,
-      body: input.offlineFallback?.body ?? input.body,
-      entityType: input.offlineFallback?.entityType,
-      tempId: input.offlineFallback?.tempId,
-    });
+    return false;
   }
+}
+
+async function doFetch() {
+  return fetch(input.endpoint, {
+    method: input.method,
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: input.body ? JSON.stringify({ ...input.body, client_updated_at: nowIso() }) : undefined,
+  });
+}
+
+try {
+  let res = await doFetch();
+
+  // On 401: silently refresh the token once and retry
+  if (res.status === 401) {
+    const refreshed = await attemptRefresh();
+    if (refreshed) {
+      res = await doFetch();
+    }
+  }
+
+  if (res.ok) {
+    if (input.onSuccess) {
+      const data = await res.json().catch(() => null);
+      input.onSuccess(data);
+    }
+  } else {
+    if (res.status === 401) {
+      useSyncQueueStore.getState().setPausedByAuth(true);
+    }
+    if (res.status === 409) {
+      toast.warning("Conflict detected", {
+        description: "A version conflict was resolved by retaining the server state.",
+      });
+      await refreshAfterConflict(input.endpoint);
+    } else {
+      input.rollback?.();
+    }
+  }
+} catch {
+  useSyncQueueStore.getState().enqueue({
+    endpoint: input.offlineFallback?.endpoint ?? input.endpoint,
+    method: input.offlineFallback?.method ?? input.method,
+    body: input.offlineFallback?.body ?? input.body,
+    entityType: input.offlineFallback?.entityType,
+    tempId: input.offlineFallback?.tempId,
+  });
+}
 }

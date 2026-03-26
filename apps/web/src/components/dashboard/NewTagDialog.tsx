@@ -2,34 +2,32 @@
 
 import * as React from "react";
 import * as Dialog from "@radix-ui/react-dialog";
+import { toast } from "sonner";
 import { cn } from "@cortex/ui";
 import { useDashboardStore } from "@/store/dashboard";
+import { Loader2 } from "lucide-react";
 
 // ─── Color options ─────────────────────────────────────────────────────────────
 
 // Full 20-color palette — sorted by hue
+// 4-color palette requested by user
 const DEFAULT_COLORS = [
   { key: "#ef4444", name: "Red" },
-  { key: "#f97316", name: "Orange" },
-  { key: "#f59e0b", name: "Amber" },
-  { key: "#eab308", name: "Yellow" },
-  { key: "#84cc16", name: "Lime" },
-  { key: "#22c55e", name: "Green" },
-  { key: "#10b981", name: "Emerald" },
-  { key: "#14b8a6", name: "Teal" },
-  { key: "#06b6d4", name: "Cyan" },
   { key: "#3b82f6", name: "Blue" },
-  { key: "#6366f1", name: "Indigo" },
-  { key: "#8b5cf6", name: "Violet" },
-  { key: "#a855f7", name: "Purple" },
-  { key: "#ec4899", name: "Pink" },
-  { key: "#f43f5e", name: "Rose" },
-  { key: "#64748b", name: "Slate" },
-  { key: "#6b7280", name: "Gray" },
-  { key: "#78716c", name: "Stone" },
-  { key: "#ffffff", name: "White" },
-  { key: "#1e1e2e", name: "Dark" },
+  { key: "#22c55e", name: "Green" },
+  { key: "#eab308", name: "Yellow" },
 ];
+
+function getContrastColor(hexColor: string) {
+  const hex = (hexColor || "#ffffff").replace("#", "");
+  if (hex.length !== 6) return "#ffffff";
+  const r = parseInt(hex.slice(0, 2), 16);
+  const g = parseInt(hex.slice(2, 4), 16);
+  const b = parseInt(hex.slice(4, 6), 16);
+  // YIQ ratio for brightness
+  const yiq = (r * 299 + g * 587 + b * 114) / 1000;
+  return yiq >= 128 ? "#000000" : "#ffffff";
+}
 
 // ─── Components ───────────────────────────────────────────────────────────────
 interface NewTagDialogProps {
@@ -45,6 +43,7 @@ export function NewTagDialog({ open, onOpenChange }: NewTagDialogProps) {
   // Store color as hex string
   const [color, setColor] = React.useState<string>(DEFAULT_COLORS[0].key);
   const [error, setError] = React.useState("");
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
 
 
   function reset() {
@@ -59,16 +58,25 @@ export function NewTagDialog({ open, onOpenChange }: NewTagDialogProps) {
   }
 
 
-  function handleCreate(e: React.FormEvent) {
+  async function handleCreate(e: React.FormEvent) {
     e.preventDefault();
     const trimmed = name.trim();
     if (!trimmed) {
       setError("Tag name is required.");
       return;
     }
-    addTag(trimmed, color);
-    reset();
-    onOpenChange(false);
+    setIsSubmitting(true);
+    try {
+      await addTag(trimmed, color);
+      toast.success(`Tag "${trimmed}" created`);
+      onOpenChange(false);
+      reset();
+    } catch (err: any) {
+      console.error(err);
+      setError(err.message || "Failed to create tag.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -145,7 +153,7 @@ export function NewTagDialog({ open, onOpenChange }: NewTagDialogProps) {
                     >
                       {color === c.key && (
                         <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
-                          <path d="M5 9l3 3 5-5" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                          <path d="M5 9l3 3 5-5" stroke={getContrastColor(c.key)} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       )}
                     </button>
@@ -177,6 +185,9 @@ export function NewTagDialog({ open, onOpenChange }: NewTagDialogProps) {
                           <circle cx="10" cy="10" r="2" fill="white" />
                         </svg>
                       )}
+                      {!DEFAULT_COLORS.some((c) => c.key === color) && (
+                        <span className="text-[10px] font-bold" style={{ color: getContrastColor(color) }}>Aa</span>
+                      )}
                     </span>
                   </label>
                 </div>
@@ -202,15 +213,21 @@ export function NewTagDialog({ open, onOpenChange }: NewTagDialogProps) {
               </Dialog.Close>
               <button
                 type="submit"
+                disabled={isSubmitting}
                 className={cn(
-                  "h-9 px-5 rounded-xl",
+                  "h-9 px-5 rounded-xl min-w-[80px]",
                   "text-sm font-medium text-white",
                   "bg-accent hover:bg-accent/90",
                   "shadow-[0_0_16px_rgba(108,99,255,0.25)]",
                   "transition-all duration-150",
+                  "disabled:opacity-40 disabled:cursor-not-allowed",
                 )}
               >
-                Create Tag
+                {isSubmitting ? (
+                  <Loader2 className="w-4 h-4 animate-spin mx-auto text-white" />
+                ) : (
+                  "Create"
+                )}
               </button>
             </div>
           </form>

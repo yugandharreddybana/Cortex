@@ -31,29 +31,42 @@ export function Providers({ children }: { children: React.ReactNode }) {
         window.fetch = async (...args) => {
             try {
                 const response = await originalFetch(...args);
-                if (!response.ok && typeof args[0] === 'string' && args[0].startsWith('/api/')) {
+                const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
+
+                if (!response.ok && url.includes('/api/')) {
                     // Ignore expected 401s from the auth check endpoint
-                    if (args[0] === '/api/auth/me' && response.status === 401) {
+                    if (url.endsWith('/api/auth/me') && response.status === 401) {
                         return response;
                     }
+
                     const clone = response.clone();
                     try {
                         const data = await clone.json();
-                        if (data?.message && data.message !== "No message available") {
-                            import("sonner").then(m => m.toast.error(data.message));
-                        } else if (data?.error) {
-                            import("sonner").then(m => m.toast.error(data.error));
+                        const { premiumToast } = await import("@/lib/premium-feedback");
+
+                        if (response.status === 401) {
+                            premiumToast.sessionExpired();
+                        } else if (response.status === 403) {
+                            premiumToast.unauthorized();
+                        } else if (response.status === 409) {
+                            if (url.includes('/folders')) premiumToast.folderExists(data.name || "Unknown");
+                            else if (url.includes('/tags')) premiumToast.tagExists(data.name || "Unknown");
+                            else premiumToast.genericError("Conflict", "This item already exists.");
+                        } else if (data?.message && data.message !== "No message available") {
+                            premiumToast.genericError(data.message);
                         } else {
-                            import("sonner").then(m => m.toast.error(`Error: ${response.status} ${response.statusText}`));
+                            premiumToast.serverError();
                         }
                     } catch {
-                        import("sonner").then(m => m.toast.error(`Error: ${response.status} ${response.statusText}`));
+                        const { premiumToast } = await import("@/lib/premium-feedback");
+                        premiumToast.serverError();
                     }
                 }
                 return response;
             } catch (err: any) {
-                if (typeof args[0] === 'string' && args[0].startsWith('/api/')) {
-                    import("sonner").then(m => m.toast.error(err?.message || "Network error: Could not reach the server."));
+                const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
+                if (url.includes('/api/')) {
+                    import("@/lib/premium-feedback").then(m => m.premiumToast.networkError());
                 }
                 throw err;
             }
@@ -68,7 +81,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <QueryProvider>
                 <SearchProvider>
                     {children}
-                    <Toaster theme="dark" position="bottom-right" richColors />
+                    <Toaster theme="dark" position="top-right" richColors closeButton />
                 </SearchProvider>
             </QueryProvider>
         </LenisProvider>

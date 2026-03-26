@@ -63,7 +63,7 @@ public class Highlight {
     private String note;
 
     // Many-to-Many relationship to tags via HighlightTag junction table
-    @OneToMany(mappedBy = "highlight", cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "highlight", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Set<HighlightTag> highlightTags = new HashSet<>();
 
     @Column(name = "is_code")

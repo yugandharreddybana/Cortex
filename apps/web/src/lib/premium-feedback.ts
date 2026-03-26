@@ -62,7 +62,6 @@ export const premiumToast = {
   }),
 
   // ── Errors ──
-
   loginFailed: (reason?: string) => toast.error("❌ Login failed", {
     description: reason ?? "Please check your email and password",
     duration: 4000,
@@ -82,18 +81,38 @@ export const premiumToast = {
     },
   }),
 
+  folderExists: (name: string) => toast.error("📁 Folder already exists", {
+    description: `A folder named "${name}" already exists here`,
+    duration: 4000,
+  }),
+
+  tagExists: (name: string) => toast.error("🏷️ Tag already exists", {
+    description: `The tag "${name}" already exists in your library`,
+    duration: 4000,
+  }),
+
+  unauthorized: () => toast.error("🔒 Access Denied", {
+    description: "You don't have permission to perform this action",
+    duration: 4000,
+  }),
+
+  genericError: (message: string, description?: string) => toast.error(message, {
+    description: description ?? "Something went wrong. Please try again.",
+    duration: 4000,
+  }),
+
   networkError: () => toast.error("📡 Network error", {
     description: "Check your connection and try again",
     duration: 4000,
   }),
 
   sessionExpired: () => toast.error("⏰ Session expired", {
-    description: "Please log in again",
+    description: "Please log in again to continue",
     duration: 4000,
   }),
 
   serverError: () => toast.error("🔧 Server error", {
-    description: "Something went wrong. Please try again later",
+    description: "Our systems are having trouble. Please try again later",
     duration: 4000,
   }),
 

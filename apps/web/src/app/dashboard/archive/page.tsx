@@ -13,7 +13,7 @@ function ArchiveIcon() {
 }
 
 export default function ArchivePage() {
-  const highlights = useDashboardStore((s) => s.highlights);
+  const { highlights, isLoading } = useDashboardStore();
   const archived = highlights.filter((h) => h.isArchived);
 
   return (
@@ -27,7 +27,7 @@ export default function ArchivePage() {
         </p>
       </div>
 
-      {archived.length === 0 ? (
+      {!isLoading && archived.length === 0 ? (
         <EmptyState
           icon={<ArchiveIcon />}
           title="Archive is empty"

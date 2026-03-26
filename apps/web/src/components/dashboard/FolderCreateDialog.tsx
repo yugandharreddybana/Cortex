@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { cn } from "@cortex/ui";
 import { useDashboardStore } from "@/store/dashboard";
+import { Loader2 } from "lucide-react";
 
 // ─── Animation ────────────────────────────────────────────────────────────────
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -21,6 +22,7 @@ export function FolderCreateDialog({ open, onOpenChange, parentId }: FolderCreat
   const addFolder = useDashboardStore((s) => s.addFolder);
   const folders   = useDashboardStore((s) => s.folders);
   const [name, setName] = React.useState("");
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const parentName = parentId ? folders.find((f) => f.id === parentId)?.name : undefined;
@@ -33,12 +35,20 @@ export function FolderCreateDialog({ open, onOpenChange, parentId }: FolderCreat
     }
   }, [open]);
 
-  function handleCreate() {
+  async function handleCreate() {
     const trimmed = name.trim();
     if (!trimmed) return;
-    addFolder(trimmed, parentId);
-    toast.success(parentId ? `Subfolder "${trimmed}" created` : `Folder "${trimmed}" created`);
-    onOpenChange(false);
+    setIsSubmitting(true);
+    try {
+      await addFolder(trimmed, parentId);
+      toast.success(parentId ? `Subfolder "${trimmed}" created` : `Folder "${trimmed}" created`);
+      onOpenChange(false);
+    } catch (err: any) {
+      console.error(err);
+      toast.error(err.message || "Failed to create folder. Please try again.");
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   function handleKeyDown(e: React.KeyboardEvent) {
@@ -126,9 +136,9 @@ export function FolderCreateDialog({ open, onOpenChange, parentId }: FolderCreat
                   </Dialog.Close>
                   <button
                     onClick={handleCreate}
-                    disabled={!name.trim()}
+                    disabled={!name.trim() || isSubmitting}
                     className={cn(
-                      "h-9 px-5 rounded-xl",
+                      "h-9 px-5 rounded-xl min-w-[80px]",
                       "text-sm font-medium text-white",
                       "bg-accent hover:bg-accent/90",
                       "shadow-[0_0_16px_rgba(108,99,255,0.3)]",
@@ -136,7 +146,11 @@ export function FolderCreateDialog({ open, onOpenChange, parentId }: FolderCreat
                       "disabled:opacity-40 disabled:cursor-not-allowed",
                     )}
                   >
-                    Create
+                    {isSubmitting ? (
+                      <Loader2 className="w-4 h-4 animate-spin mx-auto text-white" />
+                    ) : (
+                      "Create"
+                    )}
                   </button>
                 </div>
               </motion.div>

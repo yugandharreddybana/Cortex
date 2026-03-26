@@ -4,6 +4,7 @@ import * as React from "react";
 import { toast } from "sonner";
 import { cn } from "@cortex/ui";
 import { useDashboardStore } from "@/store/dashboard";
+import { Loader2 } from "lucide-react";
 
 // ─── Dummy data builder ───────────────────────────────────────────────────────
 function buildExportPayload(
@@ -53,9 +54,15 @@ export default function DataExportPage() {
       a.remove();
       URL.revokeObjectURL(url);
 
-      toast.success("Export ready — download started", { id: toastId });
+      toast.success("Export complete", { 
+        id: toastId,
+        description: "Your structured brain data has been compiled into a JSON file.",
+      });
     } catch {
-      toast.error("Export failed. Please try again.", { id: toastId });
+      toast.error("Export failed", { 
+        id: toastId,
+        description: "An error occurred during the packaging process. Please try again.",
+      });
     } finally {
       setExporting(false);
     }
@@ -179,9 +186,5 @@ function DownloadIcon() {
 }
 
 function SpinnerIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true" className="animate-spin">
-      <path d="M7 1v2M7 11v2M1 7h2M11 7h2M2.93 2.93l1.41 1.41M9.66 9.66l1.41 1.41M2.93 11.07l1.41-1.41M9.66 4.34l1.41-1.41" />
-    </svg>
-  );
+  return <Loader2 className="w-3.5 h-3.5 animate-spin" />;
 }

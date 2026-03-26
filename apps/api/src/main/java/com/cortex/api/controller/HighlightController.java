@@ -402,9 +402,8 @@ public class HighlightController {
             }
         }
 
-        // Delete existing tag associations for the current user from the database
+        // Delete existing tag associations for the current user from the collection
         if (!currentUserTags.isEmpty()) {
-            highlightTagRepo.deleteAll(currentUserTags);
             h.getHighlightTags().removeAll(currentUserTags);
         }
 
