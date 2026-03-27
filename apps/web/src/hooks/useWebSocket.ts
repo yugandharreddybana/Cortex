@@ -152,6 +152,24 @@ function subscribe(client: Client) {
     } catch { /* malformed frame — skip */ }
   });
 
+  // ── Permissions / Real-time Revocation ────────────────────────────────
+  client.subscribe("/user/topic/permissions/revoked", (msg) => {
+    try {
+      const { resourceId, resourceType } = JSON.parse(msg.body);
+      if (resourceType === "FOLDER") {
+        const id = String(resourceId);
+        useDashboardStore.setState((s) => ({
+          folders: s.folders.filter((x) => x.id !== id),
+        }));
+        
+        // Redirection logic if user is currently viewing this folder
+        if (window.location.pathname.includes(`/folders/${id}`)) {
+          window.location.href = "/dashboard";
+        }
+      }
+    } catch { /* malformed frame — skip */ }
+  });
+
   // ── Tags ─────────────────────────────────────────────────────────────────
   client.subscribe("/user/topic/tags", (msg) => {
     try {
@@ -181,6 +199,18 @@ function subscribe(client: Client) {
       useDashboardStore.setState((s) => ({
         tags: s.tags.filter((x) => x.id !== id),
       }));
+    } catch { /* malformed frame — skip */ }
+  });
+
+  // ── Notifications (for role refresh on access request resolution) ─────────
+  client.subscribe("/user/queue/notifications", (msg) => {
+    try {
+      const notification = JSON.parse(msg.body) as { type?: string };
+      // When the user's access request is resolved (approved/rejected), re-fetch
+      // folders so their effectiveRole updates in the store immediately.
+      if (notification.type === "ACCESS_REQUEST_RESOLVED") {
+        void useDashboardStore.getState().fetchFolders();
+      }
     } catch { /* malformed frame — skip */ }
   });
 }
@@ -216,6 +246,7 @@ function normalizeFolder(raw: Record<string, unknown>): Folder {
     count:    0,
     parentId: raw.parentId != null ? String(raw.parentId) : undefined,
     isPinned: Boolean(raw.isPinned),
+    effectiveRole: raw.effectiveRole ? String(raw.effectiveRole) : undefined,
   };
 }
 
@@ -224,5 +255,6 @@ function normalizeTag(raw: Record<string, unknown>): Tag {
     id:    String(raw.id ?? ""),
     name:  String(raw.name ?? ""),
     color: String(raw.color ?? ""),
+    createdAt: raw.createdAt != null ? String(raw.createdAt) : undefined,
   };
 }

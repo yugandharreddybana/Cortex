@@ -15,6 +15,7 @@ public class FolderDTO {
 
     // RBAC: the caller's effective role on this folder (OWNER, EDITOR, COMMENTER, VIEWER)
     public String effectiveRole;
+    public Long ownerId;
 
     // Timestamps
     public Instant createdAt;      // When the folder was created

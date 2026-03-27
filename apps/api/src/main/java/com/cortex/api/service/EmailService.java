@@ -353,6 +353,66 @@ public class EmailService {
     }
 
     /**
+     * Send an email to a user when their access to a folder is revoked.
+     */
+    @Async
+    public void sendFolderAccessRevokedEmail(String recipientEmail, String actorName, String folderName) {
+        try {
+            String subject = "Your access to \"" + folderName + "\" has been removed";
+            String body = String.format("""
+                    Hi!
+
+                    %s has removed your access to the shared folder "%s" in Cortex.
+
+                    You will no longer see this folder or its contents in your workspace.
+
+                    —
+                    Cortex
+                    """, actorName, folderName) + READ_ONLY_FOOTER;
+
+            if (!mailEnabled) {
+                log.info("[Email] Mock: Folder access revoked (mail disabled). folder={} actor={}", folderName, actorName);
+                return;
+            }
+
+            log.info("[Email] Sending folder-access-revoked email to {}", obfuscate(recipientEmail));
+            sendEmail(recipientEmail, subject, body);
+        } catch (Exception e) {
+            log.error("[Email] Failed to send folder-access-revoked email", e);
+        }
+    }
+
+    /**
+     * Send an email to a user when their access level for a folder is updated.
+     */
+    @Async
+    public void sendFolderAccessUpdatedEmail(String recipientEmail, String actorName, String folderName, String newLevel) {
+        try {
+            String subject = "Your access to \"" + folderName + "\" has been updated";
+            String body = String.format("""
+                    Hi!
+
+                    %s has updated your access to the shared folder "%s" in Cortex.
+
+                    Your new access level is: %s
+
+                    —
+                    Cortex
+                    """, actorName, folderName, newLevel) + READ_ONLY_FOOTER;
+
+            if (!mailEnabled) {
+                log.info("[Email] Mock: Folder access updated (mail disabled). folder={} actor={} level={}", folderName, actorName, newLevel);
+                return;
+            }
+
+            log.info("[Email] Sending folder-access-updated email to {}", obfuscate(recipientEmail));
+            sendEmail(recipientEmail, subject, body);
+        } catch (Exception e) {
+            log.error("[Email] Failed to send folder-access-updated email", e);
+        }
+    }
+
+    /**
      * Send the 60-minute collaboration digest email to a folder owner.
      *
      * <p>
@@ -447,6 +507,84 @@ public class EmailService {
                 HUMAN_FMT.format(firstActionAt),
                 HUMAN_FMT.format(lastActionAt),
                 deepLink) + READ_ONLY_FOOTER;
+    }
+
+    /**
+     * Send an email to the folder OWNER when a user requests higher access.
+     */
+    @Async
+    public void sendAccessRequestToOwner(
+            String ownerEmail,
+            String requesterName,
+            String folderName,
+            String requestedRole,
+            Long requestId) {
+        try {
+            if (!mailEnabled) {
+                log.info("[Email] Mock: Access request notification (mail disabled). folder={}, requester={}, role={}",
+                        folderName, requesterName, requestedRole);
+                return;
+            }
+
+            String subject = requesterName + " requested " + requestedRole + " access to \"" + folderName + "\"";
+            String body = String.format("""
+                    Hi!
+
+                    %s has requested %s access to your shared folder "%s".
+
+                    You can approve or reject this request from your notifications in Cortex.
+
+                    —
+                    Cortex
+                    """, requesterName, requestedRole, folderName) + READ_ONLY_FOOTER;
+
+            log.info("[Email] Sending access-request email to owner: {} (folder={})", ownerEmail, folderName);
+            sendEmail(ownerEmail, subject, body);
+
+        } catch (Exception e) {
+            log.error("[Email] Failed to send access-request notification for folder={}", folderName, e);
+        }
+    }
+
+    /**
+     * Send an email to the REQUESTER when their access request is approved or rejected.
+     */
+    @Async
+    public void sendAccessRequestResolutionToRequester(
+            String requesterEmail,
+            String ownerName,
+            String folderName,
+            String status,
+            String grantedRole) {
+        try {
+            if (!mailEnabled) {
+                log.info("[Email] Mock: Access request resolution (mail disabled). folder={}, status={}",
+                        folderName, status);
+                return;
+            }
+
+            String subject = "Your access request for \"" + folderName + "\" was " + status.toLowerCase();
+            String message = status.equalsIgnoreCase("APPROVED")
+                    ? "Your request for " + grantedRole + " access was approved. You now have full " + grantedRole + " permissions on this folder."
+                    : "Your request for " + grantedRole + " access was declined by the owner.";
+
+            String body = String.format("""
+                    Hi!
+
+                    %s has %s your request for higher access to the folder "%s".
+
+                    %s
+
+                    —
+                    Cortex
+                    """, ownerName, status.toLowerCase(), folderName, message) + READ_ONLY_FOOTER;
+
+            log.info("[Email] Sending access-request resolution to: {} (status={})", requesterEmail, status);
+            sendEmail(requesterEmail, subject, body);
+
+        } catch (Exception e) {
+            log.error("[Email] Failed to send access-request resolution email to: {}", requesterEmail, e);
+        }
     }
 
     /**

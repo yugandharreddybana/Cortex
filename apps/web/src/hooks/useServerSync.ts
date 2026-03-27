@@ -18,7 +18,6 @@ export function useServerSync() {
 
     const timer = setTimeout(() => {
       async function pull() {
-        useDashboardStore.getState().setIsLoading(true);
         try {
           const [hRes, fRes, tRes] = await Promise.all([
             fetch("/api/highlights?t=" + Date.now(), { credentials: "include" }),
@@ -44,8 +43,6 @@ export function useServerSync() {
           await applyResponses(hRes, fRes, tRes);
         } catch {
           // Server unreachable — leave store empty
-        } finally {
-          useDashboardStore.getState().setIsLoading(false);
         }
       }
 
@@ -112,6 +109,7 @@ async function applyResponses(hRes: Response, fRes: Response, tRes: Response) {
           id:    String(t.id),
           name:  t.name,
           color: t.color ?? "",
+          createdAt: (t as any).createdAt || undefined
         }),
       )
     );

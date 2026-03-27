@@ -13,9 +13,10 @@ interface EmptyStateProps {
   title?:  string;
   body?:   string;
   action?: { label: string; href: string };
+  isViewer?: boolean;
 }
 
-export function EmptyState({ icon, title, body, action }: EmptyStateProps) {
+export function EmptyState({ icon, title, body, action, isViewer }: EmptyStateProps) {
   const populateDemoData  = useDashboardStore((s) => s.populateDemoData);
   const [populated, setPopulated] = React.useState(false);
 
@@ -60,10 +61,12 @@ export function EmptyState({ icon, title, body, action }: EmptyStateProps) {
 
       {/* Copy */}
       <h2 className="text-xl font-semibold tracking-tight text-white/80 mb-3">
-        {title || "Your indexed brain awaits."}
+        {title || (isViewer ? "Waiting for shared knowledge..." : "Your indexed brain awaits.")}
       </h2>
       <p className="text-sm text-white/40 max-w-xs leading-relaxed mb-8">
-        {body || "You haven't saved any highlights yet. Install the Chrome extension and start capturing knowledge as you browse."}
+        {body || (isViewer 
+          ? "This folder is currently empty. Highlights shared by the owner or editors will appear here in real-time."
+          : "You haven't saved any highlights yet. Install the Chrome extension and start capturing knowledge as you browse.")}
       </p>
 
       {/* If custom action is provided, show a simple link instead of the full default CTA block */}
@@ -80,6 +83,11 @@ export function EmptyState({ icon, title, body, action }: EmptyStateProps) {
         >
           {action.label}
         </Link>
+      ) : isViewer ? (
+        <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-white/[0.03] border border-white/[0.06] animate-pulse">
+          <div className="w-2 h-2 rounded-full bg-accent" />
+          <span className="text-[10px] font-medium text-white/30 uppercase tracking-widest">Listening for updates</span>
+        </div>
       ) : (
         <>
       {/* Primary CTA */}

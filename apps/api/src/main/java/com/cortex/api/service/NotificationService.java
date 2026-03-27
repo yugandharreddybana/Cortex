@@ -1,6 +1,8 @@
 package com.cortex.api.service;
 
 import com.cortex.api.entity.BatchedEmailEvent;
+import com.cortex.api.entity.AccessLevel;
+import com.cortex.api.entity.Folder;
 import com.cortex.api.entity.Notification;
 import com.cortex.api.entity.User;
 import com.cortex.api.repository.BatchedEmailEventRepository;
@@ -141,6 +143,82 @@ public class NotificationService {
         return n;
     }
 
+    /**
+     * Persist an ACCESS_REQUEST notification with structured metadata.
+     */
+    public Notification emitAccessRequestNotification(User owner, User requester, Folder folder, 
+                                                        AccessLevel requestedRole, Long requestId) {
+        Notification n = new Notification();
+        n.setUser(owner);
+        String requesterName = resolveDisplayName(requester);
+        n.setMessage(requesterName + " requested " + requestedRole + " access to \"" + folder.getName() + "\"");
+        n.setActionUrl("/dashboard/folders/" + folder.getId());
+        n.setType("ACCESS_REQUEST");
+        n.setActionType("REQUESTED");
+        n.setTargetEntityId(folder.getId());
+        n.setActorId(requester.getId());
+        n.setMetadata("{\"requestId\":\"" + requestId + "\""
+                + ",\"folderId\":\"" + folder.getId() + "\""
+                + ",\"folderName\":\"" + escapeJson(folder.getName()) + "\""
+                + ",\"requestedRole\":\"" + requestedRole + "\""
+                + ",\"requesterName\":\"" + escapeJson(requesterName) + "\"}");
+        n = notifRepo.save(n);
+        broadcast(owner, n);
+        return n;
+    }
+
+    /**
+     * Persist an ACCESS_REQUEST_RESOLVED notification.
+     */
+    public Notification emitAccessRequestResolvedNotification(User requester, User owner, Folder folder, 
+                                                               String status, AccessLevel role) {
+        Notification n = new Notification();
+        n.setUser(requester);
+        String ownerName = resolveDisplayName(owner);
+        String statusText = status.equalsIgnoreCase("APPROVED") ? "approved" : "declined";
+        n.setMessage(ownerName + " " + statusText + " your request for " + role + " access to \"" + folder.getName() + "\"");
+        n.setActionUrl("/dashboard/folders/" + folder.getId());
+        n.setType("ACCESS_REQUEST_RESOLVED");
+        n.setActionType(status.toUpperCase());
+        n.setTargetEntityId(folder.getId());
+        n.setActorId(owner.getId());
+        n = notifRepo.save(n);
+        broadcast(requester, n);
+        return n;
+    }
+
+    /**
+     * Persist an ACCESS_REVOKED notification and push it in real time.
+     */
+    public Notification emitAccessRevoked(User recipient, String actorName, String resourceTitle, Long resourceId, String resourceType) {
+        Notification n = new Notification();
+        n.setUser(recipient);
+        n.setMessage(actorName + " removed your access to \"" + resourceTitle + "\"");
+        n.setActionUrl("/dashboard");
+        n.setType("ACCESS_REVOKED");
+        n.setActionType("DELETED");
+        n.setTargetEntityId(resourceId);
+        n = notifRepo.save(n);
+        broadcast(recipient, n);
+        return n;
+    }
+
+    /**
+     * Persist an ACCESS_UPDATED notification and push it in real time.
+     */
+    public Notification emitAccessUpdated(User recipient, String actorName, String resourceTitle, String newLevel, Long resourceId, String resourceType) {
+        Notification n = new Notification();
+        n.setUser(recipient);
+        n.setMessage(actorName + " updated your access to \"" + resourceTitle + "\" to " + newLevel);
+        n.setActionUrl("/dashboard/folders/" + resourceId);
+        n.setType("ACCESS_UPDATED");
+        n.setActionType("EDITED");
+        n.setTargetEntityId(resourceId);
+        n = notifRepo.save(n);
+        broadcast(recipient, n);
+        return n;
+    }
+
     // ─────────────────────────────── Layer 2a: immediate email (critical) ────
 
     /**
@@ -163,6 +241,26 @@ public class NotificationService {
         log.info("[Notification Engine] Triggering immediate access-granted email → {} for folder={}",
                 obfuscate(recipientEmail), folderId);
         emailService.sendFolderAccessGrantedEmail(recipientEmail, granterName, folderName, String.valueOf(folderId));
+    }
+
+    /**
+     * Trigger an email when a user's access to a folder is revoked.
+     */
+    public void triggerFolderAccessRevokedEmail(User recipient, User actor, String folderName) {
+        String recipientEmail = recipient.getEmail();
+        String actorName = resolveDisplayName(actor);
+        log.info("[Notification Engine] Triggering access-revoked email → {} for folder={}", obfuscate(recipientEmail), folderName);
+        emailService.sendFolderAccessRevokedEmail(recipientEmail, actorName, folderName);
+    }
+
+    /**
+     * Trigger an email when a user's access level to a folder is updated.
+     */
+    public void triggerFolderAccessUpdatedEmail(User recipient, User actor, String folderName, String newLevel) {
+        String recipientEmail = recipient.getEmail();
+        String actorName = resolveDisplayName(actor);
+        log.info("[Notification Engine] Triggering access-updated email → {} for folder={} newLevel={}", obfuscate(recipientEmail), folderName, newLevel);
+        emailService.sendFolderAccessUpdatedEmail(recipientEmail, actorName, folderName, newLevel);
     }
 
     // ─────────────────────────── Layer 2b: batched email (high-volume) ───────

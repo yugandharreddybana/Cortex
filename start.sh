@@ -67,7 +67,7 @@ if [ -f "$API_DIR/.env" ]; then
 fi
 
 log "Starting backend on http://localhost:8080 ..."
-java -jar "$JAR" &
+java -Dspring.datasource.hikari.maximum-pool-size=10 -Dspring.flyway.out-of-order=true -jar "$JAR" &
 API_PID=$!
 
 # Free port 3000 if something is already using it

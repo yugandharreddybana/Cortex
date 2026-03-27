@@ -21,6 +21,10 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.ArrayList;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/permissions")
@@ -175,7 +179,6 @@ public class PermissionController {
         return toDTO(perm);
     }
 
-    /** DELETE /api/v1/permissions/{permissionId} — revoke access */
     @DeleteMapping("/{permissionId}")
     @Transactional
     public ResponseEntity<Map<String, Boolean>> revoke(Authentication auth,
@@ -186,6 +189,78 @@ public class PermissionController {
         requireOwner(auth, perm.getResourceId(), perm.getResourceType());
 
         permissionRepo.delete(perm);
+        return ResponseEntity.ok(Map.of("ok", true));
+    }
+
+    /**
+     * POST /api/v1/permissions/bulk-manage — Update or revoke multiple permissions at once.
+     */
+    @PostMapping("/bulk-manage")
+    @Transactional
+    public ResponseEntity<Map<String, Object>> bulkManage(Authentication auth,
+                                                          @RequestBody BulkManageRequest req) {
+        if (req.resourceType == null || req.resourceType.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "resourceType is required");
+        }
+        SharedLink.ResourceType resourceType;
+        try {
+            resourceType = SharedLink.ResourceType.valueOf(req.resourceType.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid resource type: " + req.resourceType);
+        }
+
+        requireOwner(auth, req.resourceId, resourceType);
+        User owner = userRepo.findById(Long.parseLong(auth.getName())).orElseThrow();
+
+        String resourceTitle;
+        if (resourceType == SharedLink.ResourceType.HIGHLIGHT) {
+            resourceTitle = highlightRepo.findById(req.resourceId).map(h -> h.getSource()).orElse("a highlight");
+        } else {
+            resourceTitle = folderRepo.findById(req.resourceId).map(f -> f.getName()).orElse("a folder");
+        }
+
+        // 1. Process Removals
+        if (req.removals != null && !req.removals.isEmpty()) {
+            for (Long userId : req.removals) {
+                permissionRepo.findByUserIdAndResourceIdAndResourceType(userId, req.resourceId, resourceType)
+                        .ifPresent(perm -> {
+                            User user = perm.getUser();
+                            permissionRepo.delete(perm);
+                            // Notify user of revocation
+                            notificationService.emitAccessRevoked(user, owner.getFullName(), resourceTitle, req.resourceId, resourceType.name());
+                            if (resourceType == SharedLink.ResourceType.FOLDER) {
+                                notificationService.triggerFolderAccessRevokedEmail(user, owner, resourceTitle);
+                            }
+                        });
+            }
+        }
+
+        // 2. Process Updates
+        if (req.updates != null && !req.updates.isEmpty()) {
+            for (var update : req.updates) {
+                AccessLevel level;
+                try {
+                    level = AccessLevel.valueOf(update.accessLevel.toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    continue; // Skip invalid
+                }
+
+                permissionRepo.findByUserIdAndResourceIdAndResourceType(update.userId, req.resourceId, resourceType)
+                        .ifPresent(perm -> {
+                            if (perm.getAccessLevel() != level) {
+                                perm.setAccessLevel(level);
+                                permissionRepo.save(perm);
+                                // Notify user of update
+                                User user = perm.getUser();
+                                notificationService.emitAccessUpdated(user, owner.getFullName(), resourceTitle, level.name(), req.resourceId, resourceType.name());
+                                if (resourceType == SharedLink.ResourceType.FOLDER) {
+                                    notificationService.triggerFolderAccessUpdatedEmail(user, owner, resourceTitle, level.name());
+                                }
+                            }
+                        });
+            }
+        }
+
         return ResponseEntity.ok(Map.of("ok", true));
     }
 
@@ -238,6 +313,45 @@ public class PermissionController {
         }
 
         return ResponseEntity.ok(Map.of("linkAccess", linkAccess.name(), "defaultLinkRole", defaultRole.name()));
+    }
+
+    /** GET /api/v1/permissions/collaborators — list all unique users shared with/by me */
+    @GetMapping("/collaborators")
+    public List<CollaboratorDTO> getCollaborators(Authentication auth) {
+        Long userId = Long.parseLong(auth.getName());
+        Set<User> collaborators = new HashSet<>();
+
+        // 1. People shared WITH me
+        List<ResourcePermission> incoming = permissionRepo.findByUserId(userId);
+        for (ResourcePermission p : incoming) {
+            // The owner of the resource is a collaborator
+            if (p.getResourceType() == SharedLink.ResourceType.FOLDER) {
+                folderRepo.findById(p.getResourceId()).ifPresent(f -> collaborators.add(f.getUser()));
+            } else {
+                highlightRepo.findById(p.getResourceId()).ifPresent(h -> collaborators.add(h.getUser()));
+            }
+        }
+
+        // 2. People I shared WITH
+        List<com.cortex.api.entity.Folder> myFolders = folderRepo.findByUserId(userId);
+        for (com.cortex.api.entity.Folder f : myFolders) {
+            List<ResourcePermission> perms = permissionRepo.findByResourceIdAndResourceType(f.getId(), SharedLink.ResourceType.FOLDER);
+            for (ResourcePermission p : perms) {
+                collaborators.add(p.getUser());
+            }
+        }
+
+        return collaborators.stream()
+                .filter(u -> !u.getId().equals(userId)) // exclude self
+                .map(u -> {
+                    CollaboratorDTO dto = new CollaboratorDTO();
+                    dto.id = u.getId();
+                    dto.email = u.getEmail();
+                    dto.fullName = (u.getFullName() != null) ? u.getFullName() : u.getEmail();
+                    return dto;
+                })
+                .distinct()
+                .collect(Collectors.toList());
     }
 
     /** GET /api/v1/permissions/access-level?resourceId=x&type=HIGHLIGHT|FOLDER */
@@ -333,5 +447,36 @@ public class PermissionController {
         public String resourceType;
         public String linkAccess;
         public String defaultLinkRole;
+    }
+
+    public static class BulkManageRequest {
+        public Long resourceId;
+        public String resourceType;
+        public List<UpdateItem> updates;
+        public List<Long> removals;
+    }
+
+    public static class UpdateItem {
+        public Long userId;
+        public String accessLevel;
+    }
+
+    public static class CollaboratorDTO {
+        public Long id;
+        public String email;
+        public String fullName;
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) return true;
+            if (o == null || getClass() != o.getClass()) return false;
+            CollaboratorDTO that = (CollaboratorDTO) o;
+            return id.equals(that.id);
+        }
+
+        @Override
+        public int hashCode() {
+            return id.hashCode();
+        }
     }
 }

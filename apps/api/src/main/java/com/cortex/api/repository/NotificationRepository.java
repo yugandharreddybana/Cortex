@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface NotificationRepository extends JpaRepository<Notification, Long> {
 
@@ -28,5 +29,14 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     @Modifying
     @Query("UPDATE Notification n SET n.isRead = true WHERE n.user.id = :userId AND n.isRead = false")
     int markAllReadByUserId(@Param("userId") Long userId);
-}
 
+    /**
+     * Find the un-responded ACCESS_REQUEST notification for an owner + requestId.
+     * Used to mark the notification as responded after the owner approves or rejects.
+     */
+    @Query("SELECT n FROM Notification n WHERE n.user.id = :ownerId AND n.type = 'ACCESS_REQUEST' " +
+           "AND n.metadata LIKE %:requestIdFragment% AND (n.responded IS NULL OR n.responded = '')")
+    java.util.Optional<Notification> findPendingAccessRequestNotification(
+            @Param("ownerId") Long ownerId,
+            @Param("requestIdFragment") String requestIdFragment);
+}

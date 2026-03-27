@@ -16,6 +16,8 @@ import { HighlightAIPanel } from "./HighlightAIPanel";
 import { useDashboardStore } from "@/store/dashboard";
 import type { Highlight, Folder, Tag } from "@/store/dashboard";
 import { DevilsAdvocate } from "./DevilsAdvocate";
+import { RequestAccessModal } from "./RequestAccessModal";
+import { Lock, ShieldAlert } from "lucide-react";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -127,25 +129,51 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
 
   return (
     <>
-      {highlights.length === 0 ? (
-        activeFolder ? (
-          <div className="flex flex-col items-center justify-center py-24 gap-4">
-            <span className="text-4xl">📂</span>
-            <p className="text-sm font-medium text-white/50">This folder is empty</p>
-            <p className="text-xs text-white/30 text-center max-w-xs">
-              Add highlights by saving from the web or creating manually.
-            </p>
-            <button
-              onClick={() => setNewHighlightOpen(true)}
-              className="mt-2 px-4 py-2 rounded-xl text-sm font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-colors"
-            >
-              Add Highlight
-            </button>
-          </div>
-        ) : (
-          <EmptyState />
-        )
-      ) : (
+      {highlights.length === 0 ? (() => {
+        // If we're searching, show a "No results" state
+        if (searchQuery.trim()) {
+          return (
+            <EmptyState 
+              title="No matches found"
+              body={`We couldn't find any highlights for "${searchQuery}". Try a different keyword or check your filters.`}
+              icon={<SearchXIcon />}
+            />
+          );
+        }
+
+        // If we're filtering by tags, show a "No tags match" state
+        if (activeTagFilters.length > 0) {
+          return (
+            <EmptyState 
+              title="No highlights with these tags"
+              body="There are no highlights that have all the selected tags. Try removing some filters."
+              icon={<FilterXIcon />}
+            />
+          );
+        }
+
+        // Specific folder empty state (already existed, but now consistent)
+        if (activeFolder) {
+          return (
+            <div className="flex flex-col items-center justify-center py-24 gap-4">
+              <span className="text-4xl">📂</span>
+              <p className="text-sm font-medium text-white/50">This folder is empty</p>
+              <p className="text-xs text-white/30 text-center max-w-xs">
+                Organize your knowledge by moving highlights here or creating new ones directly.
+              </p>
+              <button
+                onClick={() => setNewHighlightOpen(true)}
+                className="mt-2 px-4 py-2 rounded-xl text-sm font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-colors"
+              >
+                Add Highlight
+              </button>
+            </div>
+          );
+        }
+
+        // Default empty state (No highlights at all)
+        return <EmptyState />;
+      })() : (
         <AnimatePresence mode="wait" initial={false}>
         {viewMode === "grid" ? (
           <motion.div
@@ -241,6 +269,28 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
     </>
   );
 }
+// ─── Empty state icons ────────────────────────────────────────────────────────
+function SearchXIcon() {
+  return (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/20">
+      <circle cx="11" cy="11" r="8" />
+      <path d="m21 21-4.3-4.3" />
+      <path d="m13.5 8.5-5 5" />
+      <path d="m8.5 8.5 5 5" />
+    </svg>
+  );
+}
+
+function FilterXIcon() {
+  return (
+    <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/20">
+      <path d="M4 4h16v2.172a2 2 0 0 1-.586 1.414L15 12V20l-6-3V12L4.586 7.586A2 2 0 0 1 4 6.172V4z" />
+      <path d="m14 10-4 4" />
+      <path d="m10 10 4 4" />
+    </svg>
+  );
+}
+
 // ─── Skeleton loading grid ────────────────────────────────────────────────────
 function SkeletonGrid() {
   return (
@@ -290,6 +340,14 @@ function HighlightCard({
   const [shareOpen, setShareOpen] = React.useState(false);
   const router = useRouter();
   const updateHighlight = useDashboardStore((s) => s.updateHighlight);
+  const [requestAccessOpen, setRequestAccessOpen] = React.useState(false);
+
+  // Find effective role from folder
+  const folder = folders.find((f) => f.id === String(h.folderId));
+  const effectiveRole = folder?.effectiveRole || "OWNER";
+  const isViewer = effectiveRole === "VIEWER";
+  const isCommenter = effectiveRole === "COMMENTER";
+  const canEdit = effectiveRole === "OWNER" || effectiveRole === "EDITOR";
 
   return (
     <>
@@ -402,48 +460,64 @@ function HighlightCard({
 
           {/* Pin toggle */}
           <button
-            onClick={(e) => { e.stopPropagation(); onTogglePin(); }}
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              if (canEdit) onTogglePin(); 
+              else setRequestAccessOpen(true);
+            }}
             className={cn(
               "w-5 h-5 rounded flex items-center justify-center",
               "transition-all duration-150",
               h.isPinned
                 ? "text-accent opacity-100"
                 : "text-white/40 hover:text-accent opacity-0 group-hover/card:opacity-100",
+              !canEdit && h.isPinned && "cursor-default opacity-60",
+              !canEdit && !h.isPinned && "hidden", // Only show pinned state to viewers
             )}
             aria-label={h.isPinned ? "Unpin" : "Pin"}
+            title={!canEdit ? "Only editors can pin highlights" : h.isPinned ? "Unpin" : "Pin"}
           >
             <PinIcon filled={!!h.isPinned} />
           </button>
 
           {/* Star / favorite toggle */}
           <button
-            onClick={(e) => { e.stopPropagation(); onToggleFavorite(); }}
+            onClick={(e) => { 
+              e.stopPropagation(); 
+              if (canEdit) onToggleFavorite(); 
+              else setRequestAccessOpen(true);
+            }}
             className={cn(
               "w-5 h-5 rounded flex items-center justify-center",
               "transition-all duration-150",
               h.isFavorite
                 ? "text-yellow-400 opacity-100"
                 : "text-white/40 hover:text-yellow-400 opacity-0 group-hover/card:opacity-100",
+              !canEdit && h.isFavorite && "cursor-default opacity-60",
+              !canEdit && !h.isFavorite && "hidden", // Only show fav state to viewers
             )}
             aria-label={h.isFavorite ? "Remove from favorites" : "Add to favorites"}
+            title={!canEdit ? "Only editors can favorite highlights" : h.isFavorite ? "Remove from favorites" : "Add to favorites"}
           >
             <StarSmallIcon filled={h.isFavorite} />
           </button>
 
           {/* Archive toggle */}
-          <button
-            onClick={(e) => { e.stopPropagation(); onToggleArchive(); }}
-            className={cn(
-              "w-5 h-5 rounded flex items-center justify-center",
-              "transition-all duration-150",
-              h.isArchived
-                ? "text-white/60 opacity-100"
-                : "text-white/40 hover:text-white/60 opacity-0 group-hover/card:opacity-100",
-            )}
-            aria-label={h.isArchived ? "Unarchive" : "Archive"}
-          >
-            <ArchiveSmallIcon />
-          </button>
+          {canEdit && (
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleArchive(); }}
+              className={cn(
+                "w-5 h-5 rounded flex items-center justify-center",
+                "transition-all duration-150",
+                h.isArchived
+                  ? "text-white/60 opacity-100"
+                  : "text-white/40 hover:text-white/60 opacity-0 group-hover/card:opacity-100",
+              )}
+              aria-label={h.isArchived ? "Unarchive" : "Archive"}
+            >
+              <ArchiveSmallIcon />
+            </button>
+          )}
 
           {/* 3-dot menu */}
           <DropdownMenu.Root open={menuOpen} onOpenChange={setMenuOpen}>
@@ -479,18 +553,34 @@ function HighlightCard({
                   "data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95",
                 )}
               >
-                <DropdownMenu.Item
-                  className={cn(
-                    "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
-                    "text-[12px] text-white/70 hover:text-white",
-                    "hover:bg-white/[0.06] cursor-pointer",
-                    "outline-none transition-colors duration-100",
-                  )}
-                  onSelect={() => onRename()}
-                >
-                  <PencilIcon />
-                  Rename
-                </DropdownMenu.Item>
+                {canEdit && (
+                  <DropdownMenu.Item
+                    className={cn(
+                      "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
+                      "text-[12px] text-white/70 hover:text-white",
+                      "hover:bg-white/[0.06] cursor-pointer",
+                      "outline-none transition-colors duration-100",
+                    )}
+                    onSelect={() => onRename()}
+                  >
+                    <PencilIcon />
+                    Rename
+                  </DropdownMenu.Item>
+                )}
+                {isViewer && (
+                  <DropdownMenu.Item
+                    className={cn(
+                      "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
+                      "text-[12px] text-accent hover:text-accent/80",
+                      "hover:bg-accent/[0.08] cursor-pointer",
+                      "outline-none transition-colors duration-100",
+                    )}
+                    onSelect={() => setRequestAccessOpen(true)}
+                  >
+                    <ShieldAlert className="w-3.5 h-3.5" />
+                    Request Access
+                  </DropdownMenu.Item>
+                )}
                 <DropdownMenu.Item
                   className={cn(
                     "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
@@ -522,6 +612,7 @@ function HighlightCard({
                 </DropdownMenu.Item>
                 <DropdownMenu.Sub>
                   <DropdownMenu.SubTrigger
+                    disabled={!canEdit}
                     className={cn(
                       "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
                       "text-[12px] text-white/70 hover:text-white",
@@ -561,31 +652,42 @@ function HighlightCard({
                   <ShareIcon />
                   Share
                 </DropdownMenu.Item>
-                <DropdownMenu.Item
-                  className={cn(
-                    "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
-                    "text-[12px] text-white/70 hover:text-white",
-                    "hover:bg-white/[0.06] cursor-pointer",
-                    "outline-none transition-colors duration-100",
-                  )}
-                  onSelect={onToggleArchive}
-                >
-                  <ArchiveSmallIcon />
-                  {h.isArchived ? "Unarchive" : "Archive"}
-                </DropdownMenu.Item>
-                <DropdownMenu.Separator className="my-1 h-px bg-white/[0.06]" />
-                <DropdownMenu.Item
-                  className={cn(
-                    "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
-                    "text-[12px] text-red-400 hover:text-red-300",
-                    "hover:bg-red-500/[0.08] cursor-pointer",
-                    "outline-none transition-colors duration-100",
-                  )}
-                  onSelect={() => onDelete(h.id)}
-                >
-                  <TrashIcon />
-                  Delete
-                </DropdownMenu.Item>
+
+                {canEdit && (
+                  <DropdownMenu.Item
+                    className={cn(
+                      "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
+                      "text-[12px] text-white/70 hover:text-white",
+                      "hover:bg-white/[0.06] cursor-pointer outline-none transition-colors duration-100",
+                    )}
+                    onSelect={onToggleArchive}
+                  >
+                    <ArchiveSmallIcon />
+                    {h.isArchived ? "Unarchive" : "Archive"}
+                  </DropdownMenu.Item>
+                )}
+
+                {canEdit && (
+                  <>
+                    <DropdownMenu.Separator className="my-1 h-px bg-white/[0.06]" />
+                    <DropdownMenu.Item
+                      className={cn(
+                        "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
+                        "text-[12px] text-red-400 hover:text-red-300",
+                        "hover:bg-red-500/[0.08] cursor-pointer outline-none transition-colors duration-100",
+                      )}
+                      onSelect={() => onDelete(h.id)}
+                    >
+                      <TrashIcon />
+                      Delete
+                    </DropdownMenu.Item>
+                  </>
+                )}
+                {isViewer && (
+                  <div className="px-2.5 py-2 text-[10px] text-white/30 italic max-w-[180px] leading-relaxed border-t border-white/[0.06] mt-1">
+                    Ask the owner for Editor access to edit or delete this highlight.
+                  </div>
+                )}
               </DropdownMenu.Content>
             </DropdownMenu.Portal>
           </DropdownMenu.Root>
@@ -740,6 +842,12 @@ function HighlightCard({
     </motion.div>
 
     <ShareDialog open={shareOpen} onOpenChange={setShareOpen} type="h" id={h.id} title={h.text.slice(0, 60)} />
+    <RequestAccessModal 
+      open={requestAccessOpen} 
+      onOpenChange={setRequestAccessOpen} 
+      folderId={h.folderId || ""} 
+      folderName={h.folder || "Folder"} 
+    />
     </>
   );
 }
@@ -989,6 +1097,13 @@ function HighlightListRow({
 }) {
   const [menuOpen, setMenuOpen] = React.useState(false);
   const [shareOpen, setShareOpen] = React.useState(false);
+  const [requestAccessOpen, setRequestAccessOpen] = React.useState(false);
+
+  // Find effective role from folder
+  const folder = folders.find((f) => f.id === String(h.folderId));
+  const effectiveRole = folder?.effectiveRole || "OWNER";
+  const isViewer = effectiveRole === "VIEWER";
+  const canEdit = effectiveRole === "OWNER" || effectiveRole === "EDITOR";
 
   return (
     <>
@@ -1131,8 +1246,22 @@ function HighlightListRow({
                 "data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95",
               )}
             >
+              {isViewer && (
+                <DropdownMenu.Item
+                  className={cn(
+                    "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
+                    "text-[12px] text-accent hover:text-accent/80",
+                    "hover:bg-accent/[0.08] cursor-pointer outline-none transition-colors duration-100",
+                  )}
+                  onSelect={() => setRequestAccessOpen(true)}
+                >
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  Request Access
+                </DropdownMenu.Item>
+              )}
               <DropdownMenu.Sub>
                 <DropdownMenu.SubTrigger
+                  disabled={!canEdit}
                   className={cn(
                     "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
                     "text-[12px] text-white/70 hover:text-white",
@@ -1171,29 +1300,40 @@ function HighlightListRow({
                 <ShareIcon />
                 Share
               </DropdownMenu.Item>
-              <DropdownMenu.Item
-                className={cn(
-                  "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
-                  "text-[12px] text-white/70 hover:text-white",
-                  "hover:bg-white/[0.06] cursor-pointer outline-none transition-colors duration-100",
-                )}
-                onSelect={onToggleArchive}
-              >
-                <ArchiveSmallIcon />
-                {h.isArchived ? "Unarchive" : "Archive"}
-              </DropdownMenu.Item>
-              <DropdownMenu.Separator className="my-1 h-px bg-white/[0.06]" />
-              <DropdownMenu.Item
-                className={cn(
-                  "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
-                  "text-[12px] text-red-400 hover:text-red-300",
-                  "hover:bg-red-500/[0.08] cursor-pointer outline-none transition-colors duration-100",
-                )}
-                onSelect={() => onDelete(h.id)}
-              >
-                <TrashIcon />
-                Delete
-              </DropdownMenu.Item>
+              {canEdit && (
+                <DropdownMenu.Item
+                  className={cn(
+                    "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
+                    "text-[12px] text-white/70 hover:text-white",
+                    "hover:bg-white/[0.06] cursor-pointer outline-none transition-colors duration-100",
+                  )}
+                  onSelect={onToggleArchive}
+                >
+                  <ArchiveSmallIcon />
+                  {h.isArchived ? "Unarchive" : "Archive"}
+                </DropdownMenu.Item>
+              )}
+              {canEdit && (
+                <>
+                  <DropdownMenu.Separator className="my-1 h-px bg-white/[0.06]" />
+                  <DropdownMenu.Item
+                    className={cn(
+                      "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
+                      "text-[12px] text-red-400 hover:text-red-300",
+                      "hover:bg-red-500/[0.08] cursor-pointer outline-none transition-colors duration-100",
+                    )}
+                    onSelect={() => onDelete(h.id)}
+                  >
+                    <TrashIcon />
+                    Delete
+                  </DropdownMenu.Item>
+                </>
+              )}
+              {isViewer && (
+                <div className="px-2.5 py-2 text-[10px] text-white/30 italic max-w-[180px] leading-relaxed border-t border-white/[0.06] mt-1">
+                  Ask owner for Editor access to edit/delete.
+                </div>
+              )}
             </DropdownMenu.Content>
           </DropdownMenu.Portal>
         </DropdownMenu.Root>
@@ -1202,6 +1342,12 @@ function HighlightListRow({
     </motion.div>
 
     <ShareDialog open={shareOpen} onOpenChange={setShareOpen} type="h" id={h.id} title={h.text.slice(0, 60)} />
+    <RequestAccessModal 
+      open={requestAccessOpen} 
+      onOpenChange={setRequestAccessOpen} 
+      folderId={h.folderId || ""} 
+      folderName={h.folder || "Folder"} 
+    />
     </>
   );
 }

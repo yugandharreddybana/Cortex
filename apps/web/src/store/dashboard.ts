@@ -16,6 +16,7 @@ export interface Folder {
   defaultLinkRole?: string; // VIEWER, COMMENTER, EDITOR
   // RBAC (Phase 2)
   effectiveRole?: string;   // OWNER | EDITOR | COMMENTER | VIEWER
+  ownerId?:       string;
   createdAt?: string;
   updatedAt?: string;
   synthesis?: string;
@@ -30,7 +31,8 @@ export interface SmartCollection {
 export interface Tag {
   id:    string;
   name:  string;
-  color: string; // tailwind color key e.g. "blue" | "violet" | "emerald" …
+  color: string;
+  createdAt?: string;
 }
 
 export interface Highlight {
@@ -94,6 +96,9 @@ interface DashboardState {
   // Highlights
   highlights: Highlight[];
 
+  isGlobalLoading: boolean;
+  setGlobalLoading: (v: boolean) => void;
+
   // Actions
   setSidebarCollapsed: (v: boolean) => void;
   setActiveFolder:     (id: string | null) => void;
@@ -108,10 +113,13 @@ interface DashboardState {
   clearHighlightSelection:  () => void;
   addFolder:           (name: string, parentId?: string) => Promise<void>;
   deleteFolder:        (id: string) => void;
+  unshareFolder:       (id: string) => Promise<void>;
+  bulkManagePermissions: (resourceId: number, resourceType: string, updates: any[], removals: number[]) => Promise<void>;
   renameFolder:        (id: string, name: string) => void;
   moveFolder:          (id: string, newParentId: string | undefined) => void;
   setFolderEmoji:      (id: string, emoji: string) => void;
   addTag:              (name: string, color: string) => Promise<void>;
+  updateTag:           (id: string, name: string, color: string) => Promise<void>;
   deleteTag:           (id: string) => void;
   addHighlight:        (h: Pick<Highlight, "text" | "source"> & { folderId?: string, tags?: string[], url?: string }) => Promise<boolean>;
   updateHighlight:     (id: string, patch: Partial<Pick<Highlight, "note" | "tags" | "highlightColor" | "aiContext" | "aiResponse" | "connectDotsResult" | "actionItemsResult" | "devilsAdvocateResult" | "customPrompt" | "source">>) => void;
@@ -139,8 +147,11 @@ interface DashboardState {
   deleteHighlight:     (id: string) => void;
   restoreHighlight:    (id: string) => void;
 
-  // Loading skeleton
-  isLoading:              boolean;
+  // Loading reference counter
+  loadingCount:           number;
+  startLoading:           () => void;
+  stopLoading:            () => void;
+  isLoading:              boolean; // Deprecated: use loadingCount > 0
   setIsLoading:           (v: boolean) => void;
 
   // Keyboard focus navigation
@@ -159,6 +170,10 @@ interface DashboardState {
   fetchTags: () => Promise<void>;
   updateFolderSynthesis: (id: string, synthesis: string) => void;
   setTagFilterExclusive: (tagIds: string[]) => void;
+
+  // Access Requests
+  requestAccess: (folderId: string, role: string) => Promise<boolean>;
+  respondToAccessRequest: (requestId: string, action: "APPROVE" | "REJECT") => Promise<boolean>;
 
   // Reset all user data (clears on logout)
   resetStore: () => void;
@@ -249,6 +264,7 @@ export const useDashboardStore = create<DashboardState>()(
             parentId:      f.parentId != null ? String(f.parentId) : undefined,
             isPinned:      f.isPinned ?? false,
             effectiveRole: f.effectiveRole ?? undefined,
+            ownerId:       (f as any).ownerId != null ? String((f as any).ownerId) : undefined,
           }));
           set({ folders: dedupFolders(mapped) });
           // Recompute folder counts from current highlights
@@ -278,7 +294,12 @@ export const useDashboardStore = create<DashboardState>()(
           // Normalize to string IDs so the store is always consistent with useServerSync
           const raw: Array<{ id: string | number; name: string; color?: string }> =
             Array.isArray(data) ? data : Array.isArray(data.tags) ? data.tags : [];
-          const mapped = raw.map((t) => ({ id: String(t.id), name: t.name, color: t.color ?? "" }));
+          const mapped = raw.map((t) => ({
+            id: String(t.id),
+            name: t.name,
+            color: t.color ?? "",
+            createdAt: (t as any).createdAt || undefined
+          }));
           set({ tags: dedupFolders(mapped) });
         } catch {
           // Keep existing tags on error — don't clear them
@@ -296,12 +317,24 @@ export const useDashboardStore = create<DashboardState>()(
       highlights: [],
 
       trash:                     [],
+      loadingCount:              0,
+      startLoading:              () => set((s) => {
+        const next = s.loadingCount + 1;
+        return { loadingCount: next, isLoading: next > 0 };
+      }),
+      stopLoading:               () => set((s) => {
+        const next = Math.max(0, s.loadingCount - 1);
+        return { loadingCount: next, isLoading: next > 0 };
+      }),
       isLoading:                 false,
       focusedHighlightIdx:       0,
       newFolderDialogOpen:       false,
       newHighlightDialogOpen:    false,
 
-      setSidebarCollapsed: (v)     => set({ sidebarCollapsed: v }),
+      isGlobalLoading: false,
+    setGlobalLoading: (isGlobalLoading) => set({ isGlobalLoading }),
+
+    setSidebarCollapsed: (sidebarCollapsed) => set({ sidebarCollapsed }),
       setActiveFolder: (id) => {
         set({ activeFolder: id });
       },
@@ -371,7 +404,7 @@ export const useDashboardStore = create<DashboardState>()(
       },
 
       deleteFolder: async (id) => {
-        // Collect this folder and all descendants
+        // Collect this folder and all descendants for optimistic state update
         const state = get();
         const idsToDelete = new Set<string>();
 
@@ -379,10 +412,9 @@ export const useDashboardStore = create<DashboardState>()(
         const childrenMap = new Map<string, string[]>();
         for (const f of state.folders) {
           if (f.parentId) {
-            if (!childrenMap.has(f.parentId)) {
-              childrenMap.set(f.parentId, []);
-            }
-            childrenMap.get(f.parentId)!.push(f.id);
+            const pid = String(f.parentId);
+            if (!childrenMap.has(pid)) childrenMap.set(pid, []);
+            childrenMap.get(pid)!.push(String(f.id));
           }
         }
 
@@ -395,21 +427,56 @@ export const useDashboardStore = create<DashboardState>()(
             }
           }
         }
-        collectChildren(id);
+        collectChildren(String(id));
 
-        // Optimistic UI update
+        // Optimistic UI update: 
+        // 1. Remove folders in the tree
+        // 2. Orphan highlights in these folders (set folderId to null)
         set((s) => ({
-          folders: s.folders.filter((f) => !idsToDelete.has(f.id)),
-          highlights: s.highlights.map((h) =>
-            h.folderId && idsToDelete.has(h.folderId)
-              ? { ...h, folderId: undefined, folder: undefined }
-              : h,
+          folders: s.folders.filter((f) => !idsToDelete.has(String(f.id))),
+          highlights: s.highlights.map((h) => 
+            h.folderId && idsToDelete.has(String(h.folderId)) 
+              ? { ...h, folderId: undefined, folder: undefined } 
+              : h
           ),
+          // Clear active folder if it was in the deleted tree
+          activeFolder: s.activeFolder && idsToDelete.has(String(s.activeFolder)) ? null : s.activeFolder
         }));
 
-        // Fire API calls for each folder (server cascades children)
-        for (const fid of idsToDelete) {
-          void apiFetch(`/api/folders/${encodeURIComponent(fid)}`, { method: "DELETE" });
+        // Fire a single API call for the root folder. The backend will cascade.
+        await apiFetch(`/api/folders/${encodeURIComponent(id)}`, { method: "DELETE" });
+      },
+
+      unshareFolder: async (id) => {
+        set({ isGlobalLoading: true });
+        try {
+          const { ok } = await apiFetch(`/api/folders/${encodeURIComponent(id)}/unshare`, { method: "POST" });
+          if (ok) {
+            set((s) => ({ folders: s.folders.filter((f) => f.id !== id) }));
+            // Redirect if viewing it
+            if (window.location.pathname.includes(`/folders/${id}`)) {
+              window.location.href = "/dashboard";
+            }
+          }
+        } finally {
+          set({ isGlobalLoading: false });
+        }
+      },
+
+      bulkManagePermissions: async (resourceId, resourceType, updates, removals) => {
+        set({ isGlobalLoading: true });
+        try {
+          const { ok } = await apiFetch(`/api/permissions/bulk-manage`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ resourceId, resourceType, updates, removals }),
+          });
+          if (ok) {
+            // Re-fetch folders to ensure local syncing
+            await get().fetchFolders();
+          }
+        } finally {
+          set({ isGlobalLoading: false });
         }
       },
 
@@ -485,11 +552,38 @@ export const useDashboardStore = create<DashboardState>()(
           if (status === 409) throw new Error("Tag already exists.");
           throw new Error("Failed to create tag.");
         }
-        const newTag = { id: String(data.id), name: data.name, color: data.color };
+        const newTag = { id: String(data.id), name: data.name, color: data.color, createdAt: (data as any).createdAt };
         set((s) => {
           if (s.tags.some((t) => t.id === newTag.id)) return s;
           return { tags: [...s.tags, newTag] };
         });
+      },
+
+      updateTag: async (id, name, color) => {
+        const trimmedName = name.trim().slice(0, 50);
+        if (!trimmedName) return;
+
+        // Optimistic UI update
+        set((s) => ({
+          tags: s.tags.map((t) => (t.id === id ? { ...t, name: trimmedName, color } : t)),
+        }));
+
+        const { ok, status } = await apiFetch(
+          `/api/tags/${encodeURIComponent(id)}`,
+          {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name: trimmedName, color }),
+          },
+        );
+
+        if (!ok) {
+          // Revert on error? Or just let real-time sync handle it.
+          // For now, if it fails, we fetch tags again to be sure.
+          await get().fetchTags();
+          if (status === 409) throw new Error("Tag name already exists.");
+          throw new Error("Failed to update tag.");
+        }
       },
 
       deleteTag: (id) => {
@@ -712,10 +806,34 @@ export const useDashboardStore = create<DashboardState>()(
         }));
       },
 
-      setIsLoading:           (v) => set({ isLoading: v }),
+      setIsLoading: (v: boolean) => {
+        if (v) get().startLoading();
+        else get().stopLoading();
+      },
       setFocusedHighlightIdx: (n) => set({ focusedHighlightIdx: n }),
       setNewFolderDialogOpen:    (v) => set({ newFolderDialogOpen: v }),
       setNewHighlightDialogOpen: (v) => set({ newHighlightDialogOpen: v }),
+
+      requestAccess: async (folderId, role) => {
+        set({ isGlobalLoading: true });
+        try {
+          const { ok } = await apiFetch(`/api/folders/${encodeURIComponent(folderId)}/request-access`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ role }),
+          });
+          return ok;
+        } finally {
+          set({ isGlobalLoading: false });
+        }
+      },
+
+      respondToAccessRequest: async (requestId, action) => {
+        const { ok } = await apiFetch(`/api/access-requests/${encodeURIComponent(requestId)}/respond?action=${action}`, {
+          method: "PUT",
+        });
+        return ok;
+      },
 
       addSmartCollection: async (name, tagIds) => {
         const trimmedName = name.trim();

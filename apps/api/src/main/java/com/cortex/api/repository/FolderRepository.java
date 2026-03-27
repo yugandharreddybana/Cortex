@@ -80,6 +80,21 @@ public interface FolderRepository extends JpaRepository<Folder, Long> {
     );
 
     /**
+     * Find all descendant IDs (recursive) of a folder via recursive query.
+     * Used for bulk operations to avoid Hibernate session conflicts.
+     */
+    @Query(value = """
+        WITH RECURSIVE descendants AS (
+            SELECT id FROM folders WHERE id = ?1
+            UNION ALL
+            SELECT f.id FROM folders f
+            INNER JOIN descendants d ON f.parent_folder_id = d.id
+        )
+        SELECT id FROM descendants
+    """, nativeQuery = true)
+    List<Long> findAllDescendantIdsInclusive(Long folderId);
+
+    /**
      * Find all descendants (recursive) of a folder via recursive query.
      * Used for cascade deletion. INCLUDES the root folder itself.
      */
@@ -93,4 +108,12 @@ public interface FolderRepository extends JpaRepository<Folder, Long> {
         SELECT * FROM folders WHERE id IN (SELECT id FROM descendants)
     """, nativeQuery = true)
     List<Folder> findAllDescendantsInclusive(Long folderId);
+
+    /**
+     * Bulk-delete folders by their IDs.
+     */
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Folder f WHERE f.id IN :ids")
+    void deleteByIdIn(@Param("ids") List<Long> ids);
 }

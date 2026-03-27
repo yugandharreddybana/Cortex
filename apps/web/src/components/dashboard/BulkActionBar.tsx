@@ -24,6 +24,16 @@ export function BulkActionBar() {
   const tags                = useDashboardStore((s) => s.tags);
   const count               = selectedIds.length;
 
+  // Determine if all selected highlights are editable
+  const allEditable = React.useMemo(() => {
+    const selectedHighlights = highlights.filter((h) => selectedIds.includes(h.id));
+    return selectedHighlights.every((h) => {
+      const folder = folders.find((f) => f.id === String(h.folderId));
+      const role = folder?.effectiveRole || "OWNER";
+      return role === "OWNER" || role === "EDITOR";
+    });
+  }, [selectedIds, highlights, folders]);
+
   // Deduplicate by string id — safety net against any sync path inserting duplicates
   const uniqueFolders = React.useMemo(() => {
     const seen = new Set<string>();
@@ -140,14 +150,23 @@ export function BulkActionBar() {
 
           <div className="w-px h-4 bg-white/10 shrink-0" />
 
+          {!allEditable && (
+            <div className="flex items-center gap-1.5 px-2 py-1 rounded-full bg-red-500/10 text-red-400 text-[11px] font-medium border border-red-500/20 shrink-0">
+              <LockIcon className="w-3 h-3" />
+              Some items are read-only
+            </div>
+          )}
+
           {/* Move to Folder (dropdown) */}
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>
               <button
+                disabled={!allEditable}
                 className={cn(
                   "inline-flex items-center gap-1.5 text-[12px] font-medium",
                   "px-2.5 py-1 rounded-full transition-all duration-150",
                   "text-white/65 hover:text-white/90 hover:bg-white/[0.07]",
+                  !allEditable && "opacity-40 cursor-not-allowed grayscale",
                 )}
               >
                 <FolderMoveIcon />
@@ -189,19 +208,19 @@ export function BulkActionBar() {
           </DropdownMenu.Root>
 
           {/* Pin */}
-          <BulkButton onClick={handleBulkPin}>
+          <BulkButton onClick={handleBulkPin} disabled={!allEditable}>
             <BulkPinIcon />
             Pin
           </BulkButton>
 
           {/* Favorite */}
-          <BulkButton onClick={handleBulkFavorite}>
+          <BulkButton onClick={handleBulkFavorite} disabled={!allEditable}>
             <BulkStarIcon />
             Favorite
           </BulkButton>
 
           {/* Archive */}
-          <BulkButton onClick={handleBulkArchive}>
+          <BulkButton onClick={handleBulkArchive} disabled={!allEditable}>
             <BulkArchiveIcon />
             Archive
           </BulkButton>
@@ -210,11 +229,13 @@ export function BulkActionBar() {
           <Popover.Root>
             <Popover.Trigger asChild>
               <button
+                disabled={!allEditable}
                 aria-label="Tag selected highlights"
                 className={cn(
                   "inline-flex items-center gap-1.5 text-[12px] font-medium",
                   "px-2.5 py-1 rounded-full transition-all duration-150",
                   "text-white/65 hover:text-white/90 hover:bg-white/[0.07]",
+                  !allEditable && "opacity-40 cursor-not-allowed grayscale",
                 )}
               >
                 <TagIcon />
@@ -276,7 +297,7 @@ export function BulkActionBar() {
           <div className="w-px h-4 bg-white/10 shrink-0" />
 
           {/* Delete */}
-          <BulkButton variant="danger" onClick={handleBulkDelete}>
+          <BulkButton variant="danger" onClick={handleBulkDelete} disabled={!allEditable}>
             <TrashIcon />
           </BulkButton>
 
@@ -303,20 +324,24 @@ function BulkButton({
   children,
   onClick,
   variant = "default",
+  disabled = false,
 }: {
-  children: React.ReactNode;
-  onClick:  () => void;
-  variant?: "default" | "danger";
+  children:  React.ReactNode;
+  onClick:   () => void;
+  variant?:  "default" | "danger";
+  disabled?: boolean;
 }) {
   return (
     <button
-      onClick={onClick}
+      onClick={disabled ? undefined : onClick}
+      disabled={disabled}
       className={cn(
         "inline-flex items-center gap-1.5 text-[12px] font-medium",
         "px-2.5 py-1 rounded-full transition-all duration-150",
         variant === "danger"
           ? "text-red-400 hover:text-red-300 hover:bg-red-500/10"
           : "text-white/65 hover:text-white/90 hover:bg-white/[0.07]",
+        disabled && "opacity-40 cursor-not-allowed grayscale",
       )}
     >
       {children}
@@ -325,6 +350,25 @@ function BulkButton({
 }
 
 // ─── Icons ────────────────────────────────────────────────────────────────────
+function LockIcon({ className }: { className?: string }) {
+  return (
+    <svg 
+      width="12" 
+      height="12" 
+      viewBox="0 0 24 24" 
+      fill="none" 
+      stroke="currentColor" 
+      strokeWidth="2" 
+      strokeLinecap="round" 
+      strokeLinejoin="round" 
+      className={className}
+    >
+      <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+      <path d="M7 11V7a5 5 0 0110 0v4" />
+    </svg>
+  );
+}
+
 function FolderMoveIcon() {
   return (
     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.35" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

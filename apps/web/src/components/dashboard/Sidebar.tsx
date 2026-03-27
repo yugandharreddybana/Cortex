@@ -21,14 +21,17 @@ import { Badge } from "@cortex/ui";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@cortex/ui";
 import { useDashboardStore } from "@/store/dashboard";
 import { useAuthStore } from "@/store/authStore";
-import type { Folder, SmartCollection } from "@/store/dashboard";
+import type { Folder, SmartCollection, Tag } from "@/store/dashboard";
 import { FolderCreateDialog } from "./FolderCreateDialog";
 import { DeleteAlertDialog } from "./DeleteAlertDialog";
 import { DuplicateFolderModal } from "./DuplicateFolderModal";
 import { NewTagDialog } from "./NewTagDialog";
+import { TagEditDialog } from "./TagEditDialog";
 import { RenameFolderDialog } from "./RenameFolderDialog";
 import { ShareDialog, ShareIcon } from "./ShareDialog";
-import { Loader2 } from "lucide-react";
+import { Loader2, ShieldAlert } from "lucide-react";
+import { RequestAccessModal } from "./RequestAccessModal";
+import { ManageAccessModal } from "./ManageAccessModal";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -64,6 +67,8 @@ const TAG_COLOR_MAP: any = { blue: { bg: "bg-blue-500/10", text: "text-blue-400"
 function resolveTagColor(color: string) { if (color?.startsWith("#")) return null; return TAG_COLOR_MAP[color] ?? TAG_COLOR_MAP.blue; }
 
 // ─── Components ───────────────────────────────────────────────────────────────
+
+
 
 function UserProfileDropdown() {
   const router = useRouter();
@@ -141,7 +146,7 @@ function FolderTreeMenu({ folders, onSelect, parentId, depth = 0, parentIdToExcl
   );
 }
 
-function FolderDropdown({ folder, onRename, onDelete, onShare, onDuplicate, onCreateSubfolder, onPin, onMove }: any) {
+function FolderDropdown({ folder, onRename, onDelete, onShare, onDuplicate, onCreateSubfolder, onPin, onMove, onManageAccess }: any) {
   const isOwner = !folder.effectiveRole || folder.effectiveRole === "OWNER";
   const isSharedFolder = !isOwner;
   const allFolders = useDashboardStore((s) => s.folders);
@@ -175,7 +180,22 @@ function FolderDropdown({ folder, onRename, onDelete, onShare, onDuplicate, onCr
           {isOwner && (
             <>
               <DropdownMenu.Separator className="my-1 h-px bg-white/[0.07]" />
+              <DropdownItem onSelect={onManageAccess}><ShieldAlert className="w-4 h-4" /> Manage Access</DropdownItem>
               <DropdownMenu.Item onSelect={onDelete} className={cn("flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-red-400 cursor-pointer select-none outline-none hover:bg-red-500/10 focus:bg-red-500/10 transition-colors duration-100")}><TrashIcon /> Delete</DropdownMenu.Item>
+            </>
+          )}
+          {isSharedFolder && (
+            <>
+              <DropdownMenu.Separator className="my-1 h-px bg-white/[0.07]" />
+              <DropdownMenu.Item onSelect={onDelete} className={cn("flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-red-400 cursor-pointer select-none outline-none hover:bg-red-500/10 focus:bg-red-500/10 transition-colors duration-100")}><TrashIcon /> Remove from workspace</DropdownMenu.Item>
+            </>
+          )}
+          {folder.effectiveRole === "VIEWER" && (
+            <>
+              <DropdownMenu.Separator className="my-1 h-px bg-white/[0.07]" />
+              <DropdownMenu.Item onSelect={() => (folder as any)._onRequestAccess?.()} className={cn("flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-accent cursor-pointer select-none outline-none hover:bg-accent/10 focus:bg-accent/10 transition-colors duration-100")}>
+                <ShieldAlert className="w-4 h-4" /> Request Higher Access
+              </DropdownMenu.Item>
             </>
           )}
         </DropdownMenu.Content>
@@ -219,12 +239,19 @@ function RecursiveFolderNode({
               )}
             >
               <span className="text-base leading-none shrink-0">{folder.emoji}</span>
-              <span className="flex-1 truncate text-left">{folder.name}</span>
+              <div className="flex-1 flex flex-col min-w-0">
+                <span className="truncate text-left">{folder.name}</span>
+                {folder.effectiveRole && (
+                  <span className="text-[9px] uppercase tracking-widest text-white/25 font-bold leading-none mt-0.5">
+                    {folder.effectiveRole}
+                  </span>
+                )}
+              </div>
               <span className="bg-white/10 text-white/60 text-[10px] px-1.5 rounded-full tabular-nums leading-4 shrink-0 min-w-[20px] flex items-center justify-center">
                 {isLoading ? "…" : (folderCountMap[folder.id] || 0)}
               </span>
             </Link>
-            <FolderDropdown folder={folder} onRename={() => onRename(folder)} onDelete={() => onDelete(folder)} onShare={() => onShare(folder)} onDuplicate={() => onDuplicate(folder)} onCreateSubfolder={() => onCreateSubfolder(folder.id)} onPin={() => onPin(folder)} onMove={(targetId: string) => onMove(folder, targetId)} />
+            <FolderDropdown folder={folder} onRename={() => onRename(folder)} onDelete={() => onDelete(folder)} onShare={() => onShare(folder)} onDuplicate={() => onDuplicate(folder)} onCreateSubfolder={() => onCreateSubfolder(folder.id)} onPin={() => onPin(folder)} onMove={(targetId: string) => onMove(folder, targetId)} onManageAccess={() => (folder as any)._onManageAccess?.()} />
           </div>
         </ContextMenu.Trigger>
         <ContextMenu.Portal>
@@ -290,11 +317,13 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
 
   const folders            = useDashboardStore((s) => s.folders);
   const deleteFolder       = useDashboardStore((s) => s.deleteFolder);
+  const unshareFolder      = useDashboardStore((s) => s.unshareFolder);
   const moveFolder         = useDashboardStore((s) => s.moveFolder);
   const togglePinFolder    = useDashboardStore((s) => s.togglePinFolder);
   const highlights         = useDashboardStore((s) => s.highlights);
   const tags               = useDashboardStore((s) => s.tags);
   const deleteTag          = useDashboardStore((s) => s.deleteTag);
+  const updateTag          = useDashboardStore((s) => s.updateTag);
   const smartCollections   = useDashboardStore((s) => s.smartCollections);
   const deleteSmartCollection = useDashboardStore((s) => s.deleteSmartCollection);
   const activeTagFilters   = useDashboardStore((s) => s.activeTagFilters);
@@ -308,6 +337,9 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
   const [renameTarget, setRenameTarget] = React.useState<{ id: string; name: string } | null>(null);
   const [shareTarget, setShareTarget] = React.useState<{ id: string; name: string } | null>(null);
   const [duplicateTarget, setDuplicateTarget] = React.useState<{ id: string; name: string } | null>(null);
+  const [tagEditTarget, setTagEditTarget] = React.useState<Tag | null>(null);
+  const [requestAccessTarget, setRequestAccessTarget] = React.useState<{ id: string; name: string; currentRole?: string } | null>(null);
+  const [manageAccessTarget, setManageAccessTarget] = React.useState<{ id: string; name: string } | null>(null);
   const [sharedWithMe, setSharedWithMe] = React.useState<SharedWithMeItem[]>([]);
   const [isLoadingShared, setIsLoadingShared] = React.useState(true);
   const [sharedExpanded, setSharedExpanded] = React.useState(false);
@@ -347,8 +379,14 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
     });
   }, [folders]);
 
-  const myRootFolders = React.useMemo(() => rootFoldersList.filter(f => !f.effectiveRole || f.effectiveRole === "OWNER"), [rootFoldersList]);
-  const sharedRootFolders = React.useMemo(() => rootFoldersList.filter(f => f.effectiveRole && f.effectiveRole !== "OWNER"), [rootFoldersList]);
+  const currentUser = useAuthStore((s) => s.user);
+  const myRootFolders = React.useMemo(() => {
+    return rootFoldersList.filter((f) => !f.ownerId || f.ownerId === String(currentUser?.id));
+  }, [rootFoldersList, currentUser]);
+
+  const sharedRootFolders = React.useMemo(() => {
+    return rootFoldersList.filter((f) => f.ownerId && f.ownerId !== String(currentUser?.id));
+  }, [rootFoldersList, currentUser]);
 
   const getChildren = React.useCallback((parentId: string) => {
     const seen = new Set<string>();
@@ -435,13 +473,26 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                 </div>
               </div>
               <div className="px-3 pt-2 pb-6">
-                <DndContext id="sidebar-folders-mine" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
-                  <div className="space-y-0.5">
-                    {myRootFolders.map((folder) => (
-                      <RecursiveFolderNode key={folder.id} folder={folder} depth={0} pathname={pathname} getChildren={getChildren} folderCountMap={folderCountMap} onRename={(f: any) => setRenameTarget({ id: f.id, name: f.name })} onDelete={(f: any) => setDeleteTarget({ id: f.id, name: f.name })} onShare={(f: any) => setShareTarget({ id: f.id, name: f.name })} onDuplicate={(f: any) => setDuplicateTarget({ id: f.id, name: f.name })} onCreateSubfolder={handleCreateSubfolder} onPin={(f: any) => togglePinFolder(f.id)} onMove={(f: any, targetId: string) => moveFolder(f.id, targetId)} isLoading={isLoading} />
-                    ))}
+                {myRootFolders.length === 0 ? (
+                  <div className="px-5 py-4 rounded-xl bg-white/[0.02] border border-dashed border-white/[0.08] text-center">
+                    <p className="text-[10px] text-white/30 font-medium uppercase tracking-widest leading-none">Your Space</p>
+                    <p className="text-xs text-white/20 mt-1.5 leading-snug">No folders created yet</p>
+                    <button 
+                      onClick={() => setFolderDialogOpen(true)}
+                      className="mt-2 text-[10px] font-semibold text-accent/60 hover:text-accent transition-colors"
+                    >
+                      + Create Folder
+                    </button>
                   </div>
-                </DndContext>
+                ) : (
+                  <DndContext id="sidebar-folders-mine" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
+                    <div className="space-y-0.5">
+                      {myRootFolders.map((folder) => (
+                        <RecursiveFolderNode key={folder.id} folder={{ ...folder, _onManageAccess: () => setManageAccessTarget({ id: folder.id, name: folder.name }) }} depth={0} pathname={pathname} getChildren={getChildren} folderCountMap={folderCountMap} onRename={(f: any) => setRenameTarget({ id: f.id, name: f.name })} onDelete={(f: any) => setDeleteTarget({ id: f.id, name: f.name })} onShare={(f: any) => setShareTarget({ id: f.id, name: f.name })} onDuplicate={(f: any) => setDuplicateTarget({ id: f.id, name: f.name })} onCreateSubfolder={handleCreateSubfolder} onPin={(f: any) => togglePinFolder(f.id)} onMove={(f: any, targetId: string) => moveFolder(f.id, targetId)} isLoading={isLoading} />
+                      ))}
+                    </div>
+                  </DndContext>
+                )}
               </div>
             </div>
 
@@ -457,7 +508,22 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                   <DndContext id="sidebar-folders-shared" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                     <div className="space-y-0.5">
                       {sharedRootFolders.map((folder) => (
-                        <RecursiveFolderNode key={folder.id} folder={folder} depth={0} pathname={pathname} getChildren={getChildren} folderCountMap={folderCountMap} onRename={(f: any) => setRenameTarget({ id: f.id, name: f.name })} onDelete={(f: any) => setDeleteTarget({ id: f.id, name: f.name })} onShare={(f: any) => setShareTarget({ id: f.id, name: f.name })} onDuplicate={(f: any) => setDuplicateTarget({ id: f.id, name: f.name })} onCreateSubfolder={handleCreateSubfolder} onPin={(f: any) => togglePinFolder(f.id)} onMove={(f: any, targetId: string) => moveFolder(f.id, targetId)} isLoading={isLoading} />
+                        <RecursiveFolderNode 
+                          key={folder.id} 
+                          folder={{ ...folder, _onRequestAccess: () => setRequestAccessTarget({ id: folder.id, name: folder.name, currentRole: folder.effectiveRole }) }} 
+                          depth={0} 
+                          pathname={pathname} 
+                          getChildren={getChildren} 
+                          folderCountMap={folderCountMap} 
+                          onRename={(f: any) => setRenameTarget({ id: f.id, name: f.name })} 
+                          onDelete={(f: any) => setDeleteTarget({ id: f.id, name: f.name })} 
+                          onShare={(f: any) => setShareTarget({ id: f.id, name: f.name })} 
+                          onDuplicate={(f: any) => setDuplicateTarget({ id: f.id, name: f.name })} 
+                          onCreateSubfolder={handleCreateSubfolder} 
+                          onPin={(f: any) => togglePinFolder(f.id)} 
+                          onMove={(f: any, targetId: string) => moveFolder(f.id, targetId)} 
+                          isLoading={isLoading} 
+                        />
                       ))}
                     </div>
                   </DndContext>
@@ -491,16 +557,53 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                   <button onClick={() => setTagDialogOpen(true)} className="p-1 rounded-md text-white/30 hover:text-white/70 hover:bg-white/[0.08] transition-all duration-150" aria-label="New tag"><PlusIcon /></button>
                 </div>
               </div>
-              <div className="flex flex-wrap gap-1.5 px-6 pt-3 pb-10">
-                {tags.map((tag) => {
+              <div className="flex flex-wrap gap-1.5 px-5 pt-3 pb-10">
+                {tags.length === 0 ? (
+                  <div className="w-full py-4 text-center bg-white/[0.01] rounded-xl border border-dashed border-white/[0.06]">
+                    <p className="text-[10px] text-white/20 uppercase tracking-widest font-medium">No tags yet</p>
+                  </div>
+                ) : tags.map((tag) => {
                   const resolved = resolveTagColor(tag.color);
-                  const isActive = activeTagFilters.includes(tag.id);
+                  const isActive = pathname === `/dashboard/tags/${tag.id}`;
                   return (
-                    <div key={tag.id} className="group/tag relative">
-                      <span onClick={() => toggleTagFilter(tag.id)} className={cn("inline-flex items-center gap-1 border rounded-md px-2 py-1 text-xs font-medium cursor-pointer transition-all duration-150", resolved ? `${resolved.bg} ${resolved.text} border ${resolved.border}` : undefined, isActive && "ring-1 ring-accent/50 shadow-[0_0_8px_rgba(108,99,255,0.25)]")} style={{ background: tag.color.startsWith("#") ? `${tag.color}20` : `color-mix(in srgb, ${tag.color} 20%, transparent)`, color: tag.color, borderColor: tag.color.startsWith("#") ? `${tag.color}40` : `color-mix(in srgb, ${tag.color} 40%, transparent)` }}>
-                        {tag.name}<button onClick={(e) => { e.stopPropagation(); deleteTag(tag.id); }} className="ml-0.5 opacity-0 group-hover/tag:opacity-60 hover:!opacity-100 transition-opacity"><XTinyIcon /></button>
-                      </span>
-                    </div>
+                    <ContextMenu.Root key={tag.id}>
+                      <ContextMenu.Trigger>
+                        <div className="group/tag relative">
+                          <Link
+                            href={`/dashboard/tags/${tag.id}`}
+                            className={cn(
+                              "inline-flex items-center gap-1 border rounded-md px-2 py-1 text-xs font-medium cursor-pointer transition-all duration-150",
+                              resolved ? `${resolved.bg} ${resolved.text} border ${resolved.border}` : undefined,
+                              isActive && "ring-1 ring-accent/50 shadow-[0_0_8px_rgba(108,99,255,0.25)]"
+                            )}
+                            style={{
+                              background: tag.color.startsWith("#") ? `${tag.color}20` : `color-mix(in srgb, ${tag.color} 20%, transparent)`,
+                              color: tag.color,
+                              borderColor: tag.color.startsWith("#") ? `${tag.color}40` : `color-mix(in srgb, ${tag.color} 40%, transparent)`
+                            }}
+                          >
+                            {tag.name}
+                            <button
+                              onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteTag(tag.id); }}
+                              className="ml-0.5 opacity-0 group-hover/tag:opacity-60 hover:!opacity-100 transition-opacity"
+                            >
+                              <XTinyIcon />
+                            </button>
+                          </Link>
+                        </div>
+                      </ContextMenu.Trigger>
+                      <ContextMenu.Portal>
+                        <ContextMenu.Content className="z-50 min-w-[160px] rounded-xl overflow-hidden bg-[#1e1e1e] border border-white/[0.09] shadow-[0_16px_40px_rgba(0,0,0,0.5)] p-1">
+                          <ContextMenu.Item onSelect={() => setTagEditTarget(tag)} className={dropdownItemCls}>
+                            <PencilIcon /> Edit Tag
+                          </ContextMenu.Item>
+                          <ContextMenu.Separator className="my-1 h-px bg-white/[0.07]" />
+                          <ContextMenu.Item onSelect={() => deleteTag(tag.id)} className="flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-red-400 cursor-pointer select-none outline-none hover:bg-red-500/10 transition-colors duration-100">
+                            <TrashIcon /> Delete Tag
+                          </ContextMenu.Item>
+                        </ContextMenu.Content>
+                      </ContextMenu.Portal>
+                    </ContextMenu.Root>
                   );
                 })}
               </div>
@@ -531,10 +634,45 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
 
       <FolderCreateDialog open={folderDialogOpen} onOpenChange={(v) => { setFolderDialogOpen(v); if (!v) setSubfolderParentId(undefined); }} parentId={subfolderParentId} />
       <NewTagDialog open={tagDialogOpen} onOpenChange={setTagDialogOpen} />
+      <TagEditDialog tag={tagEditTarget} open={!!tagEditTarget} onOpenChange={(v) => !v && setTagEditTarget(null)} />
       <RenameFolderDialog open={!!renameTarget} onOpenChange={(v) => !v && setRenameTarget(null)} folderId={renameTarget?.id ?? ""} currentName={renameTarget?.name ?? ""} />
-      <DeleteAlertDialog open={!!deleteTarget} onOpenChange={(v) => !v && setDeleteTarget(null)} targetLabel={deleteTarget?.name ?? ""} targetType="folder" onConfirm={() => { if (deleteTarget) deleteFolder(deleteTarget.id); setDeleteTarget(null); }} />
+      <DeleteAlertDialog 
+        open={!!deleteTarget} 
+        onOpenChange={(v) => !v && setDeleteTarget(null)} 
+        targetLabel={deleteTarget?.name ?? ""} 
+        targetType="folder" 
+        isShared={!!folders.find(f => f.id === deleteTarget?.id)?.effectiveRole && folders.find(f => f.id === deleteTarget?.id)?.effectiveRole !== "OWNER"}
+        onConfirm={() => { 
+          if (deleteTarget) {
+            const folder = folders.find(f => f.id === deleteTarget.id);
+            const isShared = folder?.effectiveRole && folder?.effectiveRole !== "OWNER";
+            if (isShared) {
+              unshareFolder(deleteTarget.id);
+            } else {
+              deleteFolder(deleteTarget.id);
+            }
+          } 
+          setDeleteTarget(null); 
+        }} 
+      />
       <ShareDialog open={!!shareTarget} onOpenChange={(v) => !v && setShareTarget(null)} type="f" id={shareTarget?.id ?? ""} title={shareTarget?.name ?? ""} />
       <DuplicateFolderModal open={!!duplicateTarget} onOpenChange={(v) => !v && setDuplicateTarget(null)} folderId={duplicateTarget?.id ?? ""} folderName={duplicateTarget?.name ?? ""} onSuccess={() => { setDuplicateTarget(null); useDashboardStore.getState().fetchFolders(); }} />
+      <RequestAccessModal 
+        open={!!requestAccessTarget} 
+        onOpenChange={(v) => !v && setRequestAccessTarget(null)} 
+        folderId={requestAccessTarget?.id ?? ""} 
+        folderName={requestAccessTarget?.name ?? ""} 
+        currentRole={requestAccessTarget?.currentRole}
+      />
+      {manageAccessTarget && (
+        <ManageAccessModal
+          open={!!manageAccessTarget}
+          onOpenChange={(v: boolean) => !v && setManageAccessTarget(null)}
+          resourceId={Number(manageAccessTarget.id)}
+          resourceType="FOLDER"
+          resourceName={manageAccessTarget.name}
+        />
+      )}
     </>
   );
 }

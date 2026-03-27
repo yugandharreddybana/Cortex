@@ -89,6 +89,7 @@ public class TagController {
         dto.id = t.getId();
         dto.name = t.getName();
         dto.color = t.getColor();
+        dto.createdAt = t.getCreatedAt();
         return dto;
     }
 }

@@ -14,9 +14,12 @@ interface FolderSynthesisProps {
 export function FolderSynthesis({ folderId, highlights }: FolderSynthesisProps) {
   const folders               = useDashboardStore((s) => s.folders);
   const updateFolderSynthesis = useDashboardStore((s) => s.updateFolderSynthesis);
+  const setGlobalLoading       = useDashboardStore((s) => s.setGlobalLoading);
 
   const folder    = folders.find((f) => f.id === folderId);
   const synthesis = folder?.synthesis;
+  const effectiveRole = folder?.effectiveRole || "OWNER";
+  const canEdit = effectiveRole === "OWNER" || effectiveRole === "EDITOR";
   const [loading, setLoading] = React.useState(false);
 
   const canGenerate = highlights.length >= 3;
@@ -25,6 +28,7 @@ export function FolderSynthesis({ folderId, highlights }: FolderSynthesisProps) 
 
   async function handleGenerate() {
     setLoading(true);
+    setGlobalLoading(true);
     try {
       const res = await fetch("/api/ai/synthesize", {
         method: "POST",
@@ -40,6 +44,7 @@ export function FolderSynthesis({ folderId, highlights }: FolderSynthesisProps) 
       // silent
     } finally {
       setLoading(false);
+      setGlobalLoading(false);
     }
   }
 
@@ -54,7 +59,7 @@ export function FolderSynthesis({ folderId, highlights }: FolderSynthesisProps) 
             <Sparkles className="text-purple-400" size={18} />
             <h3 className="text-sm font-medium text-purple-100">Living Literature Review</h3>
           </div>
-          {canGenerate && (
+          {canGenerate && canEdit && (
             <button
               onClick={handleGenerate}
               disabled={loading}
@@ -75,6 +80,11 @@ export function FolderSynthesis({ folderId, highlights }: FolderSynthesisProps) 
                 "✦ Generate Literature Review"
               )}
             </button>
+          )}
+          {synthesis && !canEdit && (
+            <div className="text-[10px] uppercase font-bold tracking-wider text-purple-400 opacity-60 px-2 py-1 rounded bg-purple-500/5 border border-purple-500/10">
+              Read Only
+            </div>
           )}
         </div>
 

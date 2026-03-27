@@ -14,6 +14,8 @@ interface DeleteAlertDialogProps {
   /** "folder" | "highlight" etc. */
   targetType?:    string;
   onConfirm:      () => void;
+  /** If true, shows "Remove from workspace" instead of "Delete" */
+  isShared?:      boolean;
 }
 
 const ease = [0.16, 1, 0.3, 1] as const;
@@ -24,6 +26,7 @@ export function DeleteAlertDialog({
   targetLabel,
   targetType = "item",
   onConfirm,
+  isShared = false,
 }: DeleteAlertDialogProps) {
   return (
     <AlertDialog.Root open={open} onOpenChange={onOpenChange}>
@@ -69,13 +72,22 @@ export function DeleteAlertDialog({
                 </div>
 
                 <AlertDialog.Title className="text-base font-semibold tracking-tight mb-2">
-                  Are you absolutely sure?
+                  {isShared ? "Remove from workspace?" : "Are you absolutely sure?"}
                 </AlertDialog.Title>
 
                 <AlertDialog.Description className="text-sm text-white/50 mb-6 leading-relaxed">
-                  This action cannot be undone. This will permanently delete{" "}
-                  <span className="text-white/80 font-medium">&quot;{targetLabel}&quot;</span>{" "}
-                  and remove its data from our servers.
+                  {isShared ? (
+                    <>
+                      You are removing your access to <span className="text-white/80 font-medium">&quot;{targetLabel}&quot;</span>. 
+                      The owner and other members will still be able to access it.
+                    </>
+                  ) : (
+                    <>
+                      This action cannot be undone. This will permanently delete{" "}
+                      <span className="text-white/80 font-medium">&quot;{targetLabel}&quot;</span>{" "}
+                      and remove its data from our servers.
+                    </>
+                  )}
                 </AlertDialog.Description>
 
                 <div className="flex items-center gap-2.5 justify-end">
@@ -105,7 +117,7 @@ export function DeleteAlertDialog({
                         "transition-all duration-150",
                       )}
                     >
-                      Delete {targetType}
+                      {isShared ? "Remove access" : `Delete ${targetType}`}
                     </button>
                   </AlertDialog.Action>
                 </div>

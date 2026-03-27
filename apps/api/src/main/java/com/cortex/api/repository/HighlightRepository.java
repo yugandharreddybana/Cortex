@@ -82,5 +82,21 @@ public interface HighlightRepository extends JpaRepository<Highlight, Long> {
     @Query("SELECT h FROM Highlight h LEFT JOIN FETCH h.highlightTags t WHERE h.folderId = :folderId AND h.isDeleted = false")
     List<Highlight> findByFolderIdAndNotDeleted(@Param("folderId") Long folderId);
 
+    /**
+     * Clear the folder relationship (orphan) for all highlights in the given folders.
+     */
+    @Modifying
+    @Transactional
+    @Query("UPDATE Highlight h SET h.folderId = null WHERE h.folderId IN :folderIds")
+    void orphanHighlightsByFolderIds(@Param("folderIds") List<Long> folderIds);
+
+    /**
+     * Soft-delete all highlights in the given folders.
+     */
+    @Modifying
+    @Transactional
+    @Query("UPDATE Highlight h SET h.isDeleted = true, h.folderId = null, h.deletedByUserId = :deletedByUserId, h.deletedAt = :deletedAt WHERE h.folderId IN :folderIds")
+    void softDeleteHighlightsByFolderIds(@Param("folderIds") List<Long> folderIds, @Param("deletedByUserId") Long deletedByUserId, @Param("deletedAt") Instant deletedAt);
+
     long countByUserId(Long userId);
 }

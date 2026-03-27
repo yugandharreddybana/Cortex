@@ -7,7 +7,6 @@ import * as Switch from "@radix-ui/react-switch";
 import { cn } from "@cortex/ui";
 import { Nav } from "@/components/layout/Nav";
 import { useAuthStore } from "@/store/authStore";
-import { useToastStore } from "@/store/useToastStore";
 
 // ─── Pricing data ─────────────────────────────────────────────────────────────
 const PLANS = [

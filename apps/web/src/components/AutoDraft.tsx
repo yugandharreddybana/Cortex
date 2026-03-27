@@ -11,6 +11,11 @@ export function AutoDraft({ folderId }: { folderId: string }) {
   const [warningOpen, setWarningOpen] = useState(false);
 
   const highlights = useDashboardStore((s) => s.highlights);
+  const folders    = useDashboardStore((s) => s.folders);
+  const setGlobalLoading = useDashboardStore((s) => s.setGlobalLoading);
+
+  const folder = folders.find(f => String(f.id) === String(folderId));
+  const canEdit = !folder?.effectiveRole || folder.effectiveRole === "OWNER" || folder.effectiveRole === "EDITOR";
 
   // Filter highlights in this folder
   const folderHighlights = useMemo(() => {
@@ -40,6 +45,7 @@ export function AutoDraft({ folderId }: { folderId: string }) {
   const executeGenerate = async () => {
     setWarningOpen(false);
     setLoading(true);
+    setGlobalLoading(true);
     setError("");
     try {
       const res = await fetch("/api/ai/auto-draft", {
@@ -56,6 +62,7 @@ export function AutoDraft({ folderId }: { folderId: string }) {
       setError(e.message);
     } finally {
       setLoading(false);
+      setGlobalLoading(false);
     }
   };
 
@@ -66,13 +73,15 @@ export function AutoDraft({ folderId }: { folderId: string }) {
         <div className="relative group/tooltip inline-block">
           <button
             onClick={handleGenerateClick}
-            disabled={loading || folderHighlights.length === 0}
+            disabled={loading || folderHighlights.length === 0 || !canEdit}
             className="px-4 py-2 bg-accent/90 hover:bg-accent text-white rounded-lg text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {loading ? "Generating..." : "Generate Essay"}
           </button>
           <div className="pointer-events-none absolute bottom-full right-0 mb-2 w-max max-w-[200px] opacity-0 group-hover/tooltip:opacity-100 transition-opacity bg-black text-white text-[10px] px-2 py-1 rounded shadow-lg z-50 text-right">
-            Automatically generates a well-structured essay based on the highlights in this folder.
+            {canEdit 
+              ? "Automatically generates a well-structured essay based on the highlights in this folder."
+              : "Ask the owner for Editor access to generate drafts."}
             <svg className="absolute text-black h-2 w-full right-4 top-full" x="0px" y="0px" viewBox="0 0 255 255"><polygon className="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
           </div>
         </div>

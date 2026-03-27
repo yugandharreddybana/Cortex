@@ -12,6 +12,7 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { SessionGuard } from "@/components/providers/SessionGuard";
 import { useAuthStore } from "@/store/authStore";
 import { sendExtensionToken } from "@/lib/extension-auth";
+import { PremiumLoader } from "@/components/ui/PremiumLoader";
 
 /**
  * Dashboard Route Layout — responsive
@@ -65,7 +66,8 @@ export default function DashboardLayout({
 
   return (
     <SessionGuard>
-    <div className="h-screen overflow-hidden flex bg-bg">
+      <PremiumLoader />
+      <div className="h-screen overflow-hidden flex bg-bg">
 
       {/* ── Desktop sidebar (hidden on mobile) ── */}
       <aside className="hidden md:flex w-64 shrink-0 border-r border-white/[0.06] bg-[#0A0A0A] flex-col">

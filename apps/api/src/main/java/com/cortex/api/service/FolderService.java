@@ -221,42 +221,28 @@ public class FolderService {
         User caller = userRepository.findById(callerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        log.info("[Folder Deletion] user={} (role={}) hard-deleting folder={} keepHighlights={}",
+        log.info("[Folder Deletion] user={} (role={}) bulk-deleting folder tree rooted at {} keepHighlights={}",
                 callerId, callerRole, folderId, keepHighlights);
 
-        // Get all descendants (including the folder itself) before deleting
-        List<Folder> allDescendants = folderRepository.findAllDescendantsInclusive(folderId);
+        // 1. Collect all descendant IDs (inclusive)
+        List<Long> descendantIds = folderRepository.findAllDescendantIdsInclusive(folderId);
 
-        // Handle highlights: either orphan or mark as deleted
-        for (Folder descendant : allDescendants) {
-            Set<Highlight> highlights = descendant.getHighlights();
-            if (keepHighlights) {
-                for (Highlight h : highlights) {
-                    h.setFolderId(null);
-                }
-            } else {
-                for (Highlight h : highlights) {
-                    h.setDeleted(true);
-                }
-            }
-            if (!highlights.isEmpty()) {
-                highlightRepository.saveAll(highlights);
-            }
+        // 2. Handle highlights in bulk (orphan or soft-delete)
+        if (keepHighlights) {
+            highlightRepository.orphanHighlightsByFolderIds(descendantIds);
+        } else {
+            highlightRepository.softDeleteHighlightsByFolderIds(descendantIds, callerId, Instant.now());
         }
 
-        // Remove all permission records for descendants (cleanup shared access)
-        List<Long> descendantIds = allDescendants.stream()
-                .map(Folder::getId)
-                .collect(java.util.stream.Collectors.toList());
-
+        // 3. Remove all permission records for descendants in bulk
         if (!descendantIds.isEmpty()) {
             permissionRepository.deleteByResourceIdInAndResourceType(descendantIds, SharedLink.ResourceType.FOLDER);
         }
 
-        // Hard-delete all descendants (including root folder)
-        folderRepository.deleteAll(allDescendants);
+        // 4. Bulk-delete all folder records (avoids Hibernate object-graph reconciliation issues)
+        folderRepository.deleteByIdIn(descendantIds);
 
-        // Send notification to owner if EDITOR (not owner) performed the deletion
+        // 5. Send notification to owner if EDITOR (not owner) performed the deletion
         if (callerRole != AccessLevel.OWNER) {
             String callerName = caller.getFullName() != null ? caller.getFullName() : caller.getEmail();
             
@@ -274,11 +260,11 @@ public class FolderService {
             // Accumulate in the 60-minute digest window
             notificationService.logBatchedAction(owner, caller, folderId, folder.getName());
 
-            log.info("[Folder Deletion] Editor={} hard-deleted folder={} owned by={}; owner notified",
+            log.info("[Folder Deletion] Editor={} deleted folder={} owned by={}; owner notified",
                     callerId, folderId, owner.getId());
         }
 
-        log.info("[Folder Deletion] Folder tree rooted at {} hard-deleted (permanently) by user={}", folderId, callerId);
+        log.info("[Folder Deletion] Folder tree rooted at {} bulk-deleted by user={}", folderId, callerId);
     }
 
     @Transactional

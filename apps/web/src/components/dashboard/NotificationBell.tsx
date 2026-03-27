@@ -16,6 +16,8 @@ interface NotificationMetadata {
   resourceTitle?: string;
   senderName?: string;
   senderEmail?: string;
+  requestId?: string;
+  requestedLevel?: string;
 }
 
 interface Notification {
@@ -114,6 +116,30 @@ export function NotificationBell() {
 
     if (notification.actionUrl) {
       router.push(notification.actionUrl);
+    }
+  }
+
+  async function handleAccessRequestResponse(notification: Notification, action: "APPROVE" | "REJECT") {
+    const meta = parseMetadata(notification.metadata);
+    if (!meta.requestId) return;
+
+    setRespondingId(notification.id + ":" + action);
+    try {
+      const success = await useDashboardStore.getState().respondToAccessRequest(meta.requestId, action);
+      if (success) {
+        setNotifications((prev) =>
+          prev.map((n) =>
+            n.id === notification.id ? { ...n, isRead: true, responded: action === "APPROVE" ? "approve" : "reject" } : n,
+          ),
+        );
+        setUnreadCount((c) => Math.max(0, c - 1));
+        // Refresh folders so any permission change is reflected in store
+        await useDashboardStore.getState().fetchFolders();
+      }
+    } catch {
+      // silent
+    } finally {
+      setRespondingId(null);
     }
   }
 
@@ -227,8 +253,9 @@ export function NotificationBell() {
             ) : (
               notifications.map((n) => {
                 const isShareInvite = n.type === "SHARE_INVITE";
-                const pending = isShareInvite && !n.responded;
-                const meta = isShareInvite ? parseMetadata(n.metadata) : null;
+                const isAccessRequest = n.type === "ACCESS_REQUEST";
+                const pending = (isShareInvite || isAccessRequest) && !n.responded;
+                const meta = (isShareInvite || isAccessRequest) ? parseMetadata(n.metadata) : null;
 
                 return (
                   <div
@@ -275,10 +302,10 @@ export function NotificationBell() {
                         <div className="flex items-center gap-2 mt-1">
                           <p className="text-[11px] text-white/30">{timeAgo(n.createdAt)}</p>
                           {/* Responded status badge */}
-                          {n.responded === "accept" && (
-                            <span className="text-[10px] text-emerald-400/80 font-medium">✓ Accepted</span>
+                          {(n.responded === "accept" || n.responded === "approve") && (
+                            <span className="text-[10px] text-emerald-400/80 font-medium">✓ Approved</span>
                           )}
-                          {n.responded === "decline" && (
+                          {(n.responded === "decline" || n.responded === "reject") && (
                             <span className="text-[10px] text-red-400/60 font-medium">✗ Declined</span>
                           )}
                         </div>
@@ -286,7 +313,7 @@ export function NotificationBell() {
                     </button>
 
                     {/* Accept / Decline buttons for pending share invites */}
-                    {pending && (
+                    {isShareInvite && pending && (
                       <div className="flex gap-2 px-4 pb-3 -mt-1">
                         <button
                           onClick={() => handleRespond(n, "accept")}
@@ -309,6 +336,34 @@ export function NotificationBell() {
                           )}
                         >
                           {respondingId === n.id + ":decline" ? "…" : "Decline"}
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Approve / Reject buttons for pending access requests */}
+                    {isAccessRequest && pending && (
+                      <div className="flex gap-2 px-4 pb-3 -mt-1">
+                        <button
+                          onClick={() => handleAccessRequestResponse(n, "APPROVE")}
+                          disabled={respondingId !== null}
+                          className={cn(
+                            "flex-1 py-1.5 rounded-md text-[12px] font-semibold",
+                            "bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/30",
+                            "transition-colors disabled:opacity-50",
+                          )}
+                        >
+                          {respondingId === n.id + ":APPROVE" ? "…" : "Approve"}
+                        </button>
+                        <button
+                          onClick={() => handleAccessRequestResponse(n, "REJECT")}
+                          disabled={respondingId !== null}
+                          className={cn(
+                            "flex-1 py-1.5 rounded-md text-[12px] font-medium",
+                            "bg-red-500/10 text-red-400/70 hover:bg-red-500/20 hover:text-red-400",
+                            "transition-colors disabled:opacity-50",
+                          )}
+                        >
+                          {respondingId === n.id + ":REJECT" ? "…" : "Reject"}
                         </button>
                       </div>
                     )}

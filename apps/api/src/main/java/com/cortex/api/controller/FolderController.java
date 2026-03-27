@@ -6,6 +6,7 @@ import com.cortex.api.entity.Folder;
 import com.cortex.api.entity.LinkAccess;
 import com.cortex.api.entity.User;
 import com.cortex.api.repository.UserRepository;
+import com.cortex.api.service.AccessRequestService;
 import com.cortex.api.service.FolderService;
 import com.cortex.api.service.PermissionService;
 import com.cortex.api.service.WebSocketService;
@@ -29,15 +30,18 @@ public class FolderController {
     private final UserRepository userRepo;
     private final PermissionService permissionService;
     private final WebSocketService webSocketService;
+    private final AccessRequestService accessRequestService;
 
     public FolderController(FolderService folderService,
                             UserRepository userRepo,
                             PermissionService permissionService,
-                            WebSocketService webSocketService) {
+                            WebSocketService webSocketService,
+                            AccessRequestService accessRequestService) {
         this.folderService = folderService;
         this.userRepo = userRepo;
         this.permissionService = permissionService;
         this.webSocketService = webSocketService;
+        this.accessRequestService = accessRequestService;
     }
 
     @GetMapping
@@ -149,6 +153,43 @@ public class FolderController {
                 .body(toDTO(cloneRoot, AccessLevel.OWNER));
     }
 
+    /**
+     * Unshare: revoke the caller's own access to a shared folder.
+     * This "removes" the folder from their workspace without deleting it for the owner.
+     */
+    @PostMapping("/{id}/unshare")
+    @Transactional
+    public ResponseEntity<Map<String, Boolean>> unshare(
+            Authentication auth,
+            @PathVariable Long id) {
+        Long callerId = Long.parseLong(auth.getName());
+        folderService.revokeAccessAfterDuplicate(callerId, id);
+        webSocketService.sendToUser(auth.getName(), "/topic/folders/deleted", id);
+        return ResponseEntity.ok(Map.of("ok", true));
+    }
+
+    @PostMapping("/{id}/request-access")
+    public ResponseEntity<Map<String, Object>> requestAccess(
+            Authentication auth,
+            @PathVariable Long id,
+            @RequestBody Map<String, String> body) {
+        Long requesterId = Long.parseLong(auth.getName());
+        String roleStr = body.get("role");
+        if (roleStr == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Missing role");
+        }
+        
+        AccessLevel requestedRole;
+        try {
+            requestedRole = AccessLevel.valueOf(roleStr.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid role: " + roleStr);
+        }
+
+        accessRequestService.createRequest(requesterId, id, requestedRole);
+        return ResponseEntity.ok(Map.of("ok", true));
+    }
+
     @PutMapping("/sync")
     @Transactional
     public List<FolderDTO> sync(Authentication auth, @RequestBody List<FolderDTO> dtos) {
@@ -214,6 +255,7 @@ public class FolderController {
         dto.updatedAt = f.getUpdatedAt();
         // RBAC: caller's effective role on this folder
         dto.effectiveRole = effectiveRole != null ? effectiveRole.name() : null;
+        dto.ownerId = f.getUser().getId();
         dto.synthesis = f.getSynthesis();
         return dto;
     }

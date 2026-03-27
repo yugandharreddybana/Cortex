@@ -11,7 +11,7 @@ import { useDashboardStore } from "@/store/dashboard";
 import { useAuthStore } from "@/store/authStore";
 import { FolderCreateDialog } from "@/components/dashboard/FolderCreateDialog";
 import { NewTagDialog } from "@/components/dashboard/NewTagDialog";
-import { Loader2 } from "lucide-react";
+import { Loader2, Trash2 } from "lucide-react";
 
 export interface CommentType {
   id: number;
@@ -148,6 +148,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
   const toggleFavorite = useDashboardStore((s) => s.toggleFavorite);
   const updateHighlight = useDashboardStore((s) => s.updateHighlight);
   const moveHighlight = useDashboardStore((s) => s.moveHighlight);
+  const deleteHighlight = useDashboardStore((s) => s.deleteHighlight);
   const currentUser = useAuthStore((s) => s.user);
 
   // Permissions
@@ -227,6 +228,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
 
   // Edit Modal State
   const [editOpen, setEditOpen] = React.useState(false);
+  const [isTagOnly, setIsTagOnly] = React.useState(false);
   const [editFolderId, setEditFolderId] = React.useState<string | null>(highlight.folderId ?? null);
   const [editTags, setEditTags] = React.useState<string[]>(highlight.tags ?? []);
   const [tagQuery, setTagQuery] = React.useState("");
@@ -259,6 +261,26 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
     });
     setEditOpen(false);
     toast.success("Highlight updated successfully");
+  };
+
+  const [isDeleting, setIsDeleting] = React.useState(false);
+  const handleDelete = async () => {
+    if (role === "VIEWER") {
+      toast.error("You do not have permission to delete this highlight.");
+      return;
+    }
+    
+    if (!confirm("Are you sure you want to delete this highlight?")) return;
+    
+    setIsDeleting(true);
+    try {
+      deleteHighlight(highlight.id);
+      toast.success("Highlight deleted");
+      router.push("/dashboard");
+    } catch (err) {
+      toast.error("Failed to delete highlight");
+      setIsDeleting(false);
+    }
   };
 
   // Build recursive folder hierarchy matching the sidebar exact UI
@@ -315,8 +337,9 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
       ]);
   };
 
-  const scrollRef = React.useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ container: scrollRef });
+  // Layout Scroll Progress - Callback Ref pattern for definitive hydration
+  const [container, setContainer] = React.useState<HTMLDivElement | null>(null);
+  const { scrollYProgress } = useScroll({ container: container ? { current: container } : undefined });
   const scaleX = useSpring(scrollYProgress, { stiffness: 200, damping: 30 });
 
   const theme = THEME_OPTIONS[themeIdx];
@@ -368,6 +391,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                 toast.error("You must have editor access to edit highlight details.");
                 return;
               }
+              setIsTagOnly(false);
               setEditOpen(true);
             }}
             aria-label="Edit Highlight"
@@ -380,6 +404,25 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M10 2l2 2-8 8H2v-2l8-8z" />
             </svg>
+          </button>
+
+          {/* Delete Button */}
+          <button 
+            onClick={handleDelete}
+            disabled={isDeleting}
+            aria-label="Delete Highlight"
+            className={cn(
+              "w-9 h-9 rounded-lg flex items-center justify-center",
+              "bg-red-500/5 border border-red-500/10",
+              "text-red-400 hover:text-red-300 hover:bg-red-500/10",
+              "transition-all duration-150",
+              isDeleting && "opacity-50 cursor-not-allowed"
+            )}>
+            {isDeleting ? (
+              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+            ) : (
+              <Trash2 className="w-3.5 h-3.5" />
+            )}
           </button>
 
           {/* Typography controls */}
@@ -469,9 +512,9 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
         </div>
       </div>
 
-      {/* Reading area */}
+      {/* Main Content Column */}
       <div
-        ref={scrollRef}
+        ref={setContainer}
         className="flex-1 overflow-y-auto"
       >
         <article
@@ -549,7 +592,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
             </div>
             
             {/* Display Tags cleanly on the page */}
-            {highlight.tags && highlight.tags.length > 0 && (
+            {highlight.tags && highlight.tags.length > 0 ? (
               <div className="mt-4 flex flex-wrap gap-1.5">
                 {highlight.tags.map((tid: string) => {
                   const t = tags.find((x: any) => String(x.id) === String(tid));
@@ -558,6 +601,31 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                     <TagPill key={tid} name={t.name} color={t.color} />
                   );
                 })}
+              </div>
+            ) : (
+              <div className="mt-6 p-4 rounded-xl bg-white/[0.02] border border-dashed border-white/[0.08] flex items-center justify-between group transition-all hover:bg-white/[0.04]">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-white/[0.03] flex items-center justify-center border border-white/[0.06]">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="text-white/20">
+                      <path d="M12 2v20M2 12h20" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-[11px] text-white/40 font-medium uppercase tracking-widest leading-none">Metadata</p>
+                    <p className="text-xs text-white/30 mt-1">No tags assigned to this highlight</p>
+                  </div>
+                </div>
+                {!isViewer && (
+                  <button 
+                    onClick={() => {
+                      setIsTagOnly(true);
+                      setEditOpen(true);
+                    }}
+                    className="text-[11px] font-semibold text-accent hover:text-accent/80 transition-colors px-3 py-1.5 rounded-lg bg-accent/5 hover:bg-accent/10 border border-accent/10"
+                  >
+                    + Assign Tag
+                  </button>
+                )}
               </div>
             )}
           </div>
@@ -778,82 +846,88 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
           <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
           <Dialog.Content className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-white/10 bg-[#121212] p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 sm:rounded-2xl">
             <div className="flex flex-col space-y-1.5 text-center sm:text-left">
-              <Dialog.Title className="text-lg font-semibold leading-none tracking-tight">Edit Highlight Details</Dialog.Title>
+              <Dialog.Title className="text-lg font-semibold leading-none tracking-tight">
+                {isTagOnly ? "Assign Tags" : "Edit Highlight Details"}
+              </Dialog.Title>
               <Dialog.Description className="text-sm text-white/50">
-                Make changes to your highlight's organization and comments.
+                {isTagOnly 
+                  ? "Select one or more tags to categorize this highlight."
+                  : "Make changes to your highlight's organization and metadata."}
               </Dialog.Description>
             </div>
 
             <div className="grid gap-6 py-4">
               {/* Folder Selection Custom UI */}
-              <div className="flex flex-col gap-2 relative">
-                <label className="text-xs font-semibold uppercase tracking-widest text-white/40">Folder</label>
-                
-                <Popover.Root open={folderPopoverOpen} onOpenChange={setFolderPopoverOpen}>
-                  <Popover.Trigger asChild>
-                    <button className="w-full flex items-center justify-between bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.06] rounded-xl px-3 py-2 text-sm text-white/80 outline-none focus:border-accent/50 transition-all">
-                      <span className="flex items-center gap-2 truncate">
-                        {editFolderId ? (
-                          <>
-                            <span>{folders.find(f => f.id === editFolderId)?.emoji || "📁"}</span>
-                            <span>{folders.find(f => f.id === editFolderId)?.name}</span>
-                          </>
-                        ) : (
-                          "Root (No Folder)"
-                        )}
-                      </span>
-                      <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
-                        <path d="M2.5 4.5l3.5 3.5 3.5-3.5" strokeLinecap="round" strokeLinejoin="round"/>
-                      </svg>
-                    </button>
-                  </Popover.Trigger>
+              {!isTagOnly && (
+                <div className="flex flex-col gap-2 relative">
+                  <label className="text-xs font-semibold uppercase tracking-widest text-white/40">Folder</label>
                   
-                  <Popover.Portal>
-                    <Popover.Content align="start" sideOffset={6} className="z-[70] w-[450px] flex flex-col rounded-xl bg-[#1e1e1e] border border-white/[0.09] shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] p-2">
-                      {/* Create Folder (Pinned to top) */}
-                      <div className="pb-2 mb-2 border-b border-white/[0.08]">
-                        <button
-                          onClick={() => {
-                            setSubfolderParentId(undefined);
-                            setFolderDialogOpen(true);
-                            setFolderPopoverOpen(false);
-                          }}
-                          className="w-full flex items-center justify-start gap-2 px-3 py-1.5 rounded-xl text-sm text-accent hover:bg-accent/10 transition-colors"
-                        >
-                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-                            <line x1="12" y1="11" x2="12" y2="17"></line>
-                            <line x1="9" y1="14" x2="15" y2="14"></line>
-                          </svg>
-                          <span className="flex-1 text-left">Create New Folder</span>
-                        </button>
-                      </div>
-
-                      <div className="max-h-[300px] overflow-y-auto pr-1">
-                        <button
-                          onClick={() => {
-                            setEditFolderId(null);
-                            setFolderPopoverOpen(false);
-                          }}
-                          className={cn(
-                            "w-full flex items-center justify-start gap-2.5 px-3 py-1.5 rounded-xl mb-1",
-                            "text-sm transition-all duration-150 ease-snappy min-w-0 text-left",
-                            editFolderId === null
-                              ? "bg-white/[0.09] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
-                              : "text-white/60 hover:bg-white/[0.05] hover:text-white"
+                  <Popover.Root open={folderPopoverOpen} onOpenChange={setFolderPopoverOpen}>
+                    <Popover.Trigger asChild>
+                      <button className="w-full flex items-center justify-between bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.06] rounded-xl px-3 py-2 text-sm text-white/80 outline-none focus:border-accent/50 transition-all">
+                        <span className="flex items-center gap-2 truncate">
+                          {editFolderId ? (
+                            <>
+                              <span>{folders.find(f => f.id === editFolderId)?.emoji || "📁"}</span>
+                              <span>{folders.find(f => f.id === editFolderId)?.name}</span>
+                            </>
+                          ) : (
+                            "Root (No Folder)"
                           )}
-                        >
-                          <span className="text-base leading-none shrink-0 opacity-50">📂</span>
-                          <span className="flex-1 truncate">Root (No Folder)</span>
-                        </button>
-                        <div className="space-y-0.5">
-                          {renderFolderList(folders)}
+                        </span>
+                        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                          <path d="M2.5 4.5l3.5 3.5 3.5-3.5" strokeLinecap="round" strokeLinejoin="round"/>
+                        </svg>
+                      </button>
+                    </Popover.Trigger>
+                    
+                    <Popover.Portal>
+                      <Popover.Content align="start" sideOffset={6} className="z-[70] w-[450px] flex flex-col rounded-xl bg-[#1e1e1e] border border-white/[0.09] shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] p-2">
+                        {/* Create Folder (Pinned to top) */}
+                        <div className="pb-2 mb-2 border-b border-white/[0.08]">
+                          <button
+                            onClick={() => {
+                              setSubfolderParentId(undefined);
+                              setFolderDialogOpen(true);
+                              setFolderPopoverOpen(false);
+                            }}
+                            className="w-full flex items-center justify-start gap-2 px-3 py-1.5 rounded-xl text-sm text-accent hover:bg-accent/10 transition-colors"
+                          >
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                              <line x1="12" y1="11" x2="12" y2="17"></line>
+                              <line x1="9" y1="14" x2="15" y2="14"></line>
+                            </svg>
+                            <span className="flex-1 text-left">Create New Folder</span>
+                          </button>
                         </div>
-                      </div>
-                    </Popover.Content>
-                  </Popover.Portal>
-                </Popover.Root>
-              </div>
+
+                        <div className="max-h-[300px] overflow-y-auto pr-1">
+                          <button
+                            onClick={() => {
+                              setEditFolderId(null);
+                              setFolderPopoverOpen(false);
+                            }}
+                            className={cn(
+                              "w-full flex items-center justify-start gap-2.5 px-3 py-1.5 rounded-xl mb-1",
+                              "text-sm transition-all duration-150 ease-snappy min-w-0 text-left",
+                              editFolderId === null
+                                ? "bg-white/[0.09] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
+                                : "text-white/60 hover:bg-white/[0.05] hover:text-white"
+                            )}
+                          >
+                            <span className="text-base leading-none shrink-0 opacity-50">📂</span>
+                            <span className="flex-1 truncate">Root (No Folder)</span>
+                          </button>
+                          <div className="space-y-0.5">
+                            {renderFolderList(folders)}
+                          </div>
+                        </div>
+                      </Popover.Content>
+                    </Popover.Portal>
+                  </Popover.Root>
+                </div>
+              )}
 
               {/* Tags Selection */}
               <div className="flex flex-col gap-2">
