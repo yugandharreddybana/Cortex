@@ -16,6 +16,7 @@ import { toast } from "sonner";
 import React from "react";
 import { RequestAccessModal } from "@/components/dashboard/RequestAccessModal";
 import { ManageAccessModal } from "@/components/dashboard/ManageAccessModal";
+import { DeleteAlertDialog } from "@/components/dashboard/DeleteAlertDialog";
 import { ShieldAlert } from "lucide-react";
 
 const ROLE_INFO: Record<string, { label: string; desc: string; color: string }> = {
@@ -199,15 +200,17 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
             </div>
           )}
 
-          {folder && isViewer && (
+          {folder && effectiveRole !== "OWNER" && (
             <div className="flex items-center gap-2">
-              <button
-                onClick={() => setRequestAccessOpen(true)}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-accent hover:text-accent/80 hover:bg-accent/10 transition-all border border-accent/20"
-              >
-                <ShieldAlert className="w-3.5 h-3.5" />
-                Request Higher Access
-              </button>
+              {(effectiveRole === "VIEWER" || effectiveRole === "COMMENTER") && (
+                <button
+                  onClick={() => setRequestAccessOpen(true)}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-accent hover:text-accent/80 hover:bg-accent/10 transition-all border border-accent/20"
+                >
+                  <ShieldAlert className="w-3.5 h-3.5" />
+                  Request Higher Access
+                </button>
+              )}
 
               <button
                 onClick={() => setShowRemoveConfirm(true)}
@@ -217,12 +220,6 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
                 Remove Access
               </button>
             </div>
-          )}
-
-          {folder && effectiveRole !== "OWNER" && (
-             <div className="hidden sm:block px-3 py-1.5 rounded-lg text-[10px] text-white/30 italic">
-               You have {effectiveRole.toLowerCase()} access to this shared folder.
-             </div>
           )}
         </div>
 
@@ -265,5 +262,3 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
   );
 }
 
-// Add the import if missing (I'll check the top of file later, but standard practice here)
-import { DeleteAlertDialog } from "@/components/dashboard/DeleteAlertDialog";

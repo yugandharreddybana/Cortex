@@ -190,7 +190,7 @@ function FolderDropdown({ folder, onRename, onDelete, onShare, onDuplicate, onCr
               <DropdownMenu.Item onSelect={onDelete} className={cn("flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-red-400 cursor-pointer select-none outline-none hover:bg-red-500/10 focus:bg-red-500/10 transition-colors duration-100")}><TrashIcon /> Remove from workspace</DropdownMenu.Item>
             </>
           )}
-          {folder.effectiveRole === "VIEWER" && (
+          {(folder.effectiveRole === "VIEWER" || folder.effectiveRole === "COMMENTER") && (
             <>
               <DropdownMenu.Separator className="my-1 h-px bg-white/[0.07]" />
               <DropdownMenu.Item onSelect={() => (folder as any)._onRequestAccess?.()} className={cn("flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-accent cursor-pointer select-none outline-none hover:bg-accent/10 focus:bg-accent/10 transition-colors duration-100")}>
@@ -207,9 +207,27 @@ function FolderDropdown({ folder, onRename, onDelete, onShare, onDuplicate, onCr
 function RecursiveFolderNode({
   folder, depth, pathname, getChildren, folderCountMap, onRename, onDelete, onShare, onDuplicate, onCreateSubfolder, onPin, onMove, isLoading
 }: any) {
-  const [expanded, setExpanded] = React.useState(true);
+  // Check if this folder or any of its children are active
   const children = getChildren(folder.id);
   const href = `/dashboard/folders/${folder.id}`;
+
+  const isChildActive = React.useMemo(() => {
+    const checkActive = (fId: string): boolean => {
+      if (pathname === `/dashboard/folders/${fId}`) return true;
+      return getChildren(fId).some((child: any) => checkActive(child.id));
+    };
+    return children.some((child: any) => checkActive(child.id));
+  }, [pathname, folder.id, children, getChildren]);
+
+  const [expanded, setExpanded] = React.useState(true);
+
+  // Auto-expand if a child becomes active
+  React.useEffect(() => {
+    if (isChildActive) {
+      setExpanded(true);
+    }
+  }, [isChildActive]);
+
   const isActive = pathname === href;
 
   const { attributes, listeners, setNodeRef: setDragRef, isDragging } = useDraggable({ id: folder.id });
@@ -218,7 +236,7 @@ function RecursiveFolderNode({
   const mergedRef = React.useCallback((node: HTMLDivElement | null) => { setDragRef(node); setDropRef(node); }, [setDragRef, setDropRef]);
 
   return (
-    <div ref={mergedRef} style={{ opacity: isDragging ? 0.4 : 1 }}>
+    <div ref={mergedRef} style={{ opacity: isDragging ? 0.4 : 1 }} {...attributes} {...listeners}>
       <ContextMenu.Root>
         <ContextMenu.Trigger asChild>
           <div className="flex items-center group/folder relative">
@@ -231,7 +249,7 @@ function RecursiveFolderNode({
             {children.length === 0 && depth > 0 && <div className="w-4 shrink-0 mr-0.5" />}
             {depth > 0 && <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-white/[0.06] -z-1" style={{ left: (depth * 16) - 8 }} />}
             <Link
-              href={href} {...attributes} {...listeners}
+              href={href}
               className={cn(
                 "flex-1 flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm transition-all duration-150 ease-snappy min-w-0",
                 isActive ? "bg-white/[0.09] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]" : "text-white/60 hover:bg-white/[0.05] hover:text-white",
@@ -241,7 +259,7 @@ function RecursiveFolderNode({
               <span className="text-base leading-none shrink-0">{folder.emoji}</span>
               <div className="flex-1 flex flex-col min-w-0">
                 <span className="truncate text-left">{folder.name}</span>
-                {folder.effectiveRole && (
+                {folder.effectiveRole && folder.effectiveRole !== "OWNER" && (
                   <span className="text-[9px] uppercase tracking-widest text-white/25 font-bold leading-none mt-0.5">
                     {folder.effectiveRole}
                   </span>
@@ -345,7 +363,7 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
   const [sharedExpanded, setSharedExpanded] = React.useState(false);
 
   React.useEffect(() => {
-    fetch("/api/share", { credentials: "include" })
+    fetch("/api/share/shared-with-me", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : []))
       .then((data: SharedWithMeItem[]) => setSharedWithMe(data))
       .catch(() => {})
@@ -381,11 +399,23 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
 
   const currentUser = useAuthStore((s) => s.user);
   const myRootFolders = React.useMemo(() => {
-    return rootFoldersList.filter((f) => !f.ownerId || f.ownerId === String(currentUser?.id));
+    const currentUserId = currentUser?.id ? String(currentUser.id) : null;
+    return rootFoldersList.filter((f) => {
+      const role = (f.effectiveRole || "").toUpperCase();
+      if (role) return role === "OWNER";
+      if (currentUserId) return !f.ownerId || f.ownerId === currentUserId;
+      return !f.ownerId;
+    });
   }, [rootFoldersList, currentUser]);
 
   const sharedRootFolders = React.useMemo(() => {
-    return rootFoldersList.filter((f) => f.ownerId && f.ownerId !== String(currentUser?.id));
+    const currentUserId = currentUser?.id ? String(currentUser.id) : null;
+    return rootFoldersList.filter((f) => {
+      const role = (f.effectiveRole || "").toUpperCase();
+      if (role) return role !== "OWNER";
+      if (!currentUserId) return false;
+      return !!f.ownerId && f.ownerId !== currentUserId;
+    });
   }, [rootFoldersList, currentUser]);
 
   const getChildren = React.useCallback((parentId: string) => {
@@ -510,7 +540,7 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                       {sharedRootFolders.map((folder) => (
                         <RecursiveFolderNode 
                           key={folder.id} 
-                          folder={{ ...folder, _onRequestAccess: () => setRequestAccessTarget({ id: folder.id, name: folder.name, currentRole: folder.effectiveRole }) }} 
+                          folder={{ ...folder, _onRequestAccess: () => setRequestAccessTarget({ id: folder.id, name: folder.name, currentRole: folder.effectiveRole }), _onManageAccess: () => setManageAccessTarget({ id: folder.id, name: folder.name }) }} 
                           depth={0} 
                           pathname={pathname} 
                           getChildren={getChildren} 
@@ -642,12 +672,15 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
         targetLabel={deleteTarget?.name ?? ""} 
         targetType="folder" 
         isShared={!!folders.find(f => f.id === deleteTarget?.id)?.effectiveRole && folders.find(f => f.id === deleteTarget?.id)?.effectiveRole !== "OWNER"}
-        onConfirm={() => { 
+        onConfirm={async () => { 
           if (deleteTarget) {
             const folder = folders.find(f => f.id === deleteTarget.id);
             const isShared = folder?.effectiveRole && folder?.effectiveRole !== "OWNER";
             if (isShared) {
-              unshareFolder(deleteTarget.id);
+              await unshareFolder(deleteTarget.id);
+              if (pathname.startsWith(`/dashboard/folders/${deleteTarget.id}`)) {
+                router.push("/dashboard");
+              }
             } else {
               deleteFolder(deleteTarget.id);
             }

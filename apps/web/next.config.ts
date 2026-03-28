@@ -11,6 +11,9 @@ const nextConfig: NextConfig = {
   },
   experimental: {
     optimizePackageImports: ["framer-motion", "@cortex/ui"],
+    staleTimes: {
+      dynamic: 30,
+    },
   },
 };
 

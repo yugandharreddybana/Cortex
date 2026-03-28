@@ -12,18 +12,38 @@ import { GlobalLoader } from "@/components/ui/GlobalLoader";
 
 // ─── Eager Global Fetch Interceptor ──────────────────────────────────────────
 // Registering in module scope ensures 100% coverage from the very first request
+
+// These endpoints are polled silently in the background.
+// They must NOT trigger the global spinner or error toasts.
+const SILENT_URL_PATTERNS = [
+    "/api/notifications/unread-count",
+    "/api/auth/me",
+    "/api/auth/ws-token",
+    "/api/auth/refresh",
+];
+
 if (typeof window !== "undefined") {
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
-        // Start global loader
-        useDashboardStore.getState().startLoading();
+        const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
+        const isApiCall = url.includes('/api/');
+        const isSilent = SILENT_URL_PATTERNS.some((p) => url.includes(p));
+
+        // Only spin up the global loader for actual API requests (not Next.js
+        // internal RSC / navigation fetches which share window.fetch).
+        const showLoader = isApiCall && !isSilent;
+        if (showLoader) useDashboardStore.getState().startLoading();
         try {
             const response = await originalFetch(...args);
-            const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
 
-            if (!response.ok && url.includes('/api/')) {
+            if (!response.ok && isApiCall && !isSilent) {
                 // Ignore expected 401s from the auth check endpoint
                 if (url.endsWith('/api/auth/me') && response.status === 401) {
+                    return response;
+                }
+
+                // 405 Method Not Allowed is an internal routing artefact — never show to users
+                if (response.status === 405) {
                     return response;
                 }
 
@@ -52,14 +72,12 @@ if (typeof window !== "undefined") {
             }
             return response;
         } catch (err: any) {
-            const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
-            if (url.includes('/api/')) {
+            if (isApiCall && !isSilent) {
                 import("@/lib/premium-feedback").then(m => m.premiumToast.networkError());
             }
             throw err;
         } finally {
-            // Stop global loader
-            useDashboardStore.getState().stopLoading();
+            if (showLoader) useDashboardStore.getState().stopLoading();
         }
     };
 }
