@@ -6,7 +6,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+import jakarta.transaction.Transactional;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 
@@ -39,4 +41,13 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
     java.util.Optional<Notification> findPendingAccessRequestNotification(
             @Param("ownerId") Long ownerId,
             @Param("requestIdFragment") String requestIdFragment);
+
+    /**
+     * Daily cleanup: delete read notifications older than the given cutoff.
+     * Called by {@link com.cortex.api.service.NotificationCleanupTask}.
+     */
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Notification n WHERE n.createdAt < :cutoff AND n.isRead = true")
+    void purgeExpiredReadNotifications(@Param("cutoff") Instant cutoff);
 }

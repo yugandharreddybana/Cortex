@@ -20,7 +20,7 @@ interface RequestAccessModalProps {
   currentRole?: string;
 }
 
-const ROLES = [
+const ALL_ROLES = [
   {
     id: "COMMENTER",
     label: "Commenter",
@@ -35,16 +35,26 @@ const ROLES = [
   },
 ];
 
+// Role ordering for comparison
+const ROLE_ORDER: Record<string, number> = { VIEWER: 0, COMMENTER: 1, EDITOR: 2, OWNER: 3 };
+
 export function RequestAccessModal({ open, onOpenChange, folderId, folderName, currentRole }: RequestAccessModalProps) {
   const requestAccess = useDashboardStore((s) => s.requestAccess);
+
+  // Only show roles strictly higher than the user's current role
+  const currentRoleOrder = ROLE_ORDER[currentRole?.toUpperCase() ?? "VIEWER"] ?? 0;
+  const availableRoles = ALL_ROLES.filter((r) => (ROLE_ORDER[r.id] ?? 0) > currentRoleOrder);
+
   const [selectedRole, setSelectedRole] = React.useState<string>("EDITOR");
   const [isSubmitting, setIsSubmitting] = React.useState(false);
 
-  // Reset state on open
+  // Reset state on open — default to highest available role
   React.useEffect(() => {
     if (open) {
-      setSelectedRole("EDITOR");
+      const highest = availableRoles[availableRoles.length - 1];
+      setSelectedRole(highest?.id ?? "EDITOR");
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
 
   async function handleSendRequest() {
@@ -112,7 +122,7 @@ export function RequestAccessModal({ open, onOpenChange, folderId, folderName, c
                   )}
 
                   <div className="space-y-3 mb-8">
-                    {ROLES.map((role) => (
+                    {availableRoles.map((role) => (
                       <button
                         key={role.id}
                         onClick={() => setSelectedRole(role.id)}

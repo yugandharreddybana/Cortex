@@ -76,7 +76,7 @@ export default function SharedCollaborationPage() {
           return r.json();
         }),
       // 2. Get resource data via share resolve (if hash-based) or direct
-      fetch(`/api/share?action=resource&resourceId=${id}&type=${resourceType}`)
+      fetch(`/api/share/resource?resourceId=${id}&type=${resourceType}`)
         .then((r) => {
           if (!r.ok) throw new Error("Resource not found");
           return r.json();

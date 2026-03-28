@@ -19,8 +19,9 @@ interface ManageAccessModalProps {
 interface PermissionItem {
   id: number;
   userId: number;
-  userName: string;
-  userEmail: string;
+  userName?: string;
+  userEmail?: string;
+  email?: string;
   accessLevel: "VIEWER" | "EDITOR" | "OWNER";
   avatarUrl?: string;
 }
@@ -61,7 +62,7 @@ export function ManageAccessModal({
 
   const fetchCollaborators = async () => {
     try {
-      const resp = await fetch("/api/v1/permissions/collaborators");
+      const resp = await fetch("/api/permissions/collaborators");
       if (resp.ok) {
         setSuggestions(await resp.json());
       }
@@ -73,10 +74,19 @@ export function ManageAccessModal({
   const fetchPermissions = async () => {
     setIsLoading(true);
     try {
-      const resp = await fetch(`/api/v1/permissions/${resourceId}?type=${resourceType}`);
+      const resp = await fetch(`/api/permissions/${resourceId}?type=${resourceType}`);
       if (resp.ok) {
         const data = await resp.json();
-        setPermissions(data);
+        const normalized = Array.isArray(data)
+          ? data.map((p: any) => ({
+              ...p,
+              id: Number(p.id),
+              userId: Number(p.userId),
+              userEmail: p.userEmail || p.email,
+              userName: p.userName || p.email,
+            }))
+          : [];
+        setPermissions(normalized);
       } else {
         toast.error("Failed to load permissions");
       }
@@ -116,7 +126,7 @@ export function ManageAccessModal({
     
     setIsSaving(true);
     try {
-      const resp = await fetch("/api/v1/permissions", {
+      const resp = await fetch("/api/permissions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -189,8 +199,9 @@ export function ManageAccessModal({
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: 20 }}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="fixed left-1/2 top-1/2 z-50 w-full max-w-lg -translate-x-1/2 -translate-y-1/2 rounded-2xl border border-white/10 bg-[#161616]/80 p-0 shadow-2xl backdrop-blur-xl focus:outline-none"
+                className="fixed inset-0 z-50 flex items-center justify-center p-4"
               >
+                <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#161616]/80 p-0 shadow-2xl backdrop-blur-xl focus:outline-none">
                 {/* Header */}
                 <div className="flex items-center justify-between border-b border-white/5 p-6">
                   <div className="flex items-center gap-3">
@@ -237,7 +248,7 @@ export function ManageAccessModal({
                         
                         {/* Suggestions Dropdown */}
                         <AnimatePresence>
-                          {showSuggestions && inviteEmail.length > 0 && (
+                          {showSuggestions && (
                             <motion.div
                               initial={{ opacity: 0, y: 4 }}
                               animate={{ opacity: 1, y: 0 }}
@@ -245,10 +256,15 @@ export function ManageAccessModal({
                               className="absolute left-0 right-0 top-full mt-2 z-[60] bg-[#1c1c1c] border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-48 overflow-y-auto"
                             >
                               {suggestions
-                                .filter(s => 
-                                  s.email.toLowerCase().includes(inviteEmail.toLowerCase()) || 
-                                  s.fullName.toLowerCase().includes(inviteEmail.toLowerCase())
-                                )
+                                .filter(s => {
+                                  const q = inviteEmail.toLowerCase();
+                                  if (!q) return true;
+                                  return (
+                                    s.email.toLowerCase().includes(q) ||
+                                    s.fullName.toLowerCase().includes(q)
+                                  );
+                                })
+                                .slice(0, 8)
                                 .map(s => (
                                   <button
                                     key={s.id}
@@ -263,6 +279,15 @@ export function ManageAccessModal({
                                   </button>
                                 ))
                               }
+                              {!suggestions.some((s) => {
+                                const q = inviteEmail.toLowerCase();
+                                if (!q) return true;
+                                return s.email.toLowerCase().includes(q) || s.fullName.toLowerCase().includes(q);
+                              }) && (
+                                <div className="px-4 py-2.5 text-xs text-white/35">
+                                  No existing collaborators found. You can invite by email.
+                                </div>
+                              )}
                               {inviteEmail.includes("@") && (
                                 <button
                                   onClick={() => setShowSuggestions(false)}
@@ -326,14 +351,14 @@ export function ManageAccessModal({
                             >
                               <div className="flex items-center gap-3 min-w-0">
                                 <div className="h-9 w-9 shrink-0 rounded-full bg-white/5 flex items-center justify-center text-xs font-medium text-white/40">
-                                  {perm.userName.charAt(0).toUpperCase()}
+                                  {(perm.userName || perm.userEmail || perm.email || "?").charAt(0).toUpperCase()}
                                 </div>
                                 <div className="min-w-0">
                                   <p className="truncate text-sm font-medium text-white">
-                                    {perm.userName}
+                                    {perm.userName || perm.userEmail || perm.email || "Unknown user"}
                                   </p>
                                   <p className="truncate text-xs text-white/30">
-                                    {perm.userEmail}
+                                    {perm.userEmail || perm.email || ""}
                                   </p>
                                 </div>
                               </div>
@@ -412,6 +437,7 @@ export function ManageAccessModal({
                       Save Changes
                     </button>
                   </div>
+                </div>
                 </div>
               </motion.div>
             </Dialog.Content>

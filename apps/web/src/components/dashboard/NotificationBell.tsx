@@ -3,8 +3,10 @@
 import * as React from "react";
 import * as Popover from "@radix-ui/react-popover";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { cn } from "@cortex/ui";
-import { useDashboardStore } from "@/store/dashboard";
+import { useDashboardStore, type NotificationItem } from "@/store/dashboard";
+import { useShallow } from "zustand/react/shallow";
 import { Loader2 } from "lucide-react";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -18,82 +20,50 @@ interface NotificationMetadata {
   senderEmail?: string;
   requestId?: string;
   requestedLevel?: string;
+  requesterName?: string;
+  folderName?: string;
+  requestedRole?: string;
 }
 
-interface Notification {
-  id: string;
-  message: string;
-  isRead: boolean;
-  actionUrl: string;
-  type: string;
-  metadata: string;
-  responded: string;
-  createdAt: string;
-}
+// Local alias so all function signatures below stay unchanged
+type Notification = NotificationItem;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export function NotificationBell() {
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
-  const [notifications, setNotifications] = React.useState<Notification[]>([]);
-  const [unreadCount, setUnreadCount] = React.useState(0);
   const [loading, setLoading] = React.useState(false);
   const [respondingId, setRespondingId] = React.useState<string | null>(null);
-  const intervalRef    = React.useRef<ReturnType<typeof setInterval> | null>(null);
-  const failureCount   = React.useRef(0);
-  const [pollInterval, setPollInterval] = React.useState(15000);
 
-  // Poll unread count and rebuild interval when pollInterval changes
+  const { notifications, unreadNotifCount, fetchNotifications,
+          removeNotification, markNotificationRead, markAllNotificationsRead } =
+    useDashboardStore(
+      useShallow((s) => ({
+        notifications:            s.notifications,
+        unreadNotifCount:         s.unreadNotifCount,
+        fetchNotifications:       s.fetchNotifications,
+        removeNotification:       s.removeNotification,
+        markNotificationRead:     s.markNotificationRead,
+        markAllNotificationsRead: s.markAllNotificationsRead,
+      })),
+    );
+
+  // Load notifications once on mount
   React.useEffect(() => {
-    fetchUnreadCount();
-    intervalRef.current = setInterval(fetchUnreadCount, pollInterval);
-    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pollInterval]);
-
-  // Fetch full list when popover opens
-  React.useEffect(() => {
-    if (open) fetchNotifications();
-  }, [open]);
-
-  async function fetchUnreadCount() {
-    try {
-      const res = await fetch("/api/notifications/unread-count", { credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
-        setUnreadCount(data.count ?? 0);
-        failureCount.current = 0;
-        setPollInterval(15000);
-      } else if (res.status === 401) {
-        if (intervalRef.current) clearInterval(intervalRef.current);
-      } else {
-        failureCount.current += 1;
-        const next = Math.min(15000 * Math.pow(2, failureCount.current), 300000);
-        setPollInterval(next);
-      }
-    } catch {
-      failureCount.current += 1;
-      const next = Math.min(15000 * Math.pow(2, failureCount.current), 300000);
-      setPollInterval(next);
-    }
-  }
-
-  async function fetchNotifications() {
     setLoading(true);
-    try {
-      const res = await fetch("/api/notifications", { credentials: "include" });
-      if (res.ok) {
-        const data = await res.json();
-        setNotifications(Array.isArray(data) ? data : []);
-        setUnreadCount(data.filter((n: Notification) => !n.isRead).length);
-      }
-    } catch {
-      // silent
-    } finally {
-      setLoading(false);
+    void fetchNotifications().finally(() => setLoading(false));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Refresh list each time the popover opens (catches up on any missed WS events)
+  React.useEffect(() => {
+    if (open) {
+      setLoading(true);
+      void fetchNotifications().finally(() => setLoading(false));
     }
-  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open]);
 
   async function handleClick(notification: Notification) {
     // Share invite notifications use dedicated accept/decline buttons — skip row click
@@ -103,10 +73,7 @@ export function NotificationBell() {
     if (!notification.isRead) {
       try {
         await fetch(`/api/notifications/${notification.id}/read`, { method: "PUT" });
-        setNotifications((prev) =>
-          prev.map((n) => (n.id === notification.id ? { ...n, isRead: true } : n)),
-        );
-        setUnreadCount((c) => Math.max(0, c - 1));
+        markNotificationRead(notification.id);
       } catch {
         // silent
       }
@@ -127,17 +94,22 @@ export function NotificationBell() {
     try {
       const success = await useDashboardStore.getState().respondToAccessRequest(meta.requestId, action);
       if (success) {
-        setNotifications((prev) =>
-          prev.map((n) =>
-            n.id === notification.id ? { ...n, isRead: true, responded: action === "APPROVE" ? "approve" : "reject" } : n,
-          ),
-        );
-        setUnreadCount((c) => Math.max(0, c - 1));
+        markNotificationRead(notification.id);
+        removeNotification(notification.id);
         // Refresh folders so any permission change is reflected in store
         await useDashboardStore.getState().fetchFolders();
+        const requesterName = meta.requesterName ?? "User";
+        const folderName = meta.folderName ?? "the folder";
+        if (action === "APPROVE") {
+          toast.success(`Approved ${requesterName}'s request for "${folderName}"`);
+        } else {
+          toast("Request declined.");
+        }
+      } else {
+        toast.error("Failed to respond to the request.");
       }
     } catch {
-      // silent
+      toast.error("An error occurred.");
     } finally {
       setRespondingId(null);
     }
@@ -151,18 +123,16 @@ export function NotificationBell() {
         { method: "PUT" },
       );
       if (res.ok) {
-        setNotifications((prev) =>
-          prev.map((n) =>
-            n.id === notification.id ? { ...n, isRead: true, responded: action } : n,
-          ),
-        );
-        setUnreadCount((c) => Math.max(0, c - 1));
+        markNotificationRead(notification.id);
+        removeNotification(notification.id);
         if (action === "accept") {
-          useDashboardStore.getState().fetchFolders();
+          const store = useDashboardStore.getState();
+          store.invalidateFolders();
+          void store.fetchFolders();
         }
       }
     } catch {
-      // silent
+      toast.error("Failed to respond to invite. Please try again.");
     } finally {
       setRespondingId(null);
     }
@@ -171,8 +141,7 @@ export function NotificationBell() {
   async function handleMarkAllRead() {
     try {
       await fetch("/api/notifications/read-all", { method: "PUT" });
-      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
-      setUnreadCount(0);
+      markAllNotificationsRead();
     } catch {
       // silent
     }
@@ -208,7 +177,7 @@ export function NotificationBell() {
           aria-label="Notifications"
         >
           <BellIcon />
-          {unreadCount > 0 && (
+          {unreadNotifCount > 0 && (
             <span className="bg-red-500 w-2 h-2 rounded-full absolute top-0 right-0 animate-pulse" />
           )}
         </button>
@@ -229,7 +198,7 @@ export function NotificationBell() {
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-white/[0.06]">
             <span className="text-sm font-semibold text-white/90">Notifications</span>
-            {unreadCount > 0 && (
+            {unreadNotifCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
                 className="text-[11px] text-white/40 hover:text-white/70 transition-colors"

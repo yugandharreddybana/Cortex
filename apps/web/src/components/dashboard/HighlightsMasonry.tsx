@@ -348,6 +348,7 @@ function HighlightCard({
   const isViewer = effectiveRole === "VIEWER";
   const isCommenter = effectiveRole === "COMMENTER";
   const canEdit = effectiveRole === "OWNER" || effectiveRole === "EDITOR";
+  const canRequestHigherAccess = isViewer || isCommenter;
 
   return (
     <>
@@ -567,7 +568,7 @@ function HighlightCard({
                     Rename
                   </DropdownMenu.Item>
                 )}
-                {isViewer && (
+                {canRequestHigherAccess && (
                   <DropdownMenu.Item
                     className={cn(
                       "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
@@ -578,7 +579,7 @@ function HighlightCard({
                     onSelect={() => setRequestAccessOpen(true)}
                   >
                     <ShieldAlert className="w-3.5 h-3.5" />
-                    Request Access
+                    Request Higher Access
                   </DropdownMenu.Item>
                 )}
                 <DropdownMenu.Item
@@ -683,9 +684,11 @@ function HighlightCard({
                     </DropdownMenu.Item>
                   </>
                 )}
-                {isViewer && (
+                {canRequestHigherAccess && (
                   <div className="px-2.5 py-2 text-[10px] text-white/30 italic max-w-[180px] leading-relaxed border-t border-white/[0.06] mt-1">
-                    Ask the owner for Editor access to edit or delete this highlight.
+                    {isViewer
+                      ? "Ask the owner for Commenter or Editor access."
+                      : "Ask the owner for Editor access to edit or delete."}
                   </div>
                 )}
               </DropdownMenu.Content>
@@ -846,7 +849,8 @@ function HighlightCard({
       open={requestAccessOpen} 
       onOpenChange={setRequestAccessOpen} 
       folderId={h.folderId || ""} 
-      folderName={h.folder || "Folder"} 
+      folderName={h.folder || "Folder"}
+      currentRole={effectiveRole !== "OWNER" ? effectiveRole : undefined}
     />
     </>
   );
@@ -1103,7 +1107,9 @@ function HighlightListRow({
   const folder = folders.find((f) => f.id === String(h.folderId));
   const effectiveRole = folder?.effectiveRole || "OWNER";
   const isViewer = effectiveRole === "VIEWER";
+  const isCommenter = effectiveRole === "COMMENTER";
   const canEdit = effectiveRole === "OWNER" || effectiveRole === "EDITOR";
+  const canRequestHigherAccess = isViewer || isCommenter;
 
   return (
     <>
@@ -1246,7 +1252,7 @@ function HighlightListRow({
                 "data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95",
               )}
             >
-              {isViewer && (
+              {canRequestHigherAccess && (
                 <DropdownMenu.Item
                   className={cn(
                     "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
@@ -1256,7 +1262,7 @@ function HighlightListRow({
                   onSelect={() => setRequestAccessOpen(true)}
                 >
                   <ShieldAlert className="w-3.5 h-3.5" />
-                  Request Access
+                  Request Higher Access
                 </DropdownMenu.Item>
               )}
               <DropdownMenu.Sub>
@@ -1329,9 +1335,11 @@ function HighlightListRow({
                   </DropdownMenu.Item>
                 </>
               )}
-              {isViewer && (
+              {canRequestHigherAccess && (
                 <div className="px-2.5 py-2 text-[10px] text-white/30 italic max-w-[180px] leading-relaxed border-t border-white/[0.06] mt-1">
-                  Ask owner for Editor access to edit/delete.
+                  {isViewer
+                    ? "Ask the owner for Commenter or Editor access."
+                    : "Ask the owner for Editor access to edit/delete."}
                 </div>
               )}
             </DropdownMenu.Content>
@@ -1346,7 +1354,8 @@ function HighlightListRow({
       open={requestAccessOpen} 
       onOpenChange={setRequestAccessOpen} 
       folderId={h.folderId || ""} 
-      folderName={h.folder || "Folder"} 
+      folderName={h.folder || "Folder"}
+      currentRole={effectiveRole !== "OWNER" ? effectiveRole : undefined}
     />
     </>
   );

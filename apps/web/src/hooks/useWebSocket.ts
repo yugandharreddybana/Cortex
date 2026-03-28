@@ -2,7 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Client } from "@stomp/stompjs";
-import { useDashboardStore, type Highlight, type Folder, type Tag } from "@/store/dashboard";
+import { useDashboardStore, type Highlight, type Folder, type Tag, type NotificationItem } from "@/store/dashboard";
 
 const WS_URL = process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080/ws";
 
@@ -202,14 +202,35 @@ function subscribe(client: Client) {
     } catch { /* malformed frame — skip */ }
   });
 
-  // ── Notifications (for role refresh on access request resolution) ─────────
+  // ── Notifications ─────────────────────────────────────────────────────────
   client.subscribe("/user/queue/notifications", (msg) => {
     try {
-      const notification = JSON.parse(msg.body) as { type?: string };
-      // When the user's access request is resolved (approved/rejected), re-fetch
-      // folders so their effectiveRole updates in the store immediately.
-      if (notification.type === "ACCESS_REQUEST_RESOLVED") {
-        void useDashboardStore.getState().fetchFolders();
+      const payload = JSON.parse(msg.body) as Record<string, unknown>;
+      const store = useDashboardStore.getState();
+
+      // Backend deleted a notification — remove from all open tabs immediately
+      if (payload.type === "NOTIFICATION_DELETED") {
+        store.removeNotification(String(payload.id ?? ""));
+        return;
+      }
+
+      // New notification pushed from server — add to front of the list
+      const notif: NotificationItem = {
+        id:        String(payload.id ?? ""),
+        message:   String(payload.message ?? ""),
+        isRead:    Boolean(payload.isRead),
+        actionUrl: String(payload.actionUrl ?? ""),
+        type:      String(payload.type ?? "GENERAL"),
+        metadata:  String(payload.metadata ?? ""),
+        responded: String(payload.responded ?? ""),
+        createdAt: String(payload.createdAt ?? new Date().toISOString()),
+      };
+      store.pushNotification(notif);
+
+      // On access request resolved: also refresh folders so effectiveRole updates
+      if (notif.type === "ACCESS_REQUEST_RESOLVED") {
+        store.invalidateFolders();
+        void store.fetchFolders();
       }
     } catch { /* malformed frame — skip */ }
   });
@@ -247,6 +268,7 @@ function normalizeFolder(raw: Record<string, unknown>): Folder {
     parentId: raw.parentId != null ? String(raw.parentId) : undefined,
     isPinned: Boolean(raw.isPinned),
     effectiveRole: raw.effectiveRole ? String(raw.effectiveRole) : undefined,
+    ownerId: raw.ownerId != null ? String(raw.ownerId) : undefined,
   };
 }
 

@@ -13,6 +13,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @Service
@@ -45,6 +47,35 @@ public class AccessRequestService {
         this.notificationService = notificationService;
         this.emailService = emailService;
         this.notificationRepo = notificationRepo;
+    }
+
+    /**
+     * Returns all PENDING access requests addressed to the given owner.
+     * Used by GET /api/v1/access-requests/pending.
+     */
+    public List<Map<String, Object>> listPendingForOwner(Long ownerId) {
+        List<AccessRequest> requests = requestRepo.findByOwnerIdAndStatusOrderByCreatedAtDesc(
+                ownerId, AccessRequestStatus.PENDING);
+
+        return requests.stream().map(r -> {
+            String folderName = folderRepo.findById(r.getFolderId())
+                    .map(Folder::getName)
+                    .orElse("Unknown");
+            String requesterName = (r.getRequester().getFullName() != null && !r.getRequester().getFullName().isBlank())
+                    ? r.getRequester().getFullName()
+                    : r.getRequester().getEmail();
+            Map<String, Object> dto = new java.util.LinkedHashMap<>();
+            dto.put("id",             r.getId());
+            dto.put("folderId",       r.getFolderId());
+            dto.put("folderName",     folderName);
+            dto.put("requesterId",    r.getRequester().getId());
+            dto.put("requesterName",  requesterName);
+            dto.put("requesterEmail", r.getRequester().getEmail());
+            dto.put("requestedLevel", r.getRequestedLevel().name());
+            dto.put("status",         r.getStatus().name());
+            dto.put("createdAt",      r.getCreatedAt().toString());
+            return dto;
+        }).toList();
     }
 
     /**
@@ -128,13 +159,16 @@ public class AccessRequestService {
         requestRepo.save(request);
 
         // Mark the original ACCESS_REQUEST notification as responded so it shows
-        // the correct badge even after a page reload.
+        // the correct badge even after a page reload, then delete it immediately
+        // (both isRead + responded are set) and broadcast removal to all open tabs.
         String requestIdFragment = "\"requestId\":\"" + requestId + "\"";
         notificationRepo.findPendingAccessRequestNotification(ownerId, requestIdFragment)
                 .ifPresent(n -> {
                     n.setResponded(status == AccessRequestStatus.APPROVED ? "approve" : "reject");
                     n.setRead(true);
                     notificationRepo.save(n);
+                    // Both conditions met — delete immediately + broadcast to all owner sessions
+                    notificationService.deleteAndBroadcastDeletion(n, request.getOwner());
                 });
 
         Folder folder = folderRepo.findById(request.getFolderId())

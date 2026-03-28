@@ -70,7 +70,7 @@ export default function DashboardLayout({
       <div className="h-screen overflow-hidden flex bg-bg">
 
       {/* ── Desktop sidebar (hidden on mobile) ── */}
-      <aside className="hidden md:flex w-64 shrink-0 border-r border-white/[0.06] bg-[#0A0A0A] flex-col">
+      <aside className="hidden md:flex w-64 shrink-0 border-r border-white/[0.06] bg-[#0A0A0A] flex-col overflow-hidden">
         <Sidebar />
       </aside>
 

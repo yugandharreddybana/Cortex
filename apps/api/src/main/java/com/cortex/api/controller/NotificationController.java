@@ -79,6 +79,10 @@ public class NotificationController {
 
         n.setRead(true);
         notificationRepo.save(n);
+        // If this notification was already responded to, both conditions are now met — clean up
+        if (n.getResponded() != null && !n.getResponded().isBlank()) {
+            notificationService.deleteAndBroadcastDeletion(n, n.getUser());
+        }
         return ResponseEntity.ok(Map.of("ok", true));
     }
 
@@ -161,6 +165,9 @@ public class NotificationController {
         n.setResponded(action.toLowerCase());
         n.setRead(true);
         notificationRepo.save(n);
+
+        // Both conditions now met — delete immediately and notify all open sessions
+        notificationService.deleteAndBroadcastDeletion(n, n.getUser());
 
         return ResponseEntity.ok(toMap(n));
     }

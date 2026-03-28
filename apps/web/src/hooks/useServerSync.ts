@@ -16,6 +16,14 @@ export function useServerSync() {
     if (hydrated.current) return;
     hydrated.current = true;
 
+    // Skip the network call if the store already has data (e.g. populated
+    // by a previous mount or the login page prefetch). Use getState() here
+    // so we don't subscribe to the store and cause unnecessary re-renders.
+    const state = useDashboardStore.getState();
+    if (state.highlights.length > 0 || state.folders.length > 0 || state.tags.length > 0) {
+      return;
+    }
+
     const timer = setTimeout(() => {
       async function pull() {
         try {
@@ -50,7 +58,6 @@ export function useServerSync() {
     }, 300);
 
     return () => {
-      hydrated.current = false;
       clearTimeout(timer);
     };
   }, []);
@@ -97,6 +104,7 @@ async function applyResponses(hRes: Response, fRes: Response, tRes: Response) {
           parentId:      f.parentId != null ? String(f.parentId) : undefined,
           isPinned:      f.isPinned ?? false,
           effectiveRole: f.effectiveRole ?? undefined,
+          ownerId:       f.ownerId != null ? String(f.ownerId) : undefined,
         }),
       )
     );
@@ -147,6 +155,7 @@ interface ServerFolder {
   parentId: string | number | null;
   isPinned: boolean;
   effectiveRole?: string;
+  ownerId?: string | number | null;
 }
 
 interface ServerTag {

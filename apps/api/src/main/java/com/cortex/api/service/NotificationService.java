@@ -317,6 +317,24 @@ public class NotificationService {
 
     // ─────────────────────────────────────────────────── Private helpers ─────
 
+    /**
+     * Delete a notification from the DB and push a NOTIFICATION_DELETED WebSocket
+     * event to all sessions for this user so every open tab removes it immediately.
+     */
+    public void deleteAndBroadcastDeletion(Notification n, User recipient) {
+        Long notifId = n.getId();
+        notifRepo.delete(n);
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("type", "NOTIFICATION_DELETED");
+        payload.put("id", notifId.toString());
+        messaging.convertAndSendToUser(
+                String.valueOf(recipient.getId()),
+                "/queue/notifications",
+                payload
+        );
+        log.info("[Notification Engine] Deleted notification id={} user={}", notifId, recipient.getId());
+    }
+
     private void broadcast(User recipient, Notification n) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("id",            n.getId().toString());
@@ -330,8 +348,9 @@ public class NotificationService {
         payload.put("responded",     n.getResponded()     != null ? n.getResponded()     : "");
         payload.put("createdAt",     n.getCreatedAt().toString());
 
-        messaging.convertAndSend(
-                "/queue/user/" + recipient.getId() + "/notifications",
+        messaging.convertAndSendToUser(
+                String.valueOf(recipient.getId()),
+                "/queue/notifications",
                 payload
         );
     }

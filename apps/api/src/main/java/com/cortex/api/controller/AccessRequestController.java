@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import org.springframework.http.HttpStatus;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -18,6 +19,16 @@ public class AccessRequestController {
 
     public AccessRequestController(AccessRequestService accessRequestService) {
         this.accessRequestService = accessRequestService;
+    }
+
+    /**
+     * Returns all PENDING access requests for the authenticated owner.
+     * Path: GET /api/v1/access-requests/pending
+     */
+    @GetMapping("/pending")
+    public ResponseEntity<List<Map<String, Object>>> getPending(Authentication auth) {
+        Long ownerId = Long.parseLong(auth.getName());
+        return ResponseEntity.ok(accessRequestService.listPendingForOwner(ownerId));
     }
 
     /**

@@ -14,22 +14,27 @@ function rewritePath(path: string): string {
   return path;
 }
 
+/** Build the full rewritten path including any query string. */
+function rewrite(request: NextRequest): string {
+  return rewritePath(request.nextUrl.pathname) + (request.nextUrl.search ?? "");
+}
+
 export async function GET(request: NextRequest) {
-  return proxyToJava(request, rewritePath(request.nextUrl.pathname));
+  return proxyToJava(request, rewrite(request));
 }
 
 export async function POST(request: NextRequest) {
-  return proxyToJava(request, rewritePath(request.nextUrl.pathname));
+  return proxyToJava(request, rewrite(request));
 }
 
 export async function PUT(request: NextRequest) {
-  return proxyToJava(request, rewritePath(request.nextUrl.pathname));
+  return proxyToJava(request, rewrite(request));
 }
 
 export async function DELETE(request: NextRequest) {
-  return proxyToJava(request, rewritePath(request.nextUrl.pathname));
+  return proxyToJava(request, rewrite(request));
 }
 
 export async function PATCH(request: NextRequest) {
-  return proxyToJava(request, rewritePath(request.nextUrl.pathname));
+  return proxyToJava(request, rewrite(request));
 }

@@ -69,6 +69,19 @@ export interface Highlight {
   fullText?: string;
 }
 
+// Notification item — matches the shape returned by /api/v1/notifications and
+// the WebSocket broadcast payload from NotificationService.broadcast().
+export interface NotificationItem {
+  id:        string;
+  message:   string;
+  isRead:    boolean;
+  actionUrl: string;
+  type:      string;
+  metadata:  string;
+  responded: string;
+  createdAt: string;
+}
+
 interface DashboardState {
   // UI
   sidebarCollapsed: boolean;
@@ -165,11 +178,22 @@ interface DashboardState {
   setNewHighlightDialogOpen: (v: boolean) => void;
 
   // Folder hydration
+  lastFoldersFetchAt: number;
   fetchFolders: () => Promise<void>;
+  invalidateFolders: () => void;
   // Tag hydration
   fetchTags: () => Promise<void>;
   updateFolderSynthesis: (id: string, synthesis: string) => void;
   setTagFilterExclusive: (tagIds: string[]) => void;
+
+  // Notifications (real-time — fed by WebSocket, loaded once on mount)
+  notifications:           NotificationItem[];
+  unreadNotifCount:        number;
+  fetchNotifications:      () => Promise<void>;
+  pushNotification:        (n: NotificationItem) => void;
+  removeNotification:      (id: string) => void;
+  markNotificationRead:    (id: string) => void;
+  markAllNotificationsRead: () => void;
 
   // Access Requests
   requestAccess: (folderId: string, role: string) => Promise<boolean>;
@@ -244,9 +268,12 @@ export const useDashboardStore = create<DashboardState>()(
       selectedHighlightIds: [],
 
       folders: [],
+      lastFoldersFetchAt: 0,
 
       // Fetch folders from backend and hydrate store
       fetchFolders: async () => {
+        // 30-second stale-while-revalidate cache — skip if data is fresh
+        if (Date.now() - get().lastFoldersFetchAt < 30_000) return;
         if (foldersInFlight) return;
         foldersInFlight = true;
         try {
@@ -266,7 +293,7 @@ export const useDashboardStore = create<DashboardState>()(
             effectiveRole: f.effectiveRole ?? undefined,
             ownerId:       (f as any).ownerId != null ? String((f as any).ownerId) : undefined,
           }));
-          set({ folders: dedupFolders(mapped) });
+          set({ folders: dedupFolders(mapped), lastFoldersFetchAt: Date.now() });
           // Recompute folder counts from current highlights
           const { highlights: currentHighlights } = get();
           const counts: Record<string, number> = {};
@@ -282,6 +309,9 @@ export const useDashboardStore = create<DashboardState>()(
           foldersInFlight = false;
         }
       },
+
+      // Invalidate the folder cache so the next fetchFolders() call always hits the network
+      invalidateFolders: () => set({ lastFoldersFetchAt: 0 }),
 
       // Fetch tags from backend and hydrate store
       fetchTags: async () => {
@@ -401,6 +431,7 @@ export const useDashboardStore = create<DashboardState>()(
           if (s.folders.some((f) => f.id === newFolder.id)) return s;
           return { folders: [...s.folders, newFolder] };
         });
+        get().invalidateFolders();
       },
 
       deleteFolder: async (id) => {
@@ -445,6 +476,7 @@ export const useDashboardStore = create<DashboardState>()(
 
         // Fire a single API call for the root folder. The backend will cascade.
         await apiFetch(`/api/folders/${encodeURIComponent(id)}`, { method: "DELETE" });
+        get().invalidateFolders();
       },
 
       unshareFolder: async (id) => {
@@ -453,10 +485,7 @@ export const useDashboardStore = create<DashboardState>()(
           const { ok } = await apiFetch(`/api/folders/${encodeURIComponent(id)}/unshare`, { method: "POST" });
           if (ok) {
             set((s) => ({ folders: s.folders.filter((f) => f.id !== id) }));
-            // Redirect if viewing it
-            if (window.location.pathname.includes(`/folders/${id}`)) {
-              window.location.href = "/dashboard";
-            }
+            get().invalidateFolders();
           }
         } finally {
           set({ isGlobalLoading: false });
@@ -472,7 +501,8 @@ export const useDashboardStore = create<DashboardState>()(
             body: JSON.stringify({ resourceId, resourceType, updates, removals }),
           });
           if (ok) {
-            // Re-fetch folders to ensure local syncing
+            // Invalidate cache then re-fetch so the network call is not skipped
+            get().invalidateFolders();
             await get().fetchFolders();
           }
         } finally {
@@ -484,6 +514,7 @@ export const useDashboardStore = create<DashboardState>()(
         set((s) => ({
           folders: s.folders.map((f) => (f.id === id ? { ...f, name: name.trim() } : f)),
         }));
+        get().invalidateFolders();
         void apiFetch(`/api/folders/${encodeURIComponent(id)}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -519,6 +550,7 @@ export const useDashboardStore = create<DashboardState>()(
         set((s) => ({
           folders: s.folders.map((f) => (f.id === id ? { ...f, parentId: newParentId } : f)),
         }));
+        get().invalidateFolders();
         void apiFetch(`/api/folders/${encodeURIComponent(id)}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -530,6 +562,7 @@ export const useDashboardStore = create<DashboardState>()(
         set((s) => ({
           folders: s.folders.map((f) => (f.id === id ? { ...f, emoji } : f)),
         }));
+        get().invalidateFolders();
         void apiFetch(`/api/folders/${encodeURIComponent(id)}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -749,6 +782,7 @@ export const useDashboardStore = create<DashboardState>()(
             f.id === id ? { ...f, isPinned: !f.isPinned } : f,
           ),
         }));
+        get().invalidateFolders();
         void apiFetch(`/api/folders/${encodeURIComponent(id)}`, {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -813,6 +847,50 @@ export const useDashboardStore = create<DashboardState>()(
       setFocusedHighlightIdx: (n) => set({ focusedHighlightIdx: n }),
       setNewFolderDialogOpen:    (v) => set({ newFolderDialogOpen: v }),
       setNewHighlightDialogOpen: (v) => set({ newHighlightDialogOpen: v }),
+
+      // ── Notifications ─────────────────────────────────────────────────────
+      notifications: [],
+      unreadNotifCount: 0,
+
+      fetchNotifications: async () => {
+        try {
+          const res = await fetch("/api/notifications", { credentials: "include" });
+          if (res.ok) {
+            const data = await res.json();
+            const list: NotificationItem[] = Array.isArray(data) ? data : [];
+            set({ notifications: list, unreadNotifCount: list.filter((n) => !n.isRead).length });
+          }
+        } catch {
+          // Keep stale data on fetch failure — don't blank the list.
+        }
+      },
+
+      pushNotification: (n) =>
+        set((s) => ({
+          notifications: [n, ...s.notifications.filter((x) => x.id !== n.id)],
+          unreadNotifCount: !n.isRead ? s.unreadNotifCount + 1 : s.unreadNotifCount,
+        })),
+
+      removeNotification: (id) =>
+        set((s) => ({
+          notifications: s.notifications.filter((n) => n.id !== id),
+        })),
+
+      markNotificationRead: (id) =>
+        set((s) => {
+          const target = s.notifications.find((n) => n.id === id);
+          if (!target || target.isRead) return s;
+          return {
+            notifications: s.notifications.map((n) => (n.id === id ? { ...n, isRead: true } : n)),
+            unreadNotifCount: Math.max(0, s.unreadNotifCount - 1),
+          };
+        }),
+
+      markAllNotificationsRead: () =>
+        set((s) => ({
+          notifications: s.notifications.map((n) => ({ ...n, isRead: true })),
+          unreadNotifCount: 0,
+        })),
 
       requestAccess: async (folderId, role) => {
         set({ isGlobalLoading: true });
@@ -965,6 +1043,8 @@ export const useDashboardStore = create<DashboardState>()(
           trash:                [],
           apiKeys:              [],
           smartCollections:     [],
+          notifications:        [],
+          unreadNotifCount:     0,
           activeFolder:         null,
           activeTagFilters:     [],
           activeDomainFilters:  [],

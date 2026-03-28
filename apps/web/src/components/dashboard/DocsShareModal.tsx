@@ -21,12 +21,14 @@ type LinkAccess = "RESTRICTED" | "ANYONE_WITH_LINK";
 
 interface Permission {
   id: string;
-  email: string;
+  email?: string;
   userId: string;
-  resourceId: string;
-  resourceType: string;
+  resourceId?: string;
+  resourceType?: string;
+  userName?: string;
+  userEmail?: string;
   accessLevel: AccessLevel;
-  createdAt: string;
+  createdAt?: string;
 }
 
 interface DocsShareModalProps {
@@ -82,7 +84,16 @@ export function DocsShareModal({
     fetch(`/api/permissions/${resourceId}?type=${resourceType}`)
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => {
-        setPermissions(Array.isArray(data) ? data : []);
+        const normalized = Array.isArray(data)
+          ? data.map((p: any) => ({
+              ...p,
+              id: String(p.id),
+              userId: String(p.userId),
+              userEmail: p.userEmail || p.email,
+              userName: p.userName || p.email,
+            }))
+          : [];
+        setPermissions(normalized);
       })
       .catch(() => setPermissions([]))
       .finally(() => setIsLoadingPermissions(false));
@@ -172,7 +183,7 @@ export function DocsShareModal({
     );
 
     try {
-      const res = await fetch(`/api/permissions/manage/${permId}`, {
+      const res = await fetch(`/api/permissions/${permId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ accessLevel: newRole }),
@@ -194,7 +205,7 @@ export function DocsShareModal({
     setPermissions((prev) => prev.filter((p) => p.id !== permId));
 
     try {
-      const res = await fetch(`/api/permissions/manage/${permId}`, {
+      const res = await fetch(`/api/permissions/${permId}`, {
         method: "DELETE",
       });
       if (!res.ok) throw new Error();
@@ -357,7 +368,7 @@ export function DocsShareModal({
                           {permissions.map((p) => (
                             <PersonRow
                               key={p.id}
-                              email={p.email}
+                              email={p.userEmail || p.email || "Unknown user"}
                               role={ROLE_LABELS[p.accessLevel]}
                               accessLevel={p.accessLevel}
                               onRoleChange={(role) =>
