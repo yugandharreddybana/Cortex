@@ -25,7 +25,13 @@ const SILENT_URL_PATTERNS = [
 if (typeof window !== "undefined") {
     const originalFetch = window.fetch;
     window.fetch = async (...args) => {
-        const url = typeof args[0] === 'string' ? args[0] : (args[0] as Request).url;
+        const input = args[0];
+        const url = input instanceof Request
+            ? input.url
+            : typeof input === 'string'
+                ? input
+                : (input as any)?.toString?.() ?? String(input);
+
         const isApiCall = url.includes('/api/');
         const isSilent = SILENT_URL_PATTERNS.some((p) => url.includes(p));
 

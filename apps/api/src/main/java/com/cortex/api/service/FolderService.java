@@ -28,16 +28,13 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
+@SuppressWarnings("null")
 public class FolderService {
     
     private static final Logger log = LoggerFactory.getLogger(FolderService.class);
-
-    /** Safety cap for the recursive deep-clone to prevent stack overflow. */
-    private static final int MAX_CLONE_DEPTH = 100;
 
     private final FolderRepository folderRepository;
     private final HighlightRepository highlightRepository;
@@ -105,14 +102,12 @@ public class FolderService {
     @Transactional
     public Folder createFolder(Folder folder) {
         // Validate uniqueness: (user_id, parent_folder_id, name)
+        Long userId = java.util.Objects.requireNonNull(folder.getUser().getId(), "userId cannot be null");
+        String folderName = java.util.Objects.requireNonNull(folder.getName(), "folder name cannot be null");
         Folder parentFolder = folder.getParentFolder();
         Long parentId = (parentFolder != null) ? parentFolder.getId() : null;
         
-        boolean exists = folderRepository.existsByUserAndParentAndName(
-                folder.getUser().getId(),
-                folder.getName(),
-                parentId
-        );
+        boolean exists = folderRepository.existsByUserAndParentAndName(userId, folderName, parentId);
         
         if (exists) {
             log.warn("[Folder Creation] Duplicate folder name '{}' for user {} at parent {}: 409 Conflict",
@@ -209,7 +204,10 @@ public class FolderService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Folder not found"));
 
         // Resolve caller's effective role (with inheritance)
-        AccessLevel callerRole = permissionService.getEffectiveRole(callerId, folderId);
+        AccessLevel callerRole = permissionService.getEffectiveRole(
+                java.util.Objects.requireNonNull(callerId, "callerId cannot be null"),
+                java.util.Objects.requireNonNull(folderId, "folderId cannot be null")
+        );
         if (callerRole == null || !callerRole.atLeast(AccessLevel.EDITOR)) {
             log.warn("[Folder Deletion] 403 Forbidden — user={} has {} on folder={} (EDITOR required)",
                     callerId, callerRole, folderId);
@@ -218,7 +216,7 @@ public class FolderService {
         }
 
         User owner = folder.getUser();
-        User caller = userRepository.findById(callerId)
+        User caller = userRepository.findById(java.util.Objects.requireNonNull(callerId, "callerId cannot be null"))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
         log.info("[Folder Deletion] user={} (role={}) bulk-deleting folder tree rooted at {} keepHighlights={}",
@@ -399,81 +397,104 @@ public class FolderService {
      */
     @Transactional
     public Folder deepCloneFolder(Long sourceFolderId, Long newOwnerId, Long targetParentId) {
+        if (sourceFolderId == null || newOwnerId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Source folder ID or User ID is null");
+        }
         User newOwner = userRepository.findById(newOwnerId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-        log.info("[Deep Clone] Starting deep clone of folder={} for newOwner={}", sourceFolderId, newOwnerId);
-        Folder cloneRoot = deepCloneRecursive(sourceFolderId, newOwner, targetParentId, 0);
-        log.info("[Deep Clone] Completed. Clone root id={}", cloneRoot.getId());
-        return cloneRoot;
-    }
+        
+        log.info("[Deep Clone] Starting optimized deep clone of folder={} for newOwner={}", sourceFolderId, newOwnerId);
 
-    private Folder deepCloneRecursive(Long sourceFolderId, User newOwner, Long parentId, int depth) {
-        if (depth > MAX_CLONE_DEPTH) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR,
-                    "Deep clone exceeded maximum nesting depth of " + MAX_CLONE_DEPTH);
+        // 1. Fetch entire source subtree structure in one query (O(1) queries)
+        List<Folder> sourceFolders = folderRepository.findAllDescendantsInclusive(sourceFolderId);
+        if (sourceFolders.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "Source folder not found: " + sourceFolderId);
         }
 
-        Folder source = folderRepository.findById(sourceFolderId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Source folder not found: " + sourceFolderId));
-
-        // ── Build the clone folder ──────────────────────────────────────────
-        Folder clone = new Folder();
-        clone.setUser(newOwner);
-        clone.setName(source.getName());
-        clone.setEmoji(source.getEmoji());
-        clone.setLinkAccess(LinkAccess.RESTRICTED);   // reset to private; owner can re-share
-        clone.setDefaultLinkRole(AccessLevel.VIEWER);
-
-        if (parentId != null) {
-            Folder parent = folderRepository.findById(parentId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                            "Parent folder not found: " + parentId));
-            clone.setParentFolder(parent);
+        // 2. Map original folders to new entities in memory
+        // We use a Map to track [Original ID] -> [New Cloned Entity]
+        java.util.Map<Long, Folder> folderMap = new java.util.HashMap<>();
+        for (Folder src : sourceFolders) {
+            Folder clone = new Folder();
+            clone.setUser(newOwner);
+            clone.setName(src.getName());
+            clone.setEmoji(src.getEmoji());
+            clone.setLinkAccess(LinkAccess.RESTRICTED);
+            clone.setDefaultLinkRole(AccessLevel.VIEWER);
+            clone.setPinned(false); // Reset pin status for clone
+            folderMap.put(src.getId(), clone);
         }
 
-        Folder savedClone = folderRepository.save(clone);
-        log.info("[Deep Clone] depth={} created folder id={} (source={})", depth, savedClone.getId(), sourceFolderId);
-
-        // ── Clone highlights in this folder ─────────────────────────────────
-        List<Highlight> sourceHighlights = highlightRepository.findByFolderIdAndNotDeleted(sourceFolderId);
-        List<Highlight> clonesToSave = new ArrayList<>();
-        for (Highlight src : sourceHighlights) {
-            Highlight h = new Highlight();
-            h.setUser(newOwner);
-            h.setText(src.getText());
-            h.setSource(src.getSource());
-            h.setUrl(src.getUrl());
-            h.setTopic(src.getTopic());
-            h.setTopicColor(src.getTopicColor());
-            h.setSavedAt(src.getSavedAt());
-            h.setFolderId(savedClone.getId());
-            h.setNote(src.getNote());
-            h.setCode(src.isCode());
-            h.setFavorite(false);    // personal state — do not copy
-            h.setArchived(false);
-            h.setPinned(false);
-            h.setHighlightColor(src.getHighlightColor());
-            h.setAI(src.isAI());
-            h.setChatName(src.getChatName());
-            h.setChatUrl(src.getChatUrl());
-            h.setResourceType(src.getResourceType() != null ? src.getResourceType() : ResourceType.TEXT);
-            h.setVideoTimestamp(src.getVideoTimestamp());
-            h.setLinkAccess(LinkAccess.RESTRICTED);
-            h.setDefaultLinkRole(AccessLevel.VIEWER);
-            clonesToSave.add(h);
-        }
-        if (!clonesToSave.isEmpty()) {
-            highlightRepository.saveAll(clonesToSave);
-        }
-        log.info("[Deep Clone] depth={} cloned {} highlight(s) into folder={}", depth, sourceHighlights.size(), savedClone.getId());
-
-        // ── Recurse into child folders ───────────────────────────────────────
-        List<Folder> children = folderRepository.findByParentFolderId(sourceFolderId);
-        for (Folder child : children) {
-            deepCloneRecursive(child.getId(), newOwner, savedClone.getId(), depth + 1);
+        // 3. Reconstruct relationships in memory
+        Folder rootClone = folderMap.get(sourceFolderId);
+        for (Folder src : sourceFolders) {
+            Folder clone = folderMap.get(src.getId());
+            
+            if (src.getId().equals(sourceFolderId)) {
+                // The root of the clone gets the specified target parent
+                if (targetParentId != null) {
+                    Folder targetParent = folderRepository.findById(targetParentId)
+                            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Target parent not found: " + targetParentId));
+                    clone.setParentFolder(targetParent);
+                }
+            } else if (src.getParentFolder() != null) {
+                // Children get their new parents from the map
+                Folder parentClone = folderMap.get(src.getParentFolder().getId());
+                if (parentClone != null) {
+                    clone.setParentFolder(parentClone);
+                }
+            }
         }
 
-        return savedClone;
+        // 4. Batch save all folders (O(1) database round-trips for structure)
+        // Note: JPA handles parent-child persistence ordering when associated in the same session.
+        folderRepository.saveAll(new ArrayList<>(folderMap.values()));
+
+        // 5. Fetch all highlights for the subtree in one query (O(1) queries)
+        List<Long> originalFolderIds = sourceFolders.stream()
+                .map(Folder::getId)
+                .collect(Collectors.toList());
+        List<Highlight> sourceHighlights = highlightRepository.findByFolderIdInAndNotDeleted(originalFolderIds);
+        
+        if (!sourceHighlights.isEmpty()) {
+            List<Highlight> highlightsToSave = new ArrayList<>();
+            for (Highlight src : sourceHighlights) {
+                Highlight h = new Highlight();
+                h.setUser(newOwner);
+                h.setText(src.getText());
+                h.setSource(src.getSource());
+                h.setUrl(src.getUrl());
+                h.setTopic(src.getTopic());
+                h.setTopicColor(src.getTopicColor());
+                h.setSavedAt(src.getSavedAt());
+                
+                // Map to the new folder ID
+                Folder targetFolder = folderMap.get(src.getFolderId());
+                if (targetFolder != null) {
+                    h.setFolderId(targetFolder.getId());
+                }
+                
+                h.setNote(src.getNote());
+                h.setCode(src.isCode());
+                h.setFavorite(false);
+                h.setArchived(false);
+                h.setPinned(false);
+                h.setHighlightColor(src.getHighlightColor());
+                h.setAI(src.isAI());
+                h.setChatName(src.getChatName());
+                h.setChatUrl(src.getChatUrl());
+                h.setResourceType(src.getResourceType() != null ? src.getResourceType() : ResourceType.TEXT);
+                h.setVideoTimestamp(src.getVideoTimestamp());
+                h.setLinkAccess(LinkAccess.RESTRICTED);
+                h.setDefaultLinkRole(AccessLevel.VIEWER);
+                highlightsToSave.add(h);
+            }
+            // 6. Batch save all highlights (O(1) database round-trips)
+            highlightRepository.saveAll(highlightsToSave);
+            log.info("[Deep Clone] Cloned {} highlights into folder subtree", highlightsToSave.size());
+        }
+
+        log.info("[Deep Clone] Optimized clone complete. Root ID={}", rootClone.getId());
+        return rootClone;
     }
 }

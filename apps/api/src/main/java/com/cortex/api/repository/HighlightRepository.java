@@ -9,7 +9,6 @@ import jakarta.transaction.Transactional;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import com.cortex.api.entity.User;
 
 public interface HighlightRepository extends JpaRepository<Highlight, Long> {
     /**
@@ -81,6 +80,13 @@ public interface HighlightRepository extends JpaRepository<Highlight, Long> {
      */
     @Query("SELECT h FROM Highlight h LEFT JOIN FETCH h.highlightTags t WHERE h.folderId = :folderId AND h.isDeleted = false")
     List<Highlight> findByFolderIdAndNotDeleted(@Param("folderId") Long folderId);
+
+    /**
+     * Find all non-deleted highlights belonging to a list of folders.
+     * Used by the deep-clone operation to fetch all highlights in a subtree in one query.
+     */
+    @Query("SELECT h FROM Highlight h LEFT JOIN FETCH h.highlightTags t WHERE h.folderId IN :folderIds AND h.isDeleted = false")
+    List<Highlight> findByFolderIdInAndNotDeleted(@Param("folderIds") List<Long> folderIds);
 
     /**
      * Clear the folder relationship (orphan) for all highlights in the given folders.
