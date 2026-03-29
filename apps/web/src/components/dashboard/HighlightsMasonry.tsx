@@ -350,6 +350,16 @@ function HighlightCard({
   const canEdit = effectiveRole === "OWNER" || effectiveRole === "EDITOR";
   const canRequestHigherAccess = isViewer || isCommenter;
 
+  const hasPendingRequest = useDashboardStore((s) =>
+    folder ? s.pendingAccessRequests[folder.id] === true : false
+  );
+
+  React.useEffect(() => {
+    if (folder && canRequestHigherAccess) {
+      useDashboardStore.getState().checkAccessRequestStatus(folder.id);
+    }
+  }, [folder?.id, canRequestHigherAccess]);
+
   return (
     <>
     <motion.div
@@ -570,16 +580,22 @@ function HighlightCard({
                 )}
                 {canRequestHigherAccess && (
                   <DropdownMenu.Item
+                    disabled={hasPendingRequest}
                     className={cn(
                       "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
                       "text-[12px] text-accent hover:text-accent/80",
-                      "hover:bg-accent/[0.08] cursor-pointer",
-                      "outline-none transition-colors duration-100",
+                      hasPendingRequest ? "opacity-50 cursor-not-allowed" : "hover:bg-accent/[0.08] cursor-pointer outline-none transition-colors duration-100",
                     )}
-                    onSelect={() => setRequestAccessOpen(true)}
+                    onSelect={(e) => {
+                      if (hasPendingRequest) {
+                        e.preventDefault();
+                      } else {
+                        setRequestAccessOpen(true);
+                      }
+                    }}
                   >
                     <ShieldAlert className="w-3.5 h-3.5" />
-                    Request Higher Access
+                    {hasPendingRequest ? "Request Raised" : "Request Higher Access"}
                   </DropdownMenu.Item>
                 )}
                 <DropdownMenu.Item
@@ -847,9 +863,14 @@ function HighlightCard({
     <ShareDialog open={shareOpen} onOpenChange={setShareOpen} type="h" id={h.id} title={h.text.slice(0, 60)} />
     <RequestAccessModal 
       open={requestAccessOpen} 
-      onOpenChange={setRequestAccessOpen} 
-      folderId={h.folderId || ""} 
-      folderName={h.folder || "Folder"}
+      onOpenChange={(open) => {
+        setRequestAccessOpen(open);
+        if (!open && folder) {
+          useDashboardStore.getState().checkAccessRequestStatus(folder.id);
+        }
+      }}
+      folderId={folder?.id || ""}
+      folderName={folder?.name || ""}
       currentRole={effectiveRole !== "OWNER" ? effectiveRole : undefined}
     />
     </>
@@ -1111,6 +1132,16 @@ function HighlightListRow({
   const canEdit = effectiveRole === "OWNER" || effectiveRole === "EDITOR";
   const canRequestHigherAccess = isViewer || isCommenter;
 
+  const hasPendingRequest = useDashboardStore((s) =>
+    folder ? s.pendingAccessRequests[folder.id] === true : false
+  );
+
+  React.useEffect(() => {
+    if (folder && canRequestHigherAccess) {
+      useDashboardStore.getState().checkAccessRequestStatus(folder.id);
+    }
+  }, [folder?.id, canRequestHigherAccess]);
+
   return (
     <>
     <motion.div
@@ -1254,15 +1285,22 @@ function HighlightListRow({
             >
               {canRequestHigherAccess && (
                 <DropdownMenu.Item
+                  disabled={hasPendingRequest}
                   className={cn(
                     "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
                     "text-[12px] text-accent hover:text-accent/80",
-                    "hover:bg-accent/[0.08] cursor-pointer outline-none transition-colors duration-100",
+                    hasPendingRequest ? "opacity-50 cursor-not-allowed" : "hover:bg-accent/[0.08] cursor-pointer outline-none transition-colors duration-100",
                   )}
-                  onSelect={() => setRequestAccessOpen(true)}
+                  onSelect={(e) => {
+                    if (hasPendingRequest) {
+                      e.preventDefault();
+                    } else {
+                      setRequestAccessOpen(true);
+                    }
+                  }}
                 >
                   <ShieldAlert className="w-3.5 h-3.5" />
-                  Request Higher Access
+                  {hasPendingRequest ? "Request Raised" : "Request Higher Access"}
                 </DropdownMenu.Item>
               )}
               <DropdownMenu.Sub>
@@ -1352,9 +1390,14 @@ function HighlightListRow({
     <ShareDialog open={shareOpen} onOpenChange={setShareOpen} type="h" id={h.id} title={h.text.slice(0, 60)} />
     <RequestAccessModal 
       open={requestAccessOpen} 
-      onOpenChange={setRequestAccessOpen} 
-      folderId={h.folderId || ""} 
-      folderName={h.folder || "Folder"}
+      onOpenChange={(open) => {
+        setRequestAccessOpen(open);
+        if (!open && folder) {
+          useDashboardStore.getState().checkAccessRequestStatus(folder.id);
+        }
+      }}
+      folderId={folder?.id || ""}
+      folderName={folder?.name || ""}
       currentRole={effectiveRole !== "OWNER" ? effectiveRole : undefined}
     />
     </>

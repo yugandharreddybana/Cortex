@@ -67,6 +67,16 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
   const isOwner = effectiveRole === "OWNER";
   const isViewer = effectiveRole === "VIEWER";
 
+  const hasPendingRequest = useDashboardStore((s) =>
+    folder ? s.pendingAccessRequests[folder.id] === true : false
+  );
+
+  React.useEffect(() => {
+    if (folder && (effectiveRole === "VIEWER" || effectiveRole === "COMMENTER")) {
+      useDashboardStore.getState().checkAccessRequestStatus(folder.id);
+    }
+  }, [folder?.id, effectiveRole]);
+
   const handleDelete = async () => {
     if (!folder) return;
     setIsDeleting(true);
@@ -204,11 +214,20 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
             <div className="flex items-center gap-2">
               {(effectiveRole === "VIEWER" || effectiveRole === "COMMENTER") && (
                 <button
-                  onClick={() => setRequestAccessOpen(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-accent hover:text-accent/80 hover:bg-accent/10 transition-all border border-accent/20"
+                  onClick={() => {
+                    if (!hasPendingRequest) setRequestAccessOpen(true);
+                  }}
+                  disabled={hasPendingRequest}
+                  title={hasPendingRequest ? "Request has been raised, we are waiting for the approval, ask the owner to approve it for the requested access." : undefined}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border",
+                    hasPendingRequest
+                      ? "text-accent/50 border-accent/10 cursor-not-allowed"
+                      : "text-accent hover:text-accent/80 hover:bg-accent/10 border-accent/20"
+                  )}
                 >
                   <ShieldAlert className="w-3.5 h-3.5" />
-                  Request Higher Access
+                  {hasPendingRequest ? "Request Raised" : "Request Higher Access"}
                 </button>
               )}
 
@@ -236,7 +255,13 @@ export default function FolderPage({ params }: { params: Promise<{ id: string }>
         <>
           <RequestAccessModal 
             open={requestAccessOpen} 
-            onOpenChange={setRequestAccessOpen} 
+            onOpenChange={(open) => {
+              setRequestAccessOpen(open);
+              if (!open) {
+                // Refresh status in case a request was made
+                useDashboardStore.getState().checkAccessRequestStatus(folder.id);
+              }
+            }}
             folderId={folder.id} 
             folderName={folder.name} 
             currentRole={folder.effectiveRole}

@@ -189,6 +189,9 @@ interface DashboardState {
   // Notifications (real-time — fed by WebSocket, loaded once on mount)
   notifications:           NotificationItem[];
   unreadNotifCount:        number;
+
+  // Access Requests Cache
+  pendingAccessRequests:   Record<string, boolean>;
   fetchNotifications:      () => Promise<void>;
   pushNotification:        (n: NotificationItem) => void;
   removeNotification:      (id: string) => void;
@@ -196,7 +199,8 @@ interface DashboardState {
   markAllNotificationsRead: () => void;
 
   // Access Requests
-  requestAccess: (folderId: string, role: string) => Promise<boolean>;
+  checkAccessRequestStatus: (folderId: string) => Promise<boolean>;
+  requestAccess: (folderId: string, role: string) => Promise<{ ok: boolean; status: number }>;
   respondToAccessRequest: (requestId: string, action: "APPROVE" | "REJECT") => Promise<boolean>;
 
   // Reset all user data (clears on logout)
@@ -852,6 +856,9 @@ export const useDashboardStore = create<DashboardState>()(
       notifications: [],
       unreadNotifCount: 0,
 
+      // ── Access Requests Cache ─────────────────────────────────────────────
+      pendingAccessRequests: {},
+
       fetchNotifications: async () => {
         try {
           const res = await fetch("/api/notifications", { credentials: "include" });
@@ -892,15 +899,38 @@ export const useDashboardStore = create<DashboardState>()(
           unreadNotifCount: 0,
         })),
 
+      checkAccessRequestStatus: async (folderId) => {
+        const current = get().pendingAccessRequests[folderId];
+        if (current !== undefined) return current;
+
+        const { ok, data } = await apiFetch<{ hasPendingRequest: boolean }>(
+          `/api/folders/${encodeURIComponent(folderId)}/access-request-status`
+        );
+        const hasPending = ok && data?.hasPendingRequest === true;
+
+        set((s) => ({
+          pendingAccessRequests: { ...s.pendingAccessRequests, [folderId]: hasPending },
+        }));
+
+        return hasPending;
+      },
+
       requestAccess: async (folderId, role) => {
         set({ isGlobalLoading: true });
         try {
-          const { ok } = await apiFetch(`/api/folders/${encodeURIComponent(folderId)}/request-access`, {
+          const res = await apiFetch(`/api/folders/${encodeURIComponent(folderId)}/request-access`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ role }),
           });
-          return ok;
+
+          if (res.ok || res.status === 409) {
+            set((s) => ({
+              pendingAccessRequests: { ...s.pendingAccessRequests, [folderId]: true },
+            }));
+          }
+
+          return { ok: res.ok, status: res.status };
         } finally {
           set({ isGlobalLoading: false });
         }

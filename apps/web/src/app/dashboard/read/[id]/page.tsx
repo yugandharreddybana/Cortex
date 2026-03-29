@@ -153,8 +153,9 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
 
   // Permissions
   const currentFolder = React.useMemo(() => folders.find((f) => f.id === highlight.folderId), [folders, highlight.folderId]);
-  const role = currentFolder?.effectiveRole;
+  const role = currentFolder?.effectiveRole || "OWNER";
   const isViewer = role === "VIEWER";
+  const canEdit = role === "OWNER" || role === "EDITOR";
 
   // Comments State
   const [comments, setComments] = React.useState<CommentType[]>([]);
@@ -387,19 +388,20 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
           {/* Edit Button */}
           <button 
             onClick={() => {
-              if (role === "VIEWER" || role === "COMMENTER") {
-                toast.error("You must have editor access to edit highlight details.");
-                return;
-              }
+              if (!canEdit) return;
               setIsTagOnly(false);
               setEditOpen(true);
             }}
+            disabled={!canEdit}
+            title={!canEdit ? "You must have editor access to edit this highlight." : undefined}
             aria-label="Edit Highlight"
             className={cn(
               "w-9 h-9 rounded-lg flex items-center justify-center",
               "bg-white/[0.03] border border-white/[0.06]",
-              "text-white/70 hover:text-white hover:bg-white/[0.08]",
               "transition-all duration-150",
+              canEdit
+                ? "text-white/70 hover:text-white hover:bg-white/[0.08]"
+                : "text-white/30 cursor-not-allowed"
             )}>
             <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M10 2l2 2-8 8H2v-2l8-8z" />
@@ -409,13 +411,16 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
           {/* Delete Button */}
           <button 
             onClick={handleDelete}
-            disabled={isDeleting}
+            disabled={isDeleting || !canEdit}
+            title={!canEdit ? "You must have editor access to delete this highlight." : undefined}
             aria-label="Delete Highlight"
             className={cn(
               "w-9 h-9 rounded-lg flex items-center justify-center",
               "bg-red-500/5 border border-red-500/10",
-              "text-red-400 hover:text-red-300 hover:bg-red-500/10",
               "transition-all duration-150",
+              !canEdit
+                ? "text-red-400/30 cursor-not-allowed"
+                : "text-red-400 hover:text-red-300 hover:bg-red-500/10",
               isDeleting && "opacity-50 cursor-not-allowed"
             )}>
             {isDeleting ? (
