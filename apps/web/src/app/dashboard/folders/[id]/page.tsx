@@ -1,6 +1,6 @@
 "use client";
 
-import { use } from "react";
+import React from "react";
 import { useShallow } from "zustand/react/shallow";
 import { useDashboardStore } from "@/store/dashboard";
 import { HighlightsMasonry } from "@/components/dashboard/HighlightsMasonry";
@@ -11,9 +11,8 @@ import * as Popover from "@radix-ui/react-popover";
 import * as AlertDialog from "@radix-ui/react-alert-dialog";
 import { cn } from "@cortex/ui";
 import { Trash2, AlertTriangle, Loader2, Users } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useParams } from "next/navigation";
 import { toast } from "sonner";
-import React from "react";
 import { RequestAccessModal } from "@/components/dashboard/RequestAccessModal";
 import { ManageAccessModal } from "@/components/dashboard/ManageAccessModal";
 import { DeleteAlertDialog } from "@/components/dashboard/DeleteAlertDialog";
@@ -44,8 +43,9 @@ function FolderIcon() {
   );
 }
 
-export default function FolderPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = use(params);
+export default function FolderPage() {
+  const params = useParams();
+  const id = typeof params.id === "string" ? params.id : Array.isArray(params.id) ? params.id[0] : "";
 
   // useShallow prevents infinite re-renders caused by .find() / .filter()
   // returning a new reference on every call even when contents are identical.
