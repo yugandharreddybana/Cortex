@@ -3,6 +3,7 @@ package com.cortex.api.service;
 import com.cortex.api.entity.BatchedEmailEvent;
 import com.cortex.api.entity.AccessLevel;
 import com.cortex.api.entity.Folder;
+import com.cortex.api.entity.Highlight;
 import com.cortex.api.entity.Notification;
 import com.cortex.api.entity.User;
 import com.cortex.api.repository.BatchedEmailEventRepository;
@@ -321,6 +322,25 @@ public class NotificationService {
      * Delete a notification from the DB and push a NOTIFICATION_DELETED WebSocket
      * event to all sessions for this user so every open tab removes it immediately.
      */
+    public void emitHighlightModificationNotification(User owner, User editor, Folder folder, Highlight highlight, String action) {
+        Notification n = new Notification();
+        n.setUser(owner);
+        String editorName = resolveDisplayName(editor);
+        n.setMessage(editorName + " " + action + " a highlight in folder \"" + folder.getName() + "\"");
+        n.setActionUrl("/dashboard/read/" + highlight.getId());
+        n.setType("FOLDER_ACTIVITY");
+        n.setActionType("HIGHLIGHT_MODIFIED");
+        n.setTargetEntityId(folder.getId());
+        n.setActorId(editor.getId());
+        n.setMetadata("{\"highlightId\":\"" + highlight.getId() + "\""
+                + ",\"folderId\":\"" + folder.getId() + "\""
+                + ",\"folderName\":\"" + escapeJson(folder.getName()) + "\""
+                + ",\"action\":\"" + escapeJson(action) + "\""
+                + ",\"editorName\":\"" + escapeJson(editorName) + "\"}");
+        n = notifRepo.save(n);
+        broadcast(owner, n);
+    }
+
     public void deleteAndBroadcastDeletion(Notification n, User recipient) {
         Long notifId = n.getId();
         notifRepo.delete(n);

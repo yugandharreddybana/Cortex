@@ -140,6 +140,14 @@ public class AccessRequestService {
     }
 
     /**
+     * Checks if the requester has a pending request for the given folder.
+     */
+    public boolean hasPendingRequest(Long requesterId, Long folderId) {
+        return requestRepo.findByRequesterIdAndFolderIdAndStatus(
+                requesterId, folderId, AccessRequestStatus.PENDING).isPresent();
+    }
+
+    /**
      * Responds to an access request.
      */
     @Transactional
