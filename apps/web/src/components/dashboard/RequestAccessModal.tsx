@@ -61,12 +61,15 @@ export function RequestAccessModal({ open, onOpenChange, folderId, folderName, c
     setIsSubmitting(true);
     useDashboardStore.getState().setGlobalLoading(true);
     try {
-      const success = await requestAccess(folderId, selectedRole);
-      if (success) {
+      const res = await requestAccess(folderId, selectedRole);
+      if (res.ok) {
         toast.success(`Request for ${selectedRole.toLowerCase()} access sent to owner.`);
         onOpenChange(false);
+      } else if (res.status === 409) {
+        toast.info("Request has been raised, we are waiting for the approval. You can ask the owner to approve it.");
+        onOpenChange(false);
       } else {
-        toast.error("Failed to send request. You might already have a pending request.");
+        toast.error("Failed to send request.");
       }
     } catch (err: any) {
       toast.error("An error occurred while sending the request.");

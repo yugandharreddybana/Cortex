@@ -168,6 +168,15 @@ public class FolderController {
         return ResponseEntity.ok(Map.of("ok", true));
     }
 
+    @GetMapping("/{id}/access-request-status")
+    public ResponseEntity<Map<String, Object>> getAccessRequestStatus(
+            Authentication auth,
+            @PathVariable Long id) {
+        Long requesterId = Long.parseLong(auth.getName());
+        boolean hasPending = accessRequestService.hasPendingRequest(requesterId, id);
+        return ResponseEntity.ok(Map.of("hasPendingRequest", hasPending));
+    }
+
     @PostMapping("/{id}/request-access")
     public ResponseEntity<Map<String, Object>> requestAccess(
             Authentication auth,

@@ -15,6 +15,7 @@ import com.cortex.api.repository.TagRepository;
 import com.cortex.api.repository.UserRepository;
 import com.cortex.api.service.OllamaService;
 import com.cortex.api.service.WebSocketService;
+import com.cortex.api.service.NotificationService;
 import jakarta.transaction.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -42,6 +43,7 @@ public class HighlightController {
     private final com.cortex.api.service.SecurityService securityService;
     private final OllamaService ollamaService;
     private final com.cortex.api.service.ReferralService referralService;
+    private final NotificationService notificationService;
 
     public HighlightController(HighlightRepository highlightRepo, UserRepository userRepo,
                                TagRepository tagRepo, HighlightTagRepository highlightTagRepo,
@@ -50,7 +52,8 @@ public class HighlightController {
                                com.cortex.api.service.FolderService folderService,
                                com.cortex.api.service.SecurityService securityService,
                                OllamaService ollamaService,
-                               com.cortex.api.service.ReferralService referralService) {
+                               com.cortex.api.service.ReferralService referralService,
+                               NotificationService notificationService) {
         this.highlightRepo = highlightRepo;
         this.userRepo = userRepo;
         this.tagRepo = tagRepo;
@@ -61,6 +64,7 @@ public class HighlightController {
         this.securityService = securityService;
         this.ollamaService = ollamaService;
         this.referralService = referralService;
+        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -118,6 +122,14 @@ public class HighlightController {
         highlightRepo.save(h);
         HighlightDTO updated = toDTO(h);
         webSocketService.sendToUser(auth.getName(), "/topic/highlights/updated", updated);
+
+        if (!h.getUser().getId().equals(user.getId()) && h.getFolderId() != null) {
+            folderRepo.findById(h.getFolderId()).ifPresent(f -> {
+                notificationService.emitHighlightModificationNotification(
+                        h.getUser(), user, f, h, "edited");
+            });
+        }
+
         return updated;
     }
 
@@ -137,6 +149,14 @@ public class HighlightController {
         highlightRepo.save(h);
         HighlightDTO patched = toDTO(h);
         webSocketService.sendToUser(auth.getName(), "/topic/highlights/updated", patched);
+
+        if (!h.getUser().getId().equals(user.getId()) && h.getFolderId() != null) {
+            folderRepo.findById(h.getFolderId()).ifPresent(f -> {
+                notificationService.emitHighlightModificationNotification(
+                        h.getUser(), user, f, h, "edited");
+            });
+        }
+
         return patched;
     }
 
@@ -160,6 +180,13 @@ public class HighlightController {
             // Editor deletion in shared folder: hide it for this user only
             h.getHiddenByUsers().add(user);
             highlightRepo.save(h);
+
+            if (h.getFolderId() != null) {
+                folderRepo.findById(h.getFolderId()).ifPresent(f -> {
+                    notificationService.emitHighlightModificationNotification(
+                            h.getUser(), user, f, h, "deleted");
+                });
+            }
         }
 
         // Notify connected clients to remove this highlight

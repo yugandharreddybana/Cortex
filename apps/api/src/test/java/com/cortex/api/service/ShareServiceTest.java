@@ -310,10 +310,13 @@ public class ShareServiceTest {
         verify(folderRepo, times(2)).save(any(Folder.class));
 
         // Verify highlight clone
-        verify(highlightRepo, times(1)).save(argThat(h ->
-            h.getUser().getId().equals(viewer.getId()) &&
-            "HL in folder".equals(h.getText())
-        ));
+        verify(highlightRepo, times(1)).saveAll(argThat(list -> {
+            if (list == null) return false;
+            java.util.List<Highlight> hlList = (java.util.List<Highlight>) list;
+            if (hlList.isEmpty()) return false;
+            Highlight h = hlList.get(0);
+            return h.getUser().getId().equals(viewer.getId()) && "HL in folder".equals(h.getText());
+        }));
     }
 
     // ── List Shared With Me ────────────────────────────────────────────────
