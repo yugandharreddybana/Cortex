@@ -128,10 +128,10 @@ export default function ReadingModePage() {
         <div className="text-center">
           <p className="text-sm text-white/40">Highlight not found</p>
           <button
-            onClick={() => router.push("/dashboard")}
+            onClick={() => router.back()}
             className="mt-3 text-xs text-accent hover:underline"
           >
-            ← Back to Dashboard
+            ← Back to previous page
           </button>
         </div>
       </div>
@@ -369,7 +369,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
       )}>
         {/* Back button */}
         <button
-          onClick={() => router.push("/dashboard")}
+          onClick={() => router.back()}
           className="flex items-center gap-1.5 text-xs text-white/40 hover:text-white/70 transition-colors bg-white/[0.03] px-3 py-1.5 rounded-lg border border-white/[0.06] hover:bg-white/[0.06]"
         >
           <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
