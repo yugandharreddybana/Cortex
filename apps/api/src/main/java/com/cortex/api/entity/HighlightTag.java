@@ -42,4 +42,26 @@ public class HighlightTag implements Serializable {
 
     public Tag getTag() { return tag; }
     public void setTag(Tag tag) { this.tag = tag; }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        HighlightTag that = (HighlightTag) o;
+        
+        Long hId = highlight != null ? highlight.getId() : null;
+        Long tId = tag != null ? tag.getId() : null;
+        Long thatHId = that.highlight != null ? that.highlight.getId() : null;
+        Long thatTId = that.tag != null ? that.tag.getId() : null;
+        
+        return java.util.Objects.equals(hId, thatHId) &&
+               java.util.Objects.equals(tId, thatTId);
+    }
+
+    @Override
+    public int hashCode() {
+        Long hId = highlight != null ? highlight.getId() : null;
+        Long tId = tag != null ? tag.getId() : null;
+        return java.util.Objects.hash(hId, tId);
+    }
 }

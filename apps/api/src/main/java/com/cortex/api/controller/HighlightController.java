@@ -1,5 +1,8 @@
 package com.cortex.api.controller;
 
+import com.cortex.api.dto.HighlightDTO;
+
+import com.cortex.api.dto.TagDTO;
 import com.cortex.api.entity.AccessLevel;
 import com.cortex.api.entity.Folder;
 import com.cortex.api.entity.Highlight;
@@ -8,15 +11,19 @@ import com.cortex.api.entity.LinkAccess;
 import com.cortex.api.entity.ResourceType;
 import com.cortex.api.entity.Tag;
 import com.cortex.api.entity.User;
+import com.cortex.api.entity.SharedLink;
+import com.cortex.api.entity.PermissionStatus;
+import com.cortex.api.entity.ResourcePermission;
 import com.cortex.api.repository.FolderRepository;
 import com.cortex.api.repository.HighlightRepository;
-import com.cortex.api.repository.HighlightTagRepository;
+import com.cortex.api.repository.ResourcePermissionRepository;
 import com.cortex.api.repository.TagRepository;
 import com.cortex.api.repository.UserRepository;
 import com.cortex.api.service.OllamaService;
 import com.cortex.api.service.WebSocketService;
 import com.cortex.api.service.NotificationService;
 import jakarta.transaction.Transactional;
+import jakarta.persistence.EntityManager;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -25,8 +32,11 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import reactor.core.scheduler.Schedulers;
 
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -36,7 +46,6 @@ public class HighlightController {
     private final HighlightRepository highlightRepo;
     private final UserRepository userRepo;
     private final TagRepository tagRepo;
-    private final HighlightTagRepository highlightTagRepo;
     private final FolderRepository folderRepo;
     private final WebSocketService webSocketService;
     private final com.cortex.api.service.FolderService folderService;
@@ -44,20 +53,24 @@ public class HighlightController {
     private final OllamaService ollamaService;
     private final com.cortex.api.service.ReferralService referralService;
     private final NotificationService notificationService;
+    private final ResourcePermissionRepository permissionRepo;
+    private final EntityManager em;
 
-    public HighlightController(HighlightRepository highlightRepo, UserRepository userRepo,
-                               TagRepository tagRepo, HighlightTagRepository highlightTagRepo,
+    public HighlightController(HighlightRepository highlightRepo,
+                               UserRepository userRepo,
+                               TagRepository tagRepo,
                                FolderRepository folderRepo,
                                WebSocketService webSocketService,
                                com.cortex.api.service.FolderService folderService,
                                com.cortex.api.service.SecurityService securityService,
                                OllamaService ollamaService,
                                com.cortex.api.service.ReferralService referralService,
-                               NotificationService notificationService) {
+                               NotificationService notificationService,
+                               ResourcePermissionRepository permissionRepo,
+                               EntityManager em) {
         this.highlightRepo = highlightRepo;
         this.userRepo = userRepo;
         this.tagRepo = tagRepo;
-        this.highlightTagRepo = highlightTagRepo;
         this.folderRepo = folderRepo;
         this.webSocketService = webSocketService;
         this.folderService = folderService;
@@ -65,22 +78,70 @@ public class HighlightController {
         this.ollamaService = ollamaService;
         this.referralService = referralService;
         this.notificationService = notificationService;
+        this.permissionRepo = permissionRepo;
+        this.em = em;
     }
 
     @Transactional
     @GetMapping
-    public List<HighlightDTO> list(Authentication auth) {
-        Long userId = Long.parseLong(auth.getName());
+    public List<HighlightDTO> list(Authentication auth, @RequestParam(defaultValue = "false") boolean includeDeleted) {
+        Long userId = Long.parseLong(java.util.Objects.requireNonNull(auth.getName()));
+        
+        if (includeDeleted) {
+            // Trash view: Own deleted + Hidden shared highlights
+            List<Highlight> deleted = highlightRepo.findDeletedByUserId(userId);
+            List<Highlight> hidden = highlightRepo.findHiddenByUserId(userId);
+            Set<Highlight> combined = new HashSet<>(deleted);
+            combined.addAll(hidden);
+            return combined.stream()
+                .sorted((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()))
+                .map(this::toDTO)
+                .toList();
+        }
+
+        // 1. Get all accessible folders (including inherited descendants of shared folders)
         List<Long> accessibleFolderIds = folderService.getFoldersByUserId(userId).stream()
                 .map(Folder::getId)
                 .toList();
 
-        if (accessibleFolderIds.isEmpty()) {
-            return highlightRepo.findByUserIdOrderByCreatedAtDesc(userId)
-                    .stream().map(this::toDTO).toList();
-        }
+        // 2. Get all DIRECTLY shared highlights (ResourcePermission.HIGHLIGHT)
+        List<Long> sharedHighlightIds = permissionRepo
+                .findByUserIdAndResourceTypeAndStatus(userId, SharedLink.ResourceType.HIGHLIGHT, PermissionStatus.ACCEPTED)
+                .stream().map(ResourcePermission::getResourceId).toList();
 
-        return highlightRepo.findByUserIdOrFolderIdsOrderByCreatedAtDesc(userId, accessibleFolderIds)
+        // 3. Fetch highlights: (owned) OR (in accessible folders) OR (direct shared highlights)
+        List<Highlight> highlights;
+        if (accessibleFolderIds.isEmpty() && sharedHighlightIds.isEmpty()) {
+            highlights = highlightRepo.findByUserIdOrderByCreatedAtDesc(userId);
+        } else {
+            highlights = highlightRepo.findByUserIdOrFolderIdsOrderByCreatedAtDesc(userId, accessibleFolderIds);
+            
+            if (!sharedHighlightIds.isEmpty()) {
+                List<Highlight> directlyShared = highlightRepo.findAllById(sharedHighlightIds);
+                Set<Long> existingIds = highlights.stream().map(Highlight::getId).collect(Collectors.toSet());
+                highlights = new ArrayList<>(highlights);
+                for (Highlight h : directlyShared) {
+                    if (!existingIds.contains(h.getId()) && !h.isDeleted()) {
+                        highlights.add(h);
+                    }
+                }
+                highlights.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
+            }
+        }
+        
+        return highlights.stream().map(this::toDTO).toList();
+    }
+
+    @GetMapping("/search")
+    public List<HighlightDTO> search(Authentication auth, @RequestParam String q) {
+        Long userId = Long.parseLong(auth.getName());
+        List<Long> accessibleFolderIds = folderService.getFoldersByUserId(userId).stream()
+                .map(Folder::getId).toList();
+        List<Long> sharedHighlightIds = permissionRepo
+                .findByUserIdAndResourceTypeAndStatus(userId, SharedLink.ResourceType.HIGHLIGHT, PermissionStatus.ACCEPTED)
+                .stream().map(ResourcePermission::getResourceId).toList();
+
+        return highlightRepo.searchHighlights(userId, accessibleFolderIds, sharedHighlightIds, q)
                 .stream().map(this::toDTO).toList();
     }
 
@@ -91,18 +152,37 @@ public class HighlightController {
         User user = resolveUser(auth);
         Highlight h = fromDTO(dto, user);
         h.setId(null); // Always use IDENTITY auto-increment for new highlights; ignore any client id
-        applyTags(h, dto.tags, user);
+        if (dto.tagIds != null) {
+            applyTags(h, dto.tagIds, user);
+        }
+
         highlightRepo.save(h);
         HighlightDTO saved = toDTO(h);
 
         if (h.getFolderId() != null && ("pro".equals(user.getTier()) || "premium".equals(user.getTier()) || "team".equals(user.getTier()))) {
-            triggerFolderSynthesis(h.getFolderId());
+            triggerFolderSynthesis(java.util.Objects.requireNonNull(h.getFolderId()));
         }
 
         referralService.processReferralForNewHighlight(user);
 
-        // Notify the owning user's connected clients (extension, other tabs)
+        // Notify folder members of the new highlight
+        Long folderId = h.getFolderId();
+        if (folderId != null) {
+            folderRepo.findById(java.util.Objects.requireNonNull(folderId)).ifPresent(f -> {
+                notificationService.notifyAllFolderMembers(
+                    user, f, h, "added a highlight", h.getText(), "HIGHLIGHT_MODIFIED"
+                );
+            });
+        }
+
+        // Notify THE OWNER's connected clients (extension, other tabs)
         webSocketService.sendToUser(auth.getName(), "/topic/highlights", saved);
+
+        // Notify ALL FOLDER MEMBERS via real-time broadcast for immediate UI refresh
+        if (folderId != null) {
+            notificationService.broadcastResourceActivity("folder", java.util.Objects.requireNonNull(folderId), "HIGHLIGHT_ADDED", saved);
+        }
+
         return ResponseEntity.status(HttpStatus.CREATED).body(saved);
     }
 
@@ -110,7 +190,7 @@ public class HighlightController {
     @PutMapping("/{id}")
     @PreAuthorize("@securityService.hasHighlightAccess(#id, 'EDITOR')")
     public HighlightDTO update(Authentication auth,
-                               @PathVariable Long id,
+                               @PathVariable long id,
                                @RequestBody HighlightDTO dto) {
         User user = resolveUser(auth);
         Highlight h = highlightRepo.findById(id)
@@ -118,15 +198,30 @@ public class HighlightController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
         applyDTO(h, dto, user);
-        applyTags(h, dto.tags, user);
+        if (dto.tagIds != null) {
+            applyTags(h, dto.tagIds, user);
+        }
+
         highlightRepo.save(h);
+        em.flush();
+        em.refresh(h);
         HighlightDTO updated = toDTO(h);
         webSocketService.sendToUser(auth.getName(), "/topic/highlights/updated", updated);
 
-        if (!h.getUser().getId().equals(user.getId()) && h.getFolderId() != null) {
-            folderRepo.findById(h.getFolderId()).ifPresent(f -> {
-                notificationService.emitHighlightModificationNotification(
-                        h.getUser(), user, f, h, "edited");
+        // Real-time broadcast to anyone viewing THIS highlight
+        notificationService.broadcastResourceActivity("highlight", id, "HIGHLIGHT_UPDATED", updated);
+        
+        // Real-time broadcast to the parent FOLDER for grid/sidebar sync
+        if (h.getFolderId() != null) {
+            notificationService.broadcastResourceActivity("folder", java.util.Objects.requireNonNull(h.getFolderId()), "HIGHLIGHT_UPDATED", updated);
+        }
+
+        // Notify all folder members of the update
+        if (h.getFolderId() != null) {
+            folderRepo.findById(java.util.Objects.requireNonNull(h.getFolderId())).ifPresent(f -> {
+                notificationService.notifyAllFolderMembers(
+                    user, f, h, "edited a highlight", h.getText(), "HIGHLIGHT_MODIFIED"
+                );
             });
         }
 
@@ -137,7 +232,7 @@ public class HighlightController {
     @PatchMapping("/{id}")
     @PreAuthorize("@securityService.hasHighlightAccess(#id, 'EDITOR')")
     public HighlightDTO patch(Authentication auth,
-                              @PathVariable Long id,
+                              @PathVariable long id,
                               @RequestBody HighlightDTO dto) {
         User user = resolveUser(auth);
         Highlight h = highlightRepo.findById(id)
@@ -145,26 +240,72 @@ public class HighlightController {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
         applyDTO(h, dto, user);
-        applyTags(h, dto.tags, user);
+        if (dto.tagIds != null) {
+            applyTags(h, dto.tagIds, user);
+        }
+
         highlightRepo.save(h);
+        em.flush();
+        em.refresh(h);
         HighlightDTO patched = toDTO(h);
         webSocketService.sendToUser(auth.getName(), "/topic/highlights/updated", patched);
 
-        if (!h.getUser().getId().equals(user.getId()) && h.getFolderId() != null) {
-            folderRepo.findById(h.getFolderId()).ifPresent(f -> {
-                notificationService.emitHighlightModificationNotification(
-                        h.getUser(), user, f, h, "edited");
+        // Real-time broadcast to anyone viewing THIS highlight
+        notificationService.broadcastResourceActivity("highlight", id, "HIGHLIGHT_UPDATED", patched);
+        
+        // Real-time broadcast to the parent FOLDER for grid/sidebar sync
+        if (h.getFolderId() != null) {
+            notificationService.broadcastResourceActivity("folder", java.util.Objects.requireNonNull(h.getFolderId()), "HIGHLIGHT_UPDATED", patched);
+        }
+
+        // Notify all folder members of the update
+        if (h.getFolderId() != null) {
+            folderRepo.findById(java.util.Objects.requireNonNull(h.getFolderId())).ifPresent(f -> {
+                notificationService.notifyAllFolderMembers(
+                    user, f, h, "patched a highlight", h.getText(), "HIGHLIGHT_MODIFIED"
+                );
             });
         }
 
         return patched;
     }
 
+    @PostMapping("/{id}/restore")
+    @Transactional
+    @PreAuthorize("@securityService.hasHighlightAccess(#id, 'EDITOR')")
+    public ResponseEntity<HighlightDTO> restore(Authentication auth, @PathVariable long id) {
+        Long userId = Long.parseLong(auth.getName());
+        Highlight h = highlightRepo.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        if (h.isDeleted() && h.getUser().getId().equals(userId)) {
+            // Owner restoring globally deleted
+            h.setDeleted(false);
+            h.setDeletedByUserId(null);
+            h.setDeletedAt(null);
+            highlightRepo.save(h);
+        } else {
+            // Non-owner unhiding
+            highlightRepo.unhideHighlight(id, userId);
+        }
+
+        HighlightDTO restored = toDTO(h);
+        webSocketService.sendToUser(auth.getName(), "/topic/highlights/updated", restored);
+        notificationService.broadcastResourceActivity("highlight", id, "HIGHLIGHT_RESTORED", restored);
+        
+        if (h.getFolderId() != null) {
+            triggerFolderSynthesis(h.getFolderId());
+            notificationService.broadcastResourceActivity("folder", h.getFolderId(), "HIGHLIGHT_RESTORED", restored);
+        }
+
+        return ResponseEntity.ok(restored);
+    }
+
     @DeleteMapping("/{id}")
     @Transactional
     @PreAuthorize("@securityService.hasHighlightAccess(#id, 'EDITOR')")
     public ResponseEntity<Map<String, Boolean>> delete(Authentication auth,
-                                                        @PathVariable Long id) {
+                                                        @PathVariable long id) {
         Long userId = Long.parseLong(auth.getName());
         User user = resolveUser(auth);
         Highlight h = highlightRepo.findById(id)
@@ -180,17 +321,24 @@ public class HighlightController {
             // Editor deletion in shared folder: hide it for this user only
             h.getHiddenByUsers().add(user);
             highlightRepo.save(h);
+        }
 
-            if (h.getFolderId() != null) {
-                folderRepo.findById(h.getFolderId()).ifPresent(f -> {
-                    notificationService.emitHighlightModificationNotification(
-                            h.getUser(), user, f, h, "deleted");
-                });
-            }
+        // Re-trigger synthesis for the folder
+        if (h.getFolderId() != null) {
+            triggerFolderSynthesis(h.getFolderId());
         }
 
         // Notify connected clients to remove this highlight
         webSocketService.sendToUser(auth.getName(), "/topic/highlights/deleted", id);
+        
+        // Real-time broadcast for highlight deletion (triggers redirect for readers)
+        notificationService.broadcastResourceActivity("highlight", id, "HIGHLIGHT_DELETED", Map.of("id", id));
+        
+        // Real-time broadcast for folder grid removal
+        if (h.getFolderId() != null) {
+            notificationService.broadcastResourceActivity("folder", java.util.Objects.requireNonNull(h.getFolderId()), "HIGHLIGHT_DELETED", Map.of("id", id));
+        }
+
         return ResponseEntity.ok(Map.of("ok", true));
     }
 
@@ -206,17 +354,32 @@ public class HighlightController {
                 .map(Folder::getId)
                 .toList();
 
-        // Get all highlights (including deleted) for initial state
-        Map<Long, Highlight> existing = new java.util.HashMap<>();
-        if (accessibleFolderIds.isEmpty()) {
-            highlightRepo.findAllByUserIdInclandDeleted(userId)
-                    .forEach(h -> existing.put(h.getId(), h));
-        } else {
-            highlightRepo.findAllByUserIdOrFolderIdsInclandDeleted(userId, accessibleFolderIds)
-                    .forEach(h -> existing.put(h.getId(), h));
-        }
+        // 2. Get all DIRECTLY shared highlights (ResourcePermission.HIGHLIGHT)
+        List<Long> sharedHighlightIds = permissionRepo
+                .findByUserIdAndResourceTypeAndStatus(userId, SharedLink.ResourceType.HIGHLIGHT, PermissionStatus.ACCEPTED)
+                .stream().map(ResourcePermission::getResourceId).toList();
 
-        java.util.Set<Long> incomingIds = new java.util.HashSet<>();
+        // 3. Get all highlights (including deleted) for initial state
+        Map<Long, Highlight> existing = new java.util.HashMap<>();
+        List<Highlight> initialSearchBase;
+        if (accessibleFolderIds.isEmpty() && sharedHighlightIds.isEmpty()) {
+            initialSearchBase = highlightRepo.findAllByUserIdInclandDeleted(userId);
+        } else {
+            initialSearchBase = highlightRepo.findAllByUserIdOrFolderIdsInclandDeleted(userId, accessibleFolderIds);
+            if (!sharedHighlightIds.isEmpty()) {
+                List<Highlight> directlyShared = highlightRepo.findAllById(sharedHighlightIds);
+                Set<Long> existingIds = initialSearchBase.stream().map(Highlight::getId).collect(Collectors.toSet());
+                initialSearchBase = new ArrayList<>(initialSearchBase);
+                for (Highlight h : directlyShared) {
+                    if (!existingIds.contains(h.getId())) {
+                        initialSearchBase.add(h);
+                    }
+                }
+            }
+        }
+        initialSearchBase.forEach(h -> existing.put(h.getId(), h));
+
+        Set<Long> incomingIds = new HashSet<>();
         boolean hasNewHighlight = false;
 
         for (HighlightDTO dto : dtos) {
@@ -226,7 +389,10 @@ public class HighlightController {
                 // New highlight from client
                 h = fromDTO(dto, user);
                 h.setId(null); // Ensure IDENTITY auto-generation
-                applyTags(h, dto.tags, user);
+                if (dto.tagIds != null) {
+                    applyTags(h, dto.tagIds, user);
+                }
+
                 highlightRepo.save(h);
                 hasNewHighlight = true;
             } else {
@@ -237,7 +403,10 @@ public class HighlightController {
 
                 // Update existing (including soft delete status)
                 applyDTO(h, dto, user);
-                applyTags(h, dto.tags, user);
+                if (dto.tagIds != null) {
+                    applyTags(h, dto.tagIds, user);
+                }
+
                 highlightRepo.save(h);
             }
         }
@@ -245,9 +414,6 @@ public class HighlightController {
         if (hasNewHighlight) {
             referralService.processReferralForNewHighlight(user);
         }
-
-        // Upsert only — do NOT delete server highlights missing from the payload.
-        // The client may send a partial set (e.g. offline-created items only).
 
         // AI Feature 3: Synthesize updated folders
         dtos.stream().filter(d -> d.folderId != null).map(d -> d.folderId).distinct().forEach(folderId -> {
@@ -257,13 +423,23 @@ public class HighlightController {
         });
 
         // Return all highlights (including soft-deleted ones) so client can sync its full state
-        if (accessibleFolderIds.isEmpty()) {
-            return highlightRepo.findAllByUserIdInclandDeleted(userId)
-                    .stream().map(this::toDTO).toList();
+        List<Highlight> finalHighlights;
+        if (accessibleFolderIds.isEmpty() && sharedHighlightIds.isEmpty()) {
+            finalHighlights = highlightRepo.findAllByUserIdInclandDeleted(userId);
         } else {
-            return highlightRepo.findAllByUserIdOrFolderIdsInclandDeleted(userId, accessibleFolderIds)
-                    .stream().map(this::toDTO).toList();
+            finalHighlights = highlightRepo.findAllByUserIdOrFolderIdsInclandDeleted(userId, accessibleFolderIds);
+            if (!sharedHighlightIds.isEmpty()) {
+                List<Highlight> directlyShared = highlightRepo.findAllById(sharedHighlightIds);
+                Set<Long> existingIds = finalHighlights.stream().map(Highlight::getId).collect(Collectors.toSet());
+                finalHighlights = new ArrayList<>(finalHighlights);
+                for (Highlight h : directlyShared) {
+                    if (!existingIds.contains(h.getId())) {
+                        finalHighlights.add(h);
+                    }
+                }
+            }
         }
+        return finalHighlights.stream().map(this::toDTO).toList();
     }
 
     // ── Helpers ──
@@ -302,8 +478,6 @@ public class HighlightController {
         dto.topic = h.getTopic();
         dto.topicColor = h.getTopicColor();
         dto.savedAt = h.getSavedAt();
-        // Look up folder name directly from DB using folderId — avoids the stale
-        // lazy @ManyToOne proxy that remains set to the OLD folder after setFolderId().
         dto.folderId = h.getFolderId();
         if (h.getFolderId() != null) {
             dto.folder = folderRepo.findById(h.getFolderId())
@@ -313,10 +487,16 @@ public class HighlightController {
             dto.folder = null;
         }
         dto.note = h.getNote();
-        // Extract tag IDs from the junction table
+        
+        // Populate full TagDTO objects so they are visible to all users (collaborative tagging)
         dto.tags = h.getHighlightTags().stream()
-                .map(ht -> String.valueOf(ht.getTag().getId()))
+                .map(ht -> new TagDTO(
+                    ht.getTag().getId(),
+                    ht.getTag().getName(),
+                    ht.getTag().getColor()
+                ))
                 .toList();
+
         dto.isCode = h.isCode();
         dto.isFavorite = h.isFavorite();
         dto.isArchived = h.isArchived();
@@ -355,6 +535,10 @@ public class HighlightController {
             if (dto.folderId <= 0L) {
                 h.setFolderId(null);
             } else {
+                // SECURITY: Verify user has access to target folder before moving
+                if (!securityService.hasFolderAccess(dto.folderId, "EDITOR")) {
+                    throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Target folder access denied");
+                }
                 h.setFolderId(folderRepo.existsById(dto.folderId) ? dto.folderId : null);
             }
         }
@@ -457,34 +641,5 @@ public class HighlightController {
         }
     }
 
-    public static class HighlightDTO {
-        public Long id;
-        public String text;
-        public String source;
-        public String url;
-        public String topic;
-        public String topicColor;
-        public String savedAt;
-        public String folder;
-        public Long folderId;
-        public String note;
-        public List<String> tags;
-        // Use Boolean wrappers (not primitives) so Jackson deserializes missing
-        // fields as null — preventing false-overwrite on partial updates (e.g.
-        // moveHighlight only sends folderId, so all booleans should stay untouched).
-        public Boolean isCode;
-        public Boolean isFavorite;
-        public Boolean isArchived;
-        public Boolean isPinned;
-        public String highlightColor;
-        public Boolean isAI;
-        public String chatName;
-        public String chatUrl;
-        public String resourceType;
-        public Integer videoTimestamp;
-        public String linkAccess;      // RESTRICTED, PUBLIC
-        public String defaultLinkRole; // VIEWER, COMMENTER, EDITOR
-        // Soft deletion support
-        public Boolean isDeleted;     // Whether the highlight is soft-deleted
-    }
+    // Removed nested HighlightDTO class (moved to com.cortex.api.dto.HighlightDTO)
 }

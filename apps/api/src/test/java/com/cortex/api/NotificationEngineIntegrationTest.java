@@ -4,7 +4,9 @@ import com.cortex.api.entity.BatchedEmailEvent;
 import com.cortex.api.entity.Notification;
 import com.cortex.api.entity.User;
 import com.cortex.api.repository.BatchedEmailEventRepository;
+import com.cortex.api.repository.FolderRepository;
 import com.cortex.api.repository.NotificationRepository;
+import com.cortex.api.repository.ResourcePermissionRepository;
 import com.cortex.api.repository.UserRepository;
 import com.cortex.api.service.EmailBatchProcessor;
 import com.cortex.api.service.EmailService;
@@ -249,7 +251,10 @@ public class NotificationEngineIntegrationTest {
                 SimpMessagingTemplate messaging,
                 EmailService emailService
         ) {
-            return new NotificationService(notifRepo, batchRepo, messaging, emailService);
+            return new NotificationService(
+                notifRepo, batchRepo, messaging, emailService, 
+                mock(ResourcePermissionRepository.class),
+                mock(FolderRepository.class));
         }
 
         @Bean

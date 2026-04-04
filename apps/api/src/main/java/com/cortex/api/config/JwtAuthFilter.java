@@ -36,21 +36,49 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             System.out.println("[DEBUG-FILTER] Received Authorization Header: " + (header != null ? header.substring(0, Math.min(20, header.length())) + "..." : "NULL"));
         }
 
-        // Fallback to query parameter for WebSockets or environments that can't send headers easily
-        if (header == null) {
-            String tokenParam = request.getParameter("token");
-            if (tokenParam != null) {
-                header = "Bearer " + tokenParam;
+        // Fallback to cookie if header is still null
+        if (header == null && request.getCookies() != null) {
+            for (jakarta.servlet.http.Cookie cookie : request.getCookies()) {
+                if ("cortex_session".equals(cookie.getName())) {
+                    header = "Bearer " + cookie.getValue();
+                    break;
+                }
             }
         }
 
         if (header != null && header.startsWith("Bearer ")) {
-            String token = header.substring(7);
-            if (jwtService.isValid(token)) {
-                String userId = jwtService.getSubject(token);
-                var auth = new UsernamePasswordAuthenticationToken(
-                        userId, null, List.of());
-                SecurityContextHolder.getContext().setAuthentication(auth);
+            String token = header.substring(7).trim();
+            
+            // Handle optional quotes that browsers or proxies might wrap around the cookie value
+            if (token.startsWith("\"") && token.endsWith("\"")) {
+                token = token.substring(1, token.length() - 1);
+            }
+
+            // Robust check for Iron Session (Next.js) tokens which are NOT JWTs
+            if (token.startsWith("Fe26.")) {
+                 System.out.println("[DEBUG-JWT] Session Bypass: Detected Iron Session token (Fe26). Skipping JWT processing.");
+                 filterChain.doFilter(request, response);
+                 return;
+            }
+
+            // Structural check: A valid JWS JWT must have exactly two periods (header.payload.signature)
+            long dotCount = token.chars().filter(ch -> ch == '.').count();
+            
+            if (dotCount == 2 && jwtService.isValid(token)) {
+                try {
+                    String userId = jwtService.getSubject(token);
+                    var auth = new UsernamePasswordAuthenticationToken(
+                            userId, null, List.of());
+                    SecurityContextHolder.getContext().setAuthentication(auth);
+                } catch (Exception e) {
+                    System.err.println("[DEBUG-JWT] Failed to set authentication for token " + 
+                        (token.length() > 10 ? token.substring(0, 10) + "..." : token) + 
+                        ": " + e.getMessage());
+                }
+            } else if (dotCount != 2 && !token.isEmpty()) {
+                // Log malformation strictly for diagnostics
+                System.out.println("[DEBUG-JWT] Structural Rejection: Found " + dotCount + 
+                    " dots. Token prefix: " + (token.length() > 20 ? token.substring(0, 20) + "..." : token));
             }
         }
 

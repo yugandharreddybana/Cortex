@@ -50,13 +50,16 @@ public class JwtService {
             return claims.getExpiration().after(new Date());
         } catch (JwtException | IllegalArgumentException e) {
             System.err.println("[DEBUG-JWT] Token validation failed: " + e.getMessage());
-            e.printStackTrace();
             return false;
         }
     }
 
     public String getSubject(String token) {
-        return parseToken(token).getSubject();
+        try {
+            return parseToken(token).getSubject();
+        } catch (Exception e) {
+            return null;
+        }
     }
 
     private String buildToken(String subject, Map<String, Object> claims, long expMs) {

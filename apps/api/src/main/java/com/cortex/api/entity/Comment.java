@@ -13,9 +13,9 @@ import jakarta.persistence.Table;
 import java.time.Instant;
 
 /**
- * Comment entity: Immutable comments on highlights.
- * Once created, cannot be edited or deleted.
- * Only users with OWNER or EDITOR access can post comments.
+ * Comment entity: Represents a user contribution to a highlight.
+ * Comments can be updated by their authors and moderated (deleted) by authorized users.
+ * Requires at least COMMENTER access on the resource.
  */
 @Entity
 @Table(name = "comments")

@@ -21,11 +21,16 @@ public class ShareController {
     private final ShareService shareService;
     private final SecurityService securityService;
     private final UserRepository userRepo;
+    private final com.cortex.api.service.PermissionService permissionService;
 
-    public ShareController(ShareService shareService, SecurityService securityService, UserRepository userRepo) {
+    public ShareController(ShareService shareService, 
+                           SecurityService securityService, 
+                           UserRepository userRepo,
+                           com.cortex.api.service.PermissionService permissionService) {
         this.shareService = shareService;
         this.securityService = securityService;
         this.userRepo = userRepo;
+        this.permissionService = permissionService;
     }
 
     /** POST /api/v1/share — create a share link */
@@ -91,6 +96,26 @@ public class ShareController {
 
         return shareService.buildResourcePayload(resourceId, resourceType);
     }
+ 
+    /** POST /api/v1/share/invite — bulk invite collaborators */
+    @PostMapping("/invite")
+    public ResponseEntity<InviteResponse> invite(Authentication auth,
+                                                  @RequestBody InviteRequest req) {
+        User granter = resolveUser(auth);
+        SharedLink.ResourceType type = SharedLink.ResourceType.valueOf(req.resourceType.toUpperCase());
+ 
+        // Security check: Only owners can invite
+        if (!securityService.isOwner(req.resourceId, type)) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Only the owner can invite collaborators");
+        }
+ 
+        List<com.cortex.api.service.PermissionService.InviteResult> results = 
+                permissionService.bulkInvite(granter, req.emails, req.resourceId, type, req.accessLevel);
+ 
+        InviteResponse resp = new InviteResponse();
+        resp.results = results;
+        return ResponseEntity.ok(resp);
+    }
 
     // ── Helpers ──
 
@@ -102,5 +127,17 @@ public class ShareController {
     public static class ShareRequest {
         public String resourceType;
         public Long resourceId;
+    }
+ 
+    public static class InviteRequest {
+        public List<String> emails;
+        public Long resourceId;
+        public String resourceType;
+        public String accessLevel;
+        public String resourceTitle;
+    }
+ 
+    public static class InviteResponse {
+        public List<com.cortex.api.service.PermissionService.InviteResult> results;
     }
 }

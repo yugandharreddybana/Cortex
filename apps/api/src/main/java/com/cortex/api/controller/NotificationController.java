@@ -88,12 +88,10 @@ public class NotificationController {
 
     /** PUT /api/v1/notifications/read-all — mark all as read */
     @PutMapping("/read-all")
+    @jakarta.transaction.Transactional
     public ResponseEntity<Map<String, Boolean>> markAllRead(Authentication auth) {
         Long userId = Long.parseLong(auth.getName());
-        List<Notification> unread = notificationRepo.findByUserIdOrderByCreatedAtDesc(userId)
-                .stream().filter(n -> !n.isRead()).toList();
-        unread.forEach(n -> n.setRead(true));
-        notificationRepo.saveAll(unread);
+        notificationRepo.markAllReadByUserId(userId);
         return ResponseEntity.ok(Map.of("ok", true));
     }
 

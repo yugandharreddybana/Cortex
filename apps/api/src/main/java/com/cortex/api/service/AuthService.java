@@ -211,6 +211,14 @@ public class AuthService {
         return new AuthResponse(token, toDTO(user));
     }
 
+    public UserResponseDTO getUserProfile(Long userId) {
+        if (userId == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid session");
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "User not found"));
+        return toDTO(user);
+    }
+
     private Map<String, Object> buildClaims(User user) {
         Map<String, Object> claims = new java.util.HashMap<>();
         claims.put("email", user.getEmail());

@@ -8,11 +8,11 @@ spring:
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:postgres}
     hikari:
-      minimum-idle: 1          
-      maximum-pool-size: 10
-      idle-timeout: 10000      
-      max-lifetime: 30000     
-      connection-timeout: 10000 
+      minimum-idle: 2
+      maximum-pool-size: 20
+      idle-timeout: 30000
+      max-lifetime: 1800000
+      connection-timeout: 20000
       keepalive-time: 60000
       connection-test-query: SELECT 1
       data-source-properties:
@@ -53,11 +53,11 @@ spring:
 
 cortex:
   jwt:
-    secret: ${CORTEX_JWT_SECRET:${JWT_SECRET:your-256-bit-secret}}
+    secret: ${CORTEX_JWT_SECRET}      # Removed insecure fallback: your-256-bit-secret
     expiration-ms: 604800000        # 7 days
     extension-expiration-ms: 2592000000  # 30 days
   encryption:
-    key: ${CORTEX_ENCRYPTION_KEY:${ENCRYPTION_KEY:Kclxcd4KRneZx+7tVEkvp0gVRzxwz0/3Ml2KOA3zxmk=}}
+    key: ${CORTEX_ENCRYPTION_KEY}     # Removed insecure fallback: Kclxcd...
   stripe:
     api-key: ${STRIPE_API_KEY:sk_test_123}
     webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_123}

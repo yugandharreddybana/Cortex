@@ -85,7 +85,7 @@ export function DocsShareModal({
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => {
         const normalized = Array.isArray(data)
-          ? data.map((p: any) => ({
+          ? data.map((p: Permission) => ({
               ...p,
               id: String(p.id),
               userId: String(p.userId),

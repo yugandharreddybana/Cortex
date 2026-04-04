@@ -16,7 +16,9 @@ import { toast } from "sonner";
 import { RequestAccessModal } from "@/components/dashboard/RequestAccessModal";
 import { ManageAccessModal } from "@/components/dashboard/ManageAccessModal";
 import { DeleteAlertDialog } from "@/components/dashboard/DeleteAlertDialog";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@cortex/ui";
 import { ShieldAlert } from "lucide-react";
+import { useResourceSync } from "@/hooks/useResourceSync";
 
 const ROLE_INFO: Record<string, { label: string; desc: string; color: string }> = {
   OWNER: { label: "Owner", desc: "You own this folder and can manage all contents and settings.", color: "text-blue-400 bg-blue-500/10 border-blue-500/20" },
@@ -77,6 +79,46 @@ export default function FolderPage() {
     }
   }, [folder?.id, effectiveRole]);
 
+  const handleResourceEvent = React.useCallback((event: any) => {
+    const { type, data } = event;
+    
+    switch (type) {
+      case "HIGHLIGHT_ADDED":
+        useDashboardStore.setState((s: any) => {
+          if (s.highlights.some((h: any) => h.id === String(data.id))) return s;
+          return { highlights: [data, ...s.highlights] };
+        });
+        break;
+      case "HIGHLIGHT_UPDATED":
+        useDashboardStore.setState((s: any) => ({
+          highlights: s.highlights.map((h: any) => h.id === String(data.id) ? { ...h, ...data } : h)
+        }));
+        break;
+      case "HIGHLIGHT_DELETED":
+        useDashboardStore.setState((s: any) => ({
+          highlights: s.highlights.filter((h: any) => h.id !== String(data.id))
+        }));
+        break;
+      case "HIGHLIGHT_RESTORED":
+        useDashboardStore.setState((s: any) => {
+          if (s.highlights.some((h: any) => h.id === String(data.id))) return s;
+          return { highlights: [data, ...s.highlights] };
+        });
+        break;
+      case "FOLDER_UPDATED":
+        useDashboardStore.setState((s: any) => ({
+          folders: s.folders.map((f: any) => f.id === String(data.id) ? { ...f, ...data } : f)
+        }));
+        break;
+      case "FOLDER_DELETED":
+        toast.error("This folder has been deleted by its owner.");
+        router.push("/dashboard");
+        break;
+    }
+  }, [router]);
+
+  useResourceSync("folder", id, handleResourceEvent);
+
   const handleDelete = async () => {
     if (!folder) return;
     setIsDeleting(true);
@@ -97,7 +139,7 @@ export default function FolderPage() {
 
   const folderHighlights = useDashboardStore(
     useShallow((s) =>
-      s.highlights.filter((h) => h.folderId === id && !h.isArchived && !h.isDeleted),
+      s.highlights.filter((h) => String(h.folderId) === String(id) && !h.isArchived && !h.isDeleted),
     ),
   );
 
@@ -213,22 +255,32 @@ export default function FolderPage() {
           {folder && effectiveRole !== "OWNER" && (
             <div className="flex items-center gap-2">
               {(effectiveRole === "VIEWER" || effectiveRole === "COMMENTER") && (
-                <button
-                  onClick={() => {
-                    if (!hasPendingRequest) setRequestAccessOpen(true);
-                  }}
-                  disabled={hasPendingRequest}
-                  title={hasPendingRequest ? "Request has been raised, we are waiting for the approval, ask the owner to approve it for the requested access." : undefined}
-                  className={cn(
-                    "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border",
-                    hasPendingRequest
-                      ? "text-accent/50 border-accent/10 cursor-not-allowed"
-                      : "text-accent hover:text-accent/80 hover:bg-accent/10 border-accent/20"
-                  )}
-                >
-                  <ShieldAlert className="w-3.5 h-3.5" />
-                  {hasPendingRequest ? "Request Raised" : "Request Higher Access"}
-                </button>
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <button
+                        onClick={() => {
+                          if (!hasPendingRequest) setRequestAccessOpen(true);
+                        }}
+                        disabled={hasPendingRequest}
+                        className={cn(
+                          "flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-all border",
+                          hasPendingRequest
+                            ? "text-accent/40 border-accent/10 cursor-not-allowed bg-accent/[0.02]"
+                            : "text-accent hover:text-accent/80 hover:bg-accent/10 border-accent/20"
+                        )}
+                      >
+                        <ShieldAlert className="w-3.5 h-3.5" />
+                        {hasPendingRequest ? "Request Raised" : "Request Higher Access"}
+                      </button>
+                    </TooltipTrigger>
+                    {hasPendingRequest && (
+                      <TooltipContent side="top">
+                        <p>Waiting for the approval</p>
+                      </TooltipContent>
+                    )}
+                  </Tooltip>
+                </TooltipProvider>
               )}
 
               <button

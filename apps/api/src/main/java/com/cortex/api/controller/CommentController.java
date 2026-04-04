@@ -1,16 +1,16 @@
 package com.cortex.api.controller;
 
-import com.cortex.api.entity.Comment;
+import com.cortex.api.dto.CommentDTO;
+import com.cortex.api.dto.ReactionDTO;
 import com.cortex.api.service.CommentService;
-import jakarta.transaction.Transactional;
+import com.cortex.api.service.CommentReactionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import java.time.Instant;
 import java.util.List;
 
 @RestController
@@ -20,9 +20,11 @@ public class CommentController {
     private static final Logger log = LoggerFactory.getLogger(CommentController.class);
 
     private final CommentService commentService;
-
-    public CommentController(CommentService commentService) {
+    private final CommentReactionService reactionService;
+ 
+    public CommentController(CommentService commentService, CommentReactionService reactionService) {
         this.commentService = commentService;
+        this.reactionService = reactionService;
     }
 
     /**
@@ -30,22 +32,18 @@ public class CommentController {
      * Fetch all comments on a highlight.
      */
     @GetMapping
-    @Transactional
+    @PreAuthorize("@securityService.hasHighlightAccess(#highlightId, 'VIEWER')")
     public List<CommentDTO> getComments(Authentication auth, @PathVariable Long highlightId) {
         log.info("[Comment] Fetching comments for highlight {}", highlightId);
-        return commentService.getCommentsByHighlight(highlightId)
-                .stream()
-                .map(this::toDTO)
-                .toList();
+        return commentService.getCommentsDTOByHighlight(highlightId);
     }
 
     /**
      * POST /api/v1/highlights/{highlightId}/comments
      * Add a comment to a highlight.
-     * RBAC: Only EDITOR and OWNER can comment (403 for VIEWER).
      */
     @PostMapping
-    @Transactional
+    @PreAuthorize("@securityService.hasHighlightAccess(#highlightId, 'COMMENTER')")
     public ResponseEntity<CommentDTO> addComment(
             Authentication auth,
             @PathVariable Long highlightId,
@@ -53,14 +51,8 @@ public class CommentController {
     ) {
         Long userId = Long.parseLong(auth.getName());
         log.info("[Comment] User {} adding comment to highlight {}", userId, highlightId);
-
-        try {
-            Comment comment = commentService.addComment(highlightId, request.text, userId);
-            return ResponseEntity.status(HttpStatus.CREATED).body(toDTO(comment));
-        } catch (Exception e) {
-            log.error("[Comment] Error adding comment", e);
-            throw e;
-        }
+        CommentDTO comment = commentService.addComment(highlightId, request.text, userId);
+        return ResponseEntity.status(HttpStatus.CREATED).body(comment);
     }
 
     /**
@@ -68,6 +60,7 @@ public class CommentController {
      * Update an existing comment.
      */
     @PutMapping("/{commentId}")
+    @PreAuthorize("@securityService.hasHighlightAccess(#highlightId, 'COMMENTER')")
     public ResponseEntity<CommentDTO> updateComment(
             Authentication auth,
             @PathVariable Long highlightId,
@@ -76,22 +69,16 @@ public class CommentController {
     ) {
         Long userId = Long.parseLong(auth.getName());
         log.info("[Comment] User {} updating comment {}", userId, commentId);
-
-        try {
-            Comment updated = commentService.updateComment(commentId, userId, request.text);
-            return ResponseEntity.ok(toDTO(updated));
-        } catch (Exception e) {
-            log.error("[Comment] Error updating comment", e);
-            throw e;
-        }
+        CommentDTO updated = commentService.updateComment(commentId, userId, request.text);
+        return ResponseEntity.ok(updated);
     }
 
     /**
      * DELETE /api/v1/highlights/{highlightId}/comments/{commentId}
-     * Delete a comment (author or highlight owner only).
+     * Delete a comment.
      */
     @DeleteMapping("/{commentId}")
-    @Transactional
+    @PreAuthorize("@securityService.hasHighlightAccess(#highlightId, 'VIEWER')")
     public ResponseEntity<Void> deleteComment(
             Authentication auth,
             @PathVariable Long highlightId,
@@ -102,19 +89,21 @@ public class CommentController {
         commentService.deleteComment(commentId, userId);
         return ResponseEntity.noContent().build();
     }
-
-    // ── Helpers ──
-
-    private CommentDTO toDTO(Comment c) {
-        CommentDTO dto = new CommentDTO();
-        dto.id = c.getId();
-        dto.highlightId = c.getHighlight().getId();
-        dto.authorId = c.getAuthor().getId();
-        dto.authorEmail = c.getAuthor().getEmail();
-        dto.authorFullName = c.getAuthor().getFullName();
-        dto.text = c.getText();
-        dto.createdAt = c.getCreatedAt();
-        return dto;
+ 
+    /**
+     * POST /api/v1/highlights/{highlightId}/comments/{commentId}/reactions
+     * Toggle a reaction on a comment.
+     */
+    @PostMapping("/{commentId}/reactions")
+    @PreAuthorize("@securityService.hasHighlightAccess(#highlightId, 'VIEWER')")
+    public List<ReactionDTO> toggleReaction(
+            Authentication auth,
+            @PathVariable Long highlightId,
+            @PathVariable Long commentId,
+            @RequestBody ReactionRequest request
+    ) {
+        Long userId = Long.parseLong(auth.getName());
+        return reactionService.toggleReaction(commentId, userId, request.emoji);
     }
 
     // ── DTOs ──
@@ -122,14 +111,8 @@ public class CommentController {
     public static class CommentRequest {
         public String text;
     }
-
-    public static class CommentDTO {
-        public Long id;
-        public Long highlightId;
-        public Long authorId;
-        public String authorEmail;
-        public String authorFullName;
-        public String text;
-        public Instant createdAt;
+ 
+    public static class ReactionRequest {
+        public String emoji;
     }
 }

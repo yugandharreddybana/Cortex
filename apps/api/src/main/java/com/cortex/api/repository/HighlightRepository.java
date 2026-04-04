@@ -18,11 +18,23 @@ public interface HighlightRepository extends JpaRepository<Highlight, Long> {
     @Query("SELECT h FROM Highlight h LEFT JOIN FETCH h.highlightTags t WHERE h.user.id = :userId AND h.isDeleted = false AND NOT EXISTS (SELECT 1 FROM h.hiddenByUsers u WHERE u.id = :userId) ORDER BY h.createdAt DESC")
     List<Highlight> findByUserIdOrderByCreatedAtDesc(@Param("userId") Long userId);
 
-    /**
-     * Find all highlights for a user or in specified folders, excluding soft-deleted ones.
-     */
     @Query("SELECT h FROM Highlight h WHERE (h.user.id = :userId OR (h.folderId IN :folderIds AND h.folderId IS NOT NULL)) AND h.isDeleted = false AND NOT EXISTS (SELECT 1 FROM h.hiddenByUsers u WHERE u.id = :userId) ORDER BY h.createdAt DESC")
     List<Highlight> findByUserIdOrFolderIdsOrderByCreatedAtDesc(@Param("userId") Long userId, @Param("folderIds") List<Long> folderIds);
+
+    /**
+     * Search highlights by query string across owned and shared content.
+     */
+    @Query("SELECT h FROM Highlight h WHERE (h.user.id = :userId OR (h.folderId IN :folderIds AND h.folderId IS NOT NULL) OR (h.id IN :sharedIds)) " +
+           "AND h.isDeleted = false AND NOT EXISTS (SELECT 1 FROM h.hiddenByUsers u WHERE u.id = :userId) " +
+           "AND (LOWER(h.text) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(h.source) LIKE LOWER(CONCAT('%', :query, '%')) OR LOWER(h.note) LIKE LOWER(CONCAT('%', :query, '%'))) " +
+           "ORDER BY h.createdAt DESC")
+    List<Highlight> searchHighlights(@Param("userId") Long userId, @Param("folderIds") List<Long> folderIds, @Param("sharedIds") List<Long> sharedIds, @Param("query") String query);
+
+    /**
+     * Find highlights hidden by a specific user (collaborator trash).
+     */
+    @Query("SELECT h FROM Highlight h JOIN h.hiddenByUsers u WHERE u.id = :userId AND h.isDeleted = false ORDER BY h.createdAt DESC")
+    List<Highlight> findHiddenByUserId(@Param("userId") Long userId);
 
     /**
      * Find a specific highlight by ID and user ID, only if it's not deleted.
@@ -75,6 +87,14 @@ public interface HighlightRepository extends JpaRepository<Highlight, Long> {
     void restoreByIdAndUserId(@Param("id") Long id, @Param("userId") Long userId);
 
     /**
+     * Un-hide a highlight for a collaborator.
+     */
+    @Modifying
+    @Transactional
+    @Query(value = "DELETE FROM hidden_highlights WHERE highlight_id = :id AND user_id = :userId", nativeQuery = true)
+    void unhideHighlight(@Param("id") Long id, @Param("userId") Long userId);
+
+    /**
      * Find all non-deleted highlights belonging to a specific folder.
      * Used by the deep-clone operation to copy highlights into a new folder.
      */
@@ -103,6 +123,19 @@ public interface HighlightRepository extends JpaRepository<Highlight, Long> {
     @Transactional
     @Query("UPDATE Highlight h SET h.isDeleted = true, h.folderId = null, h.deletedByUserId = :deletedByUserId, h.deletedAt = :deletedAt WHERE h.folderId IN :folderIds")
     void softDeleteHighlightsByFolderIds(@Param("folderIds") List<Long> folderIds, @Param("deletedByUserId") Long deletedByUserId, @Param("deletedAt") Instant deletedAt);
+
+    @Query("SELECT h FROM Highlight h WHERE h.isDeleted = true AND h.deletedAt >= :start AND h.deletedAt < :end")
+    List<Highlight> findDeletedBetween(@Param("start") Instant start, @Param("end") Instant end);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Highlight h WHERE h.user.id = :userId AND h.isDeleted = true")
+    void emptyTrashByUserId(@Param("userId") Long userId);
+
+    @Modifying
+    @Transactional
+    @Query("DELETE FROM Highlight h WHERE h.isDeleted = true AND h.deletedAt < :cutoff")
+    void permanentlyDeleteOlderThan(@Param("cutoff") Instant cutoff);
 
     long countByUserId(Long userId);
 }

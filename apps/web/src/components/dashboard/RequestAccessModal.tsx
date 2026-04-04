@@ -71,7 +71,7 @@ export function RequestAccessModal({ open, onOpenChange, folderId, folderName, c
       } else {
         toast.error("Failed to send request.");
       }
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error("An error occurred while sending the request.");
     } finally {
       setIsSubmitting(false);

@@ -224,6 +224,36 @@ public class EmailService {
     }
 
     /**
+     * Send an activity notification email to a collaborator in a shared folder.
+     */
+    @Async
+    public void sendCollaborationActivityEmail(
+            String recipientEmail,
+            String actorName,
+            String folderName,
+            String action,
+            String detail,
+            String deepLink) {
+        try {
+            if (!mailEnabled) {
+                log.info("[Email] Mock: Collaboration activity (mail disabled). folder={}, actor={}, action={}",
+                        folderName, actorName, action);
+                return;
+            }
+
+            String subject = actorName + " " + action + " in \"" + folderName + "\"";
+            String body = buildCollaborationActivityBody(actorName, folderName, action, detail, deepLink);
+
+            log.info("[Email] Sending collaboration activity email to: {} (action={})", 
+                    obfuscate(recipientEmail), action);
+            sendEmail(recipientEmail, subject, body);
+
+        } catch (Exception e) {
+            log.error("[Email] Failed to send collaboration activity notification", e);
+        }
+    }
+
+    /**
      * Core helper method to send an email using JavaMailSender.
      */
     public void sendEmail(String to, String subject, String text) {
@@ -585,6 +615,28 @@ public class EmailService {
         } catch (Exception e) {
             log.error("[Email] Failed to send access-request resolution email to: {}", requesterEmail, e);
         }
+    }
+
+    private String buildCollaborationActivityBody(
+            String actorName,
+            String folderName,
+            String action,
+            String detail,
+            String deepLink) {
+        return String.format("""
+                Hi!
+
+                There's new activity in your shared folder "%s".
+
+                Action: %s %s
+                Detail: %s
+
+                View the update:
+                %s
+
+                —
+                Cortex
+                """, folderName, actorName, action, detail != null ? detail : "(No additional details)", deepLink) + READ_ONLY_FOOTER;
     }
 
     /**

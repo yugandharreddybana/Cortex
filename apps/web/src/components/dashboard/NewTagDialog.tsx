@@ -72,10 +72,11 @@ export function NewTagDialog({ open, onOpenChange }: NewTagDialogProps) {
       toast.success(`Tag "${trimmed}" created`, { id: toastId });
       onOpenChange(false);
       reset();
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      toast.error(err.message || "Failed to create tag.", { id: toastId });
-      setError(err.message || "Failed to create tag.");
+      const msg = err instanceof Error ? err.message : "Failed to create tag.";
+      toast.error(msg, { id: toastId });
+      setError(msg);
     } finally {
       setIsSubmitting(false);
     }

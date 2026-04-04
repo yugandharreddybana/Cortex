@@ -35,17 +35,33 @@ export function FolderCreateDialog({ open, onOpenChange, parentId }: FolderCreat
     }
   }, [open]);
 
+  function calculateDepth(id: string | undefined): number {
+    if (!id) return 0;
+    const f = folders.find(folder => folder.id === id);
+    if (!f) return 0;
+    return 1 + calculateDepth(f.parentId);
+  }
+
   async function handleCreate() {
     const trimmed = name.trim();
     if (!trimmed) return;
+
+    // Policy: Max 10 levels deep
+    if (parentId && calculateDepth(parentId) >= 10) {
+      toast.error("Depth limit reached", {
+        description: "Folders can only be nested up to 10 levels deep."
+      });
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       await addFolder(trimmed, parentId);
       toast.success(parentId ? `Subfolder "${trimmed}" created` : `Folder "${trimmed}" created`);
       onOpenChange(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      toast.error(err.message || "Failed to create folder. Please try again.");
+      toast.error(err instanceof Error ? err.message : "Failed to create folder. Please try again.");
     } finally {
       setIsSubmitting(false);
     }

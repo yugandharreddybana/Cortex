@@ -29,7 +29,8 @@ import { NewTagDialog } from "./NewTagDialog";
 import { TagEditDialog } from "./TagEditDialog";
 import { RenameFolderDialog } from "./RenameFolderDialog";
 import { ShareDialog, ShareIcon } from "./ShareDialog";
-import { Loader2, ShieldAlert } from "lucide-react";
+import { ShieldAlert } from "lucide-react";
+import { Spinner } from "@/components/ui/Spinner";
 import { RequestAccessModal } from "./RequestAccessModal";
 import { ManageAccessModal } from "./ManageAccessModal";
 
@@ -63,8 +64,25 @@ function DropdownItem({ children, onSelect }: { children: React.ReactNode; onSel
   return <DropdownMenu.Item onSelect={onSelect} className={cn(dropdownItemCls)}>{children}</DropdownMenu.Item>;
 }
 
-const TAG_COLOR_MAP: any = { blue: { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/20" }, violet: { bg: "bg-violet-500/10", text: "text-violet-400", border: "border-violet-500/20" }, emerald: { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20" }, amber: { bg: "bg-amber-500/10", text: "text-amber-400", border: "border-amber-500/20" }, pink: { bg: "bg-pink-500/10", text: "text-pink-400", border: "border-pink-500/20" }, teal: { bg: "bg-teal-500/10", text: "text-teal-400", border: "border-teal-500/20" } };
-function resolveTagColor(color: string) { if (color?.startsWith("#")) return null; return TAG_COLOR_MAP[color] ?? TAG_COLOR_MAP.blue; }
+interface TagColorConfig {
+  bg: string;
+  text: string;
+  border: string;
+}
+
+const TAG_COLOR_MAP: Record<string, TagColorConfig> = { 
+  blue: { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/20" }, 
+  violet: { bg: "bg-violet-500/10", text: "text-violet-400", border: "border-violet-500/20" }, 
+  emerald: { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20" }, 
+  amber: { bg: "bg-amber-500/10", text: "text-amber-400", border: "border-amber-500/20" }, 
+  pink: { bg: "bg-pink-500/10", text: "text-pink-400", border: "border-pink-500/20" }, 
+  teal: { bg: "bg-teal-500/10", text: "text-teal-400", border: "border-teal-500/20" } 
+};
+
+function resolveTagColor(color: string): TagColorConfig | null { 
+  if (color?.startsWith("#")) return null; 
+  return TAG_COLOR_MAP[color] ?? TAG_COLOR_MAP.blue; 
+}
 
 // ─── Components ───────────────────────────────────────────────────────────────
 
@@ -113,18 +131,42 @@ function UserProfileDropdown() {
   );
 }
 
-function FolderTreeMenu({ folders, onSelect, parentId, depth = 0, parentIdToExclude }: any) {
+interface FolderTreeMenuProps {
+  folders: Folder[];
+  onSelect: (id: string) => void;
+  parentId?: string;
+  depth?: number;
+  parentIdToExclude?: string;
+}
+
+function FolderTreeMenu({ folders, onSelect, parentId, depth = 0, parentIdToExclude }: FolderTreeMenuProps) {
+  // Policy: Cannot move folder into itself OR any of its descendants
+  const idsToExclude = React.useMemo(() => {
+    if (!parentIdToExclude) return new Set<string>();
+    const excluded = new Set<string>([parentIdToExclude]);
+    const collectDescendants = (pid: string) => {
+      folders.filter(f => f.parentId === pid).forEach(child => {
+        if (!excluded.has(child.id)) {
+          excluded.add(child.id);
+          collectDescendants(child.id);
+        }
+      });
+    };
+    collectDescendants(parentIdToExclude);
+    return excluded;
+  }, [folders, parentIdToExclude]);
+
   const seen = new Set<string>();
-  const items = folders.filter((f: any) => {
-    if (f.id === parentIdToExclude) return false;
+  const items = folders.filter((f: Folder) => {
+    if (idsToExclude.has(f.id)) return false;
     if (parentId ? f.parentId !== parentId : !!f.parentId) return false;
     const sid = String(f.id); if (seen.has(sid)) return false; seen.add(sid); return true;
   });
   if (items.length === 0) return depth === 0 ? <div className="px-3 py-2 text-[11px] text-white/30">No folders available</div> : null;
   return (
     <>
-      {items.map((folder: any) => {
-        const children = folders.filter((f: any) => f.parentId === folder.id && f.id !== parentIdToExclude);
+      {items.map((folder: Folder) => {
+        const children = folders.filter((f: Folder) => f.parentId === folder.id && f.id !== parentIdToExclude);
         if (children.length > 0) {
           return (
             <DropdownMenu.Sub key={folder.id}>
@@ -146,10 +188,30 @@ function FolderTreeMenu({ folders, onSelect, parentId, depth = 0, parentIdToExcl
   );
 }
 
-function FolderDropdown({ folder, onRename, onDelete, onShare, onDuplicate, onCreateSubfolder, onPin, onMove, onManageAccess }: any) {
+interface FolderWithActions extends Folder {
+  _onManageAccess?: () => void;
+  _onRequestAccess?: () => void;
+}
+
+interface FolderDropdownProps {
+  folder: FolderWithActions;
+  onRename: () => void;
+  onDelete: () => void;
+  onShare: () => void;
+  onDuplicate: () => void;
+  onCreateSubfolder: () => void;
+  onPin: () => void;
+  onMove: (targetId: string) => void;
+  onManageAccess: () => void;
+}
+
+function FolderDropdown({ folder, onRename, onDelete, onShare, onDuplicate, onCreateSubfolder, onPin, onMove, onManageAccess }: FolderDropdownProps) {
   const isOwner = !folder.effectiveRole || folder.effectiveRole === "OWNER";
   const isSharedFolder = !isOwner;
   const allFolders = useDashboardStore((s) => s.folders);
+  const pendingRequests = useDashboardStore((s) => s.pendingAccessRequests);
+  const hasPendingRequest = pendingRequests[folder.id] === true;
+
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
@@ -193,8 +255,18 @@ function FolderDropdown({ folder, onRename, onDelete, onShare, onDuplicate, onCr
           {(folder.effectiveRole === "VIEWER" || folder.effectiveRole === "COMMENTER") && (
             <>
               <DropdownMenu.Separator className="my-1 h-px bg-white/[0.07]" />
-              <DropdownMenu.Item onSelect={() => (folder as any)._onRequestAccess?.()} className={cn("flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-accent cursor-pointer select-none outline-none hover:bg-accent/10 focus:bg-accent/10 transition-colors duration-100")}>
-                <ShieldAlert className="w-4 h-4" /> Request Higher Access
+              <DropdownMenu.Item 
+                disabled={hasPendingRequest}
+                onSelect={() => {
+                  if (!hasPendingRequest) (folder as any)._onRequestAccess?.();
+                }} 
+                className={cn(
+                  "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-accent cursor-pointer select-none outline-none hover:bg-accent/10 focus:bg-accent/10 transition-colors duration-100",
+                  hasPendingRequest && "opacity-50 cursor-not-allowed bg-accent/[0.02]"
+                )}
+              >
+                <ShieldAlert className="w-4 h-4" /> 
+                {hasPendingRequest ? "Request Raised" : "Request Higher Access"}
               </DropdownMenu.Item>
             </>
           )}
@@ -204,9 +276,25 @@ function FolderDropdown({ folder, onRename, onDelete, onShare, onDuplicate, onCr
   );
 }
 
+interface RecursiveFolderNodeProps {
+  folder: FolderWithActions;
+  depth: number;
+  pathname: string;
+  getChildren: (fId: string) => FolderWithActions[];
+  folderCountMap: Record<string, number>;
+  onRename: (f: Folder) => void;
+  onDelete: (f: Folder) => void;
+  onShare: (f: Folder) => void;
+  onDuplicate: (f: Folder) => void;
+  onCreateSubfolder: (parentId: string) => void;
+  onPin: (f: Folder) => void;
+  onMove: (f: Folder, targetId: string) => void;
+  isLoading: boolean;
+}
+
 function RecursiveFolderNode({
   folder, depth, pathname, getChildren, folderCountMap, onRename, onDelete, onShare, onDuplicate, onCreateSubfolder, onPin, onMove, isLoading
-}: any) {
+}: RecursiveFolderNodeProps) {
   // Check if this folder or any of its children are active
   const children = getChildren(folder.id);
   const href = `/dashboard/folders/${folder.id}`;
@@ -214,9 +302,9 @@ function RecursiveFolderNode({
   const isChildActive = React.useMemo(() => {
     const checkActive = (fId: string): boolean => {
       if (pathname === `/dashboard/folders/${fId}`) return true;
-      return getChildren(fId).some((child: any) => checkActive(child.id));
+      return getChildren(fId).some((child: FolderWithActions) => checkActive(child.id));
     };
-    return children.some((child: any) => checkActive(child.id));
+    return children.some((child: FolderWithActions) => checkActive(child.id));
   }, [pathname, folder.id, children, getChildren]);
 
   const [expanded, setExpanded] = React.useState(true);
@@ -269,7 +357,7 @@ function RecursiveFolderNode({
                 {isLoading ? "…" : (folderCountMap[folder.id] || 0)}
               </span>
             </Link>
-            <FolderDropdown folder={folder} onRename={() => onRename(folder)} onDelete={() => onDelete(folder)} onShare={() => onShare(folder)} onDuplicate={() => onDuplicate(folder)} onCreateSubfolder={() => onCreateSubfolder(folder.id)} onPin={() => onPin(folder)} onMove={(targetId: string) => onMove(folder, targetId)} onManageAccess={() => (folder as any)._onManageAccess?.()} />
+            <FolderDropdown folder={folder} onRename={() => onRename(folder)} onDelete={() => onDelete(folder)} onShare={() => onShare(folder)} onDuplicate={() => onDuplicate(folder)} onCreateSubfolder={() => onCreateSubfolder(folder.id)} onPin={() => onPin(folder)} onMove={(targetId: string) => onMove(folder, targetId)} onManageAccess={() => folder._onManageAccess?.()} />
           </div>
         </ContextMenu.Trigger>
         <ContextMenu.Portal>
@@ -301,7 +389,7 @@ function RecursiveFolderNode({
       </ContextMenu.Root>
       {expanded && children.length > 0 && (
         <div className="space-y-0.5">
-          {children.map((child: any) => (
+          {children.map((child: FolderWithActions) => (
             <RecursiveFolderNode key={child.id} folder={child} depth={depth + 1} pathname={pathname} getChildren={getChildren} folderCountMap={folderCountMap} onRename={onRename} onDelete={onDelete} onShare={onShare} onDuplicate={onDuplicate} onCreateSubfolder={onCreateSubfolder} onPin={onPin} onMove={onMove} isLoading={isLoading} />
           ))}
         </div>
@@ -518,7 +606,25 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                   <DndContext id="sidebar-folders-mine" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                     <div className="space-y-0.5">
                       {myRootFolders.map((folder) => (
-                        <RecursiveFolderNode key={folder.id} folder={{ ...folder, _onManageAccess: () => setManageAccessTarget({ id: folder.id, name: folder.name }) }} depth={0} pathname={pathname} getChildren={getChildren} folderCountMap={folderCountMap} onRename={(f: any) => setRenameTarget({ id: f.id, name: f.name })} onDelete={(f: any) => setDeleteTarget({ id: f.id, name: f.name })} onShare={(f: any) => setShareTarget({ id: f.id, name: f.name })} onDuplicate={(f: any) => setDuplicateTarget({ id: f.id, name: f.name })} onCreateSubfolder={handleCreateSubfolder} onPin={(f: any) => togglePinFolder(f.id)} onMove={(f: any, targetId: string) => moveFolder(f.id, targetId)} isLoading={isLoading} />
+                        <RecursiveFolderNode 
+                          key={folder.id} 
+                          folder={{ 
+                            ...folder, 
+                            _onManageAccess: () => setManageAccessTarget({ id: folder.id, name: folder.name }) 
+                          }} 
+                          depth={0} 
+                          pathname={pathname} 
+                          getChildren={getChildren} 
+                          folderCountMap={folderCountMap} 
+                          onRename={(f: Folder) => setRenameTarget({ id: f.id, name: f.name })} 
+                          onDelete={(f: Folder) => setDeleteTarget({ id: f.id, name: f.name })} 
+                          onShare={(f: Folder) => setShareTarget({ id: f.id, name: f.name })} 
+                          onDuplicate={(f: Folder) => setDuplicateTarget({ id: f.id, name: f.name })} 
+                          onCreateSubfolder={handleCreateSubfolder} 
+                          onPin={(f: Folder) => togglePinFolder(f.id)} 
+                          onMove={(f: Folder, targetId: string) => moveFolder(f.id, targetId)} 
+                          isLoading={isLoading} 
+                        />
                       ))}
                     </div>
                   </DndContext>
@@ -540,18 +646,22 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                       {sharedRootFolders.map((folder) => (
                         <RecursiveFolderNode 
                           key={folder.id} 
-                          folder={{ ...folder, _onRequestAccess: () => setRequestAccessTarget({ id: folder.id, name: folder.name, currentRole: folder.effectiveRole }), _onManageAccess: () => setManageAccessTarget({ id: folder.id, name: folder.name }) }} 
+                          folder={{ 
+                            ...folder, 
+                            _onRequestAccess: () => setRequestAccessTarget({ id: folder.id, name: folder.name, currentRole: folder.effectiveRole }), 
+                            _onManageAccess: () => setManageAccessTarget({ id: folder.id, name: folder.name }) 
+                          }} 
                           depth={0} 
                           pathname={pathname} 
                           getChildren={getChildren} 
                           folderCountMap={folderCountMap} 
-                          onRename={(f: any) => setRenameTarget({ id: f.id, name: f.name })} 
-                          onDelete={(f: any) => setDeleteTarget({ id: f.id, name: f.name })} 
-                          onShare={(f: any) => setShareTarget({ id: f.id, name: f.name })} 
-                          onDuplicate={(f: any) => setDuplicateTarget({ id: f.id, name: f.name })} 
+                          onRename={(f: Folder) => setRenameTarget({ id: f.id, name: f.name })} 
+                          onDelete={(f: Folder) => setDeleteTarget({ id: f.id, name: f.name })} 
+                          onShare={(f: Folder) => setShareTarget({ id: f.id, name: f.name })} 
+                          onDuplicate={(f: Folder) => setDuplicateTarget({ id: f.id, name: f.name })} 
                           onCreateSubfolder={handleCreateSubfolder} 
-                          onPin={(f: any) => togglePinFolder(f.id)} 
-                          onMove={(f: any, targetId: string) => moveFolder(f.id, targetId)} 
+                          onPin={(f: Folder) => togglePinFolder(f.id)} 
+                          onMove={(f: Folder, targetId: string) => moveFolder(f.id, targetId)} 
                           isLoading={isLoading} 
                         />
                       ))}
@@ -645,7 +755,7 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
               <button onClick={() => setSharedExpanded((v) => !v)} className="flex items-center gap-1.5 px-6 py-4 w-full text-left">
                 <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-white/30" style={{ transform: sharedExpanded ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.15s ease" }}><path d="M2 1L6 4L2 7" /></svg>
                 <span className="text-2xs font-semibold uppercase tracking-widest text-muted">Shared with me</span>
-                {isLoadingShared ? <Loader2 className="ml-auto w-3 h-3 animate-spin text-white/30 shrink-0" /> : <span className="ml-auto bg-white/10 text-white/50 text-[10px] px-1.5 rounded-full tabular-nums leading-4">{sharedWithMe.length}</span>}
+                {isLoadingShared ? <Spinner size="xs" variant="accent" className="ml-auto" /> : <span className="ml-auto bg-white/10 text-white/50 text-[10px] px-1.5 rounded-full tabular-nums leading-4">{sharedWithMe.length}</span>}
               </button>
               {sharedExpanded && (
                 <div className="px-3 pb-10 space-y-0.5">
@@ -654,6 +764,26 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                   ))}
                 </div>
               )}
+            </div>
+          )}
+          <div className="h-20" />
+          {currentUser?.tier === "starter" && (
+            <div className="px-4 py-6">
+              <div className="relative group/premium rounded-2xl p-4 overflow-hidden border border-accent/20 bg-accent/[0.03] transition-all duration-300 hover:border-accent/40 hover:bg-accent/[0.06]">
+                <div className="absolute top-0 right-0 p-3 opacity-10 group-hover/premium:opacity-20 transition-opacity">
+                  <StarIcon />
+                </div>
+                <h4 className="text-xs font-bold uppercase tracking-widest text-accent mb-1">Upgrade to Pro</h4>
+                <p className="text-[11px] text-white/40 leading-relaxed mb-3">
+                  Unlock unlimited highlights, AI tagging, and semantic search.
+                </p>
+                <Link 
+                  href="/pricing"
+                  className="inline-flex items-center justify-center w-full h-8 rounded-lg bg-accent text-[11px] font-semibold text-white shadow-[0_0_15px_rgba(108,99,255,0.3)] transition-transform active:scale-95"
+                >
+                  Get Premium
+                </Link>
+              </div>
             </div>
           )}
           <div className="h-20" />

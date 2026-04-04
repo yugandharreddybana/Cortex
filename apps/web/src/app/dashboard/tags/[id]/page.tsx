@@ -19,6 +19,8 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { EmptyState } from "@/components/dashboard/EmptyState";
+
 export default function TagDetailPage() {
   const params = useParams();
   const router = useRouter();
@@ -39,7 +41,7 @@ export default function TagDetailPage() {
   const scaleX = useSpring(scrollYProgress, { stiffness: 200, damping: 30 });
 
   const associatedHighlights = React.useMemo(() => 
-    highlights.filter(h => h.tags?.includes(id)), 
+    highlights.filter(h => h.tags?.some(t => String(t.id) === id)), 
   [highlights, id]);
 
   const handleDelete = async () => {
@@ -60,17 +62,13 @@ export default function TagDetailPage() {
 
   if (!tag && !isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center h-screen bg-[#0a0a0a] text-center p-6">
-        <div className="w-16 h-16 rounded-2xl bg-white/[0.03] border border-white/[0.08] flex items-center justify-center mb-6">
-          <TagIcon className="w-8 h-8 text-white/20" />
-        </div>
-        <h1 className="text-xl font-semibold text-white/90 mb-2">Tag not found</h1>
-        <button
-          onClick={() => router.push("/dashboard")}
-          className="mt-4 text-sm text-accent hover:underline"
-        >
-          ← Back to Dashboard
-        </button>
+      <div className="h-screen bg-[#0a0a0a] flex items-center justify-center">
+        <EmptyState 
+          icon={<TagIcon className="w-8 h-8 text-white/20" />}
+          title="Tag not found"
+          body="The tag you are looking for doesn't exist or has been deleted."
+          action={{ label: "Back to Dashboard", href: "/dashboard" }}
+        />
       </div>
     );
   }
@@ -150,7 +148,7 @@ export default function TagDetailPage() {
               </h2>
             </div>
 
-            <HighlightsMasonry filterFn={(h) => h.tags?.includes(id) ?? false} />
+            <HighlightsMasonry filterFn={(h) => h.tags?.some(t => String(t.id) === id) ?? false} />
           </main>
 
           {/* Right Column: Metadata Sidebar */}

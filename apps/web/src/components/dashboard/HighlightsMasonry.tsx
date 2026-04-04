@@ -14,10 +14,12 @@ import { EmptyState } from "./EmptyState";
 import { ShareDialog, ShareIcon } from "./ShareDialog";
 import { HighlightAIPanel } from "./HighlightAIPanel";
 import { useDashboardStore } from "@/store/dashboard";
+import { LoadingSkeleton } from "./LoadingSkeleton";
 import type { Highlight, Folder, Tag } from "@/store/dashboard";
 import { DevilsAdvocate } from "./DevilsAdvocate";
 import { RequestAccessModal } from "./RequestAccessModal";
 import { Lock, ShieldAlert } from "lucide-react";
+import { formatSourceUrl } from "@/lib/url";
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -61,8 +63,20 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
   const updateHighlight       = useDashboardStore((s) => s.updateHighlight);
   const activeFolder          = useDashboardStore((s) => s.activeFolder);
   const setNewHighlightOpen   = useDashboardStore((s) => s.setNewHighlightDialogOpen);
+  const searchHighlights      = useDashboardStore((s) => s.searchHighlights);
+  const isSearching           = useDashboardStore((s) => s.isSearching);
 
-  // Apply filters
+  // Server-side search with debounce
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      if (searchQuery.trim()) {
+        searchHighlights(searchQuery);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, searchHighlights]);
+
+  // Apply filters (excluding search which is now server-side)
   const highlights = React.useMemo(() => {
     let list = allHighlights;
 
@@ -72,22 +86,10 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
     // Hide archived in main view (when no filterFn)
     if (!filterFn) list = list.filter((h) => !h.isArchived);
 
-    // Search
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      list = list.filter(
-        (h) =>
-          h.text.toLowerCase().includes(q) ||
-          h.source.toLowerCase().includes(q) ||
-          h.topic.toLowerCase().includes(q) ||
-          (h.note?.toLowerCase().includes(q) ?? false),
-      );
-    }
-
     // Tags (intersection — highlight must have ALL selected tags)
     if (activeTagFilters.length > 0) {
       list = list.filter((h) =>
-        activeTagFilters.every((t) => h.tags?.includes(t)) ?? false,
+        activeTagFilters.every((t) => h.tags?.some((ht) => String(ht.id) === String(t))) ?? false,
       );
     }
 
@@ -113,6 +115,14 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
 
   const [activeHighlight, setActiveHighlight] = React.useState<Highlight | null>(null);
   const [renameTarget, setRenameTarget] = React.useState<Highlight | null>(null);
+  const [visibleCount, setVisibleCount] = React.useState(20);
+
+  const hasMore = highlights.length > visibleCount;
+  const displayedHighlights = highlights.slice(0, visibleCount);
+
+  const handleLoadMore = React.useCallback(() => {
+    setVisibleCount((prev) => prev + 50);
+  }, []);
 
   const handleDelete = React.useCallback((id: string) => {
     deleteHighlight(id);
@@ -125,7 +135,7 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
 
   useHotkeys(handleDelete);
 
-  if (isLoading) return <SkeletonGrid />;
+  if (isLoading || isSearching) return <LoadingSkeleton />;
 
   return (
     <>
@@ -154,19 +164,27 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
 
         // Specific folder empty state (already existed, but now consistent)
         if (activeFolder) {
+          const folderObj = folders.find(f => f.id === activeFolder);
+          const folderRole = folderObj?.effectiveRole || "OWNER";
+          const canEditInFolder = folderRole === "OWNER" || folderRole === "EDITOR";
+
           return (
             <div className="flex flex-col items-center justify-center py-24 gap-4">
               <span className="text-4xl">📂</span>
               <p className="text-sm font-medium text-white/50">This folder is empty</p>
               <p className="text-xs text-white/30 text-center max-w-xs">
-                Organize your knowledge by moving highlights here or creating new ones directly.
+                {canEditInFolder 
+                  ? "Organize your knowledge by moving highlights here or creating new ones directly."
+                  : "There are no highlights shared in this folder yet."}
               </p>
-              <button
-                onClick={() => setNewHighlightOpen(true)}
-                className="mt-2 px-4 py-2 rounded-xl text-sm font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-colors"
-              >
-                Add Highlight
-              </button>
+              {canEditInFolder && (
+                <button
+                  onClick={() => setNewHighlightOpen(true)}
+                  className="mt-2 px-4 py-2 rounded-xl text-sm font-medium bg-accent/10 text-accent border border-accent/20 hover:bg-accent/20 transition-colors"
+                >
+                  Add Highlight
+                </button>
+              )}
             </div>
           );
         }
@@ -174,7 +192,8 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
         // Default empty state (No highlights at all)
         return <EmptyState />;
       })() : (
-        <AnimatePresence mode="wait" initial={false}>
+        <>
+          <AnimatePresence mode="wait" initial={false}>
         {viewMode === "grid" ? (
           <motion.div
             key="grid"
@@ -184,11 +203,12 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
             transition={{ duration: 0.18 }}
             className="columns-1 md:columns-2 xl:columns-3 gap-4"
           >
-            {highlights.map((h, i) => (
+            {displayedHighlights.map((h, i) => (
               <HighlightCard
                 key={h.id}
                 highlight={h}
                 index={i}
+                // ... props same ...
                 isSelected={selectedHighlightIds.includes(h.id)}
                 isFocused={i === focusedIdx}
                 folders={folders}
@@ -201,16 +221,11 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
                 onTogglePin={() => togglePinHighlight(h.id)}
                 onRename={() => setRenameTarget(h)}
                 onMove={(folderId, folderName) => {
-                  // Allow moving to root (no folderId)
                   if (!folderId || folders.some((f) => f.id === folderId)) {
                     moveHighlight(h.id, folderId, folderName);
-                    toast.success("Highlight moved", { 
-                      description: `Relocated to the "${folderName}" folder successfully.` 
-                    });
+                    toast.success("Highlight moved", { description: `Relocated to the "${folderName}" folder successfully.` });
                   } else {
-                    toast.error("Move failed", { 
-                      description: "The target folder could not be found." 
-                    });
+                    toast.error("Move failed", { description: "The target folder could not be found." });
                   }
                 }}
               />
@@ -225,11 +240,12 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
             transition={{ duration: 0.18 }}
             className="flex flex-col divide-y divide-white/[0.05]"
           >
-            {highlights.map((h, i) => (
+            {displayedHighlights.map((h, i) => (
               <HighlightListRow
                 key={h.id}
                 highlight={h}
                 index={i}
+                // ... props same ...
                 isSelected={selectedHighlightIds.includes(h.id)}
                 isFocused={i === focusedIdx}
                 folders={folders}
@@ -242,15 +258,42 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
                 onTogglePin={() => togglePinHighlight(h.id)}
                 onMove={(folderId, folderName) => {
                   moveHighlight(h.id, folderId, folderName);
-                  toast.success("Highlight moved", { 
-                    description: `Relocated to the "${folderName}" folder successfully.` 
-                  });
+                  toast.success("Highlight moved", { description: `Relocated to the "${folderName}" folder successfully.` });
                 }}
               />
             ))}
           </motion.div>
         )}
       </AnimatePresence>
+
+      {hasMore && (
+        <div className="flex justify-center py-12">
+          <button
+            onClick={handleLoadMore}
+            className={cn(
+              "group relative px-8 py-3 rounded-2xl",
+              "bg-surface border border-white/[0.06]",
+              "text-sm font-medium text-white/50 hover:text-white",
+              "transition-all duration-300 ease-snappy",
+              "hover:border-white/20 hover:shadow-glass",
+              "overflow-hidden transform-gpu active:scale-[0.98]"
+            )}
+          >
+            <div className="relative z-10 flex items-center gap-2">
+              <span>Load {Math.min(50, highlights.length - visibleCount)} more</span>
+              <svg 
+                className="w-3.5 h-3.5 transition-transform duration-300 group-hover:translate-y-0.5" 
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"
+              >
+                <path d="M19 9l-7 7-7-7" strokeLinecap="round" strokeLinejoin="round" />
+              </svg>
+            </div>
+            {/* Shimmer effect */}
+            <div className="absolute inset-0 z-0 bg-gradient-to-r from-transparent via-white/[0.03] to-transparent -translate-x-full group-hover:animate-shimmer" />
+          </button>
+        </div>
+      )}
+        </>
       )}
 
       <RenameHighlightDialog
@@ -291,19 +334,6 @@ function FilterXIcon() {
   );
 }
 
-// ─── Skeleton loading grid ────────────────────────────────────────────────────
-function SkeletonGrid() {
-  return (
-    <div className="columns-1 md:columns-2 xl:columns-3 gap-4">
-      {Array.from({ length: 6 }).map((_, i) => (
-        <div
-          key={i}
-          className="break-inside-avoid mb-4 animate-pulse bg-white/[0.05] border border-white/10 rounded-2xl h-40"
-        />
-      ))}
-    </div>
-  );
-}
 // ─── Grid Card ────────────────────────────────────────────────────────────────
 function HighlightCard({
   highlight: h,
@@ -354,11 +384,8 @@ function HighlightCard({
     folder ? s.pendingAccessRequests[folder.id] === true : false
   );
 
-  React.useEffect(() => {
-    if (folder && canRequestHigherAccess) {
-      useDashboardStore.getState().checkAccessRequestStatus(folder.id);
-    }
-  }, [folder?.id, canRequestHigherAccess]);
+  // Removed redundant useEffect to prevent N+1 API calls. 
+  // Access status is lazy-loaded or handled at the page level.
 
   return (
     <>
@@ -701,11 +728,31 @@ function HighlightCard({
                   </>
                 )}
                 {canRequestHigherAccess && (
-                  <div className="px-2.5 py-2 text-[10px] text-white/30 italic max-w-[180px] leading-relaxed border-t border-white/[0.06] mt-1">
-                    {isViewer
-                      ? "Ask the owner for Commenter or Editor access."
-                      : "Ask the owner for Editor access to edit or delete."}
-                  </div>
+                  <>
+                    <DropdownMenu.Item
+                      disabled={hasPendingRequest}
+                      className={cn(
+                        "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
+                        "text-[12px] text-accent hover:text-accent/80",
+                        hasPendingRequest ? "opacity-50 cursor-not-allowed bg-accent/[0.02]" : "hover:bg-accent/[0.08] cursor-pointer outline-none transition-colors duration-100",
+                      )}
+                      onSelect={(e) => {
+                        if (hasPendingRequest) {
+                          e.preventDefault();
+                        } else {
+                          setRequestAccessOpen(true);
+                        }
+                      }}
+                    >
+                    <ShieldAlert className="w-3.5 h-3.5" />
+                    {hasPendingRequest ? "Request Raised" : "Request Higher Access"}
+                  </DropdownMenu.Item>
+                    <div className="px-2.5 py-2 text-[10px] text-white/30 italic max-w-[180px] leading-relaxed border-t border-white/[0.06] mt-1">
+                      {isViewer
+                        ? "Ask the owner for Commenter or Editor access."
+                        : "Ask the owner for Editor access to edit or delete."}
+                    </div>
+                  </>
                 )}
               </DropdownMenu.Content>
             </DropdownMenu.Portal>
@@ -760,10 +807,7 @@ function HighlightCard({
       {/* Tags */}
       {h.tags && h.tags.length > 0 && (
         <div className="flex flex-wrap gap-1.5 mt-3">
-          {h.tags.map((tagId) => {
-            const tag = tags.find((t) => t.id === tagId);
-            if (!tag) return null;
-            return (
+          {h.tags.map((tag) => (
               <span
                 key={tag.id}
                 className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
@@ -775,8 +819,7 @@ function HighlightCard({
               >
                 {tag.name}
               </span>
-            );
-          })}
+            ))}
         </div>
       )}
 
@@ -784,7 +827,7 @@ function HighlightCard({
       <div className="flex items-center gap-2 mt-3 flex-wrap">
         {h.resourceType === "VIDEO" ? (
           <a
-            href={h.url && h.url !== "#" ? h.url : undefined}
+            href={formatSourceUrl(h.url, h.text)}
             onClick={(e) => e.stopPropagation()}
             target="_blank"
             rel="noopener noreferrer"
@@ -803,22 +846,20 @@ function HighlightCard({
           </a>
         ) : (
         <a
-          href={
-            h.url && h.url !== "#"
-              ? `${h.url}#:~:text=${encodeURIComponent(h.text.slice(0, 100))}`
-              : undefined
-          }
+          href={formatSourceUrl(h.url, h.text)}
           onClick={(e) => e.stopPropagation()}
           target="_blank"
           rel="noopener noreferrer"
+          title={h.url}
           className={cn(
-            "inline-flex items-center gap-1",
+            "inline-flex items-center gap-1.5",
             "text-[11px] text-white/35",
-            "hover:text-accent transition-colors duration-200",
+            "hover:text-accent transition-all duration-200",
+            "bg-white/[0.03] hover:bg-white/[0.06] border border-white/[0.05] rounded-md px-2 py-0.5"
           )}
         >
-          <LinkIcon />
-          <span className="truncate max-w-[160px]">{h.source}</span>
+          <LinkIcon className="w-3 h-3" />
+          <span className="truncate max-w-[140px]">{h.source || "Source"}</span>
         </a>
         )}
 
@@ -865,9 +906,6 @@ function HighlightCard({
       open={requestAccessOpen} 
       onOpenChange={(open) => {
         setRequestAccessOpen(open);
-        if (!open && folder) {
-          useDashboardStore.getState().checkAccessRequestStatus(folder.id);
-        }
       }}
       folderId={folder?.id || ""}
       folderName={folder?.name || ""}
@@ -912,9 +950,9 @@ function ArchiveSmallIcon() {
   );
 }
 
-function LinkIcon() {
+function LinkIcon({ className }: { className?: string }) {
   return (
-    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+    <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true" className={className}>
       <path
         d="M4 2H2a1 1 0 00-1 1v5a1 1 0 001 1h5a1 1 0 001-1V6M6 1h3m0 0v3m0-3L5 5"
         stroke="currentColor"
@@ -1136,11 +1174,7 @@ function HighlightListRow({
     folder ? s.pendingAccessRequests[folder.id] === true : false
   );
 
-  React.useEffect(() => {
-    if (folder && canRequestHigherAccess) {
-      useDashboardStore.getState().checkAccessRequestStatus(folder.id);
-    }
-  }, [folder?.id, canRequestHigherAccess]);
+  // Removed redundant useEffect to prevent N+1 API calls.
 
   return (
     <>
@@ -1190,10 +1224,7 @@ function HighlightListRow({
       {/* Tags */}
       {h.tags && h.tags.length > 0 && (
         <div className="flex items-center gap-1.5 shrink-0">
-          {h.tags.map(tagId => {
-            const tag = tags.find(t => t.id === tagId);
-            if (!tag) return null;
-            return (
+          {h.tags.map(tag => (
               <span
                   key={tag.id}
                   className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
@@ -1205,8 +1236,7 @@ function HighlightListRow({
                 >
                 {tag.name}
               </span>
-            );
-          })}
+            ))}
         </div>
       )}
 
@@ -1289,7 +1319,7 @@ function HighlightListRow({
                   className={cn(
                     "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
                     "text-[12px] text-accent hover:text-accent/80",
-                    hasPendingRequest ? "opacity-50 cursor-not-allowed" : "hover:bg-accent/[0.08] cursor-pointer outline-none transition-colors duration-100",
+                    hasPendingRequest ? "opacity-50 cursor-not-allowed bg-accent/[0.02]" : "hover:bg-accent/[0.08] cursor-pointer outline-none transition-colors duration-100",
                   )}
                   onSelect={(e) => {
                     if (hasPendingRequest) {
@@ -1300,7 +1330,7 @@ function HighlightListRow({
                   }}
                 >
                   <ShieldAlert className="w-3.5 h-3.5" />
-                  {hasPendingRequest ? "Request Raised" : "Request Higher Access"}
+                  {hasPendingRequest ? "Requested access" : "Request Higher Access"}
                 </DropdownMenu.Item>
               )}
               <DropdownMenu.Sub>
@@ -1392,9 +1422,6 @@ function HighlightListRow({
       open={requestAccessOpen} 
       onOpenChange={(open) => {
         setRequestAccessOpen(open);
-        if (!open && folder) {
-          useDashboardStore.getState().checkAccessRequestStatus(folder.id);
-        }
       }}
       folderId={folder?.id || ""}
       folderName={folder?.name || ""}

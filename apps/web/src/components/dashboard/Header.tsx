@@ -101,6 +101,7 @@ export function DashboardHeader() {
         <div className="flex items-center gap-3">
           {/* New Highlight */}
           <button
+            type="button"
             onClick={() => setNewHighlightOpen(true)}
             className={cn(
               "h-8 px-3.5 rounded-lg",
@@ -116,6 +117,7 @@ export function DashboardHeader() {
 
           {/* Cmd+K trigger */}
           <button
+            type="button"
             onClick={() => setIsOpen(true)}
             className={cn(
               "flex items-center gap-2 px-3 py-1.5 rounded-lg",
@@ -139,6 +141,7 @@ export function DashboardHeader() {
 
           {/* Avatar */}
           <button
+            type="button"
             className={cn(
               "w-8 h-8 rounded-full overflow-hidden",
               "bg-accent/20 border border-accent/30",

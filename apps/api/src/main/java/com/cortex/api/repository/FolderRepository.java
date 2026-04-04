@@ -110,6 +110,21 @@ public interface FolderRepository extends JpaRepository<Folder, Long> {
     List<Folder> findAllDescendantsInclusive(Long folderId);
 
     /**
+     * Find all descendants (recursive) of a list of folders via recursive query.
+     * Used for shared folder tree visibility expansion.
+     */
+    @Query(value = """
+        WITH RECURSIVE descendants AS (
+            SELECT id FROM folders WHERE id IN :rootIds
+            UNION ALL
+            SELECT f.id FROM folders f
+            INNER JOIN descendants d ON f.parent_folder_id = d.id
+        )
+        SELECT id FROM descendants
+    """, nativeQuery = true)
+    List<Long> findAllDescendantIdsByParentIds(@Param("rootIds") List<Long> rootIds);
+
+    /**
      * Bulk-delete folders by their IDs.
      */
     @Modifying
