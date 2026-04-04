@@ -1,0 +1,554 @@
+Unused import in apps/web/src/app/api/auth/extension-token/route.ts: { NextRequest, NextResponse } from next/server
+Unused import in apps/web/src/app/api/auth/extension-token/route.ts: { API_BASE } from @/lib/auth
+Unused import in apps/web/src/app/api/auth/extension-token/route.ts: { getSession } from @/lib/session
+Unused import in apps/web/src/app/api/auth/forgot-password/route.ts: { NextRequest, NextResponse } from next/server
+Unused import in apps/web/src/app/api/auth/forgot-password/route.ts: { z } from zod/v4
+Unused import in apps/web/src/app/api/auth/heartbeat/route.ts: { NextRequest, NextResponse } from next/server
+Unused import in apps/web/src/app/api/auth/heartbeat/route.ts: { getSession } from @/lib/session
+Unused import in apps/web/src/app/api/auth/login/route.ts: { loginSchema, API_BASE } from @/lib/auth
+Unused import in apps/web/src/app/api/auth/login/route.ts: { getSession } from @/lib/session
+Unused import in apps/web/src/app/api/auth/login/route.ts: { NextRequest, NextResponse } from next/server
+Unused import in apps/web/src/app/api/auth/logout/route.ts: { getSession } from @/lib/session
+Unused import in apps/web/src/app/api/auth/logout/route.ts: { NextResponse } from next/server
+Unused import in apps/web/src/app/api/auth/me/route.ts: { API_BASE } from @/lib/auth
+Unused import in apps/web/src/app/api/auth/me/route.ts: { getSession } from @/lib/session
+Unused import in apps/web/src/app/api/auth/me/route.ts: { NextRequest, NextResponse } from next/server
+Unused import in apps/web/src/app/api/auth/refresh/route.ts: { NextRequest, NextResponse } from next/server
+Unused import in apps/web/src/app/api/auth/refresh/route.ts: { API_BASE } from @/lib/auth
+Unused import in apps/web/src/app/api/auth/refresh/route.ts: { getSession } from @/lib/session
+Unused import in apps/web/src/app/api/auth/signup/route.ts: { NextRequest, NextResponse } from next/server
+Unused import in apps/web/src/app/api/auth/signup/route.ts: { signupSchema, API_BASE } from @/lib/auth
+Unused import in apps/web/src/app/api/auth/signup/route.ts: { getSession } from @/lib/session
+Unused import in apps/web/src/app/api/auth/ws-token/route.ts: { getSession } from @/lib/session
+Unused import in apps/web/src/app/api/auth/ws-token/route.ts: { NextResponse } from next/server
+Unused import in apps/web/src/app/api/og/route.tsx: { ImageResponse } from next/og
+Unused import in apps/web/src/app/api/og/route.tsx: type { NextRequest } from next/server
+Unused import in apps/web/src/app/api/[...path]/route.ts: { NextRequest } from next/server
+Unused import in apps/web/src/app/api/[...path]/route.ts: { proxyToJava } from @/lib/proxy
+Unused import in apps/web/src/app/api/stripe/checkout/route.ts: { NextRequest, NextResponse } from next/server
+Unused import in apps/web/src/app/api/stripe/checkout/route.ts: { getSession } from @/lib/session
+Unused import in apps/web/src/app/api/stripe/checkout/route.ts: { API_BASE } from @/lib/auth
+Unused import in apps/web/src/app/api/stripe/portal/route.ts: { NextRequest, NextResponse } from next/server
+Unused import in apps/web/src/app/api/stripe/portal/route.ts: { getSession } from @/lib/session
+Unused import in apps/web/src/app/api/stripe/portal/route.ts: { API_BASE } from @/lib/auth
+Unused import in apps/web/src/app/dashboard/archive/page.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/app/dashboard/archive/page.tsx: { HighlightsMasonry } from @/components/dashboard/HighlightsMasonry
+Unused import in apps/web/src/app/dashboard/archive/page.tsx: { EmptyState } from @/components/dashboard/EmptyState
+Unused import in apps/web/src/app/dashboard/error.tsx: { useEffect } from react
+Unused import in apps/web/src/app/dashboard/favorites/page.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/app/dashboard/favorites/page.tsx: { HighlightsMasonry } from @/components/dashboard/HighlightsMasonry
+Unused import in apps/web/src/app/dashboard/favorites/page.tsx: { EmptyState } from @/components/dashboard/EmptyState
+Unused import in apps/web/src/app/dashboard/folders/[id]/page.tsx: React from react
+Unused import in apps/web/src/app/dashboard/folders/[id]/page.tsx: { useShallow } from zustand/react/shallow
+Unused import in apps/web/src/app/dashboard/folders/[id]/page.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/app/dashboard/folders/[id]/page.tsx: { HighlightsMasonry } from @/components/dashboard/HighlightsMasonry
+Unused import in apps/web/src/app/dashboard/folders/[id]/page.tsx: { EmptyState } from @/components/dashboard/EmptyState
+Unused import in apps/web/src/app/dashboard/folders/[id]/page.tsx: { AutoDraft } from @/components/AutoDraft
+Unused import in apps/web/src/app/dashboard/folders/[id]/page.tsx: { FolderSynthesis } from @/components/dashboard/FolderSynthesis
+Unused import in apps/web/src/app/dashboard/folders/[id]/page.tsx: * as Popover from @radix-ui/react-popover
+Unused import in apps/web/src/app/dashboard/folders/[id]/page.tsx: * as AlertDialog from @radix-ui/react-alert-dialog
+Unused import in apps/web/src/app/dashboard/folders/[id]/page.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/app/dashboard/folders/[id]/page.tsx: { Trash2, AlertTriangle, Loader2, Users } from lucide-react
+Unused import in apps/web/src/app/dashboard/folders/[id]/page.tsx: { useRouter, useParams } from next/navigation
+Unused import in apps/web/src/app/dashboard/folders/[id]/page.tsx: { toast } from sonner
+Unused import in apps/web/src/app/dashboard/folders/[id]/page.tsx: { RequestAccessModal } from @/components/dashboard/RequestAccessModal
+Unused import in apps/web/src/app/dashboard/folders/[id]/page.tsx: { ManageAccessModal } from @/components/dashboard/ManageAccessModal
+Unused import in apps/web/src/app/dashboard/folders/[id]/page.tsx: { DeleteAlertDialog } from @/components/dashboard/DeleteAlertDialog
+Unused import in apps/web/src/app/dashboard/folders/[id]/page.tsx: { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from @cortex/ui
+Unused import in apps/web/src/app/dashboard/folders/[id]/page.tsx: { ShieldAlert } from lucide-react
+Unused import in apps/web/src/app/dashboard/folders/[id]/page.tsx: { useResourceSync } from @/hooks/useResourceSync
+Unused import in apps/web/src/app/dashboard/layout.tsx: * as React from react
+Unused import in apps/web/src/app/dashboard/layout.tsx: * as Dialog from @radix-ui/react-dialog
+Unused import in apps/web/src/app/dashboard/layout.tsx: { motion, AnimatePresence } from framer-motion
+Unused import in apps/web/src/app/dashboard/layout.tsx: Link from next/link
+Unused import in apps/web/src/app/dashboard/layout.tsx: { Sidebar } from @/components/dashboard/Sidebar
+Unused import in apps/web/src/app/dashboard/layout.tsx: { DashboardHeader } from @/components/dashboard/Header
+Unused import in apps/web/src/app/dashboard/layout.tsx: { useExtensionSync } from @/hooks/useExtensionSync
+Unused import in apps/web/src/app/dashboard/layout.tsx: { useServerSync } from @/hooks/useServerSync
+Unused import in apps/web/src/app/dashboard/layout.tsx: { useWebSocket } from @/hooks/useWebSocket
+Unused import in apps/web/src/app/dashboard/layout.tsx: { SessionGuard } from @/components/providers/SessionGuard
+Unused import in apps/web/src/app/dashboard/layout.tsx: { useAuthStore } from @/store/authStore
+Unused import in apps/web/src/app/dashboard/layout.tsx: { sendExtensionToken } from @/lib/extension-auth
+Unused import in apps/web/src/app/dashboard/layout.tsx: { PremiumLoader } from @/components/ui/PremiumLoader
+Unused import in apps/web/src/app/dashboard/loading.tsx: { Loader2 } from lucide-react
+Unused import in apps/web/src/app/dashboard/page.tsx: * as React from react
+Unused import in apps/web/src/app/dashboard/page.tsx: { motion } from framer-motion
+Unused import in apps/web/src/app/dashboard/page.tsx: { HighlightsMasonry } from @/components/dashboard/HighlightsMasonry
+Unused import in apps/web/src/app/dashboard/page.tsx: { ViewControlBar } from @/components/dashboard/ViewControlBar
+Unused import in apps/web/src/app/dashboard/page.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/app/dashboard/page.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/app/dashboard/read/[id]/page.tsx: * as React from react
+Unused import in apps/web/src/app/dashboard/read/[id]/page.tsx: { useParams, useRouter } from next/navigation
+Unused import in apps/web/src/app/dashboard/read/[id]/page.tsx: { motion, useScroll, useSpring } from framer-motion
+Unused import in apps/web/src/app/dashboard/read/[id]/page.tsx: * as Popover from @radix-ui/react-popover
+Unused import in apps/web/src/app/dashboard/read/[id]/page.tsx: * as Dialog from @radix-ui/react-dialog
+Unused import in apps/web/src/app/dashboard/read/[id]/page.tsx: { toast } from sonner
+Unused import in apps/web/src/app/dashboard/read/[id]/page.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/app/dashboard/read/[id]/page.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/app/dashboard/read/[id]/page.tsx: { useAuthStore } from @/store/authStore
+Unused import in apps/web/src/app/dashboard/read/[id]/page.tsx: { FolderCreateDialog } from @/components/dashboard/FolderCreateDialog
+Unused import in apps/web/src/app/dashboard/read/[id]/page.tsx: { NewTagDialog } from @/components/dashboard/NewTagDialog
+Unused import in apps/web/src/app/dashboard/read/[id]/page.tsx: { Trash2 } from lucide-react
+Unused import in apps/web/src/app/dashboard/read/[id]/page.tsx: { Spinner } from @/components/ui/Spinner
+Unused import in apps/web/src/app/dashboard/read/[id]/page.tsx: { formatSourceUrl } from @/lib/url
+Unused import in apps/web/src/app/dashboard/read/[id]/page.tsx: { useResourceSync } from @/hooks/useResourceSync
+Unused import in apps/web/src/app/dashboard/referrals/page.tsx: { useEffect, useState } from react
+Unused import in apps/web/src/app/dashboard/referrals/page.tsx: { CopyIcon, CheckIcon, GiftIcon, UsersIcon, AwardIcon, Loader2 } from lucide-react
+Unused import in apps/web/src/app/dashboard/settings/billing/page.tsx: * as React from react
+Unused import in apps/web/src/app/dashboard/settings/billing/page.tsx: * as AlertDialog from @radix-ui/react-alert-dialog
+Unused import in apps/web/src/app/dashboard/settings/billing/page.tsx: * as Dialog from @radix-ui/react-dialog
+Unused import in apps/web/src/app/dashboard/settings/billing/page.tsx: { motion, AnimatePresence } from framer-motion
+Unused import in apps/web/src/app/dashboard/settings/billing/page.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/app/dashboard/settings/billing/page.tsx: { toast } from sonner
+Unused import in apps/web/src/app/dashboard/settings/billing/page.tsx: { useAuthStore } from @/store/authStore
+Unused import in apps/web/src/app/dashboard/settings/data/page.tsx: * as React from react
+Unused import in apps/web/src/app/dashboard/settings/data/page.tsx: { toast } from sonner
+Unused import in apps/web/src/app/dashboard/settings/data/page.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/app/dashboard/settings/data/page.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/app/dashboard/settings/data/page.tsx: { Loader2 } from lucide-react
+Unused import in apps/web/src/app/dashboard/settings/developer/page.tsx: * as React from react
+Unused import in apps/web/src/app/dashboard/settings/developer/page.tsx: * as Dialog from @radix-ui/react-dialog
+Unused import in apps/web/src/app/dashboard/settings/developer/page.tsx: { motion, AnimatePresence } from framer-motion
+Unused import in apps/web/src/app/dashboard/settings/developer/page.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/app/dashboard/settings/developer/page.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/app/dashboard/settings/developer/page.tsx: { toast } from sonner
+Unused import in apps/web/src/app/dashboard/settings/profile/page.tsx: * as React from react
+Unused import in apps/web/src/app/dashboard/settings/profile/page.tsx: { motion } from framer-motion
+Unused import in apps/web/src/app/dashboard/settings/profile/page.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/app/dashboard/settings/profile/page.tsx: { useAuthStore } from @/store/authStore
+Unused import in apps/web/src/app/dashboard/settings/profile/page.tsx: { useForm } from react-hook-form
+Unused import in apps/web/src/app/dashboard/settings/profile/page.tsx: { zodResolver } from @hookform/resolvers/zod
+Unused import in apps/web/src/app/dashboard/settings/profile/page.tsx: { z } from zod/v4
+Unused import in apps/web/src/app/dashboard/settings/profile/page.tsx: { toast } from sonner
+Unused import in apps/web/src/app/dashboard/settings/profile/page.tsx: { SettingSkeleton } from @/components/dashboard/SettingSkeleton
+Unused import in apps/web/src/app/dashboard/shared/[id]/page.tsx: * as React from react
+Unused import in apps/web/src/app/dashboard/shared/[id]/page.tsx: { useParams, useRouter } from next/navigation
+Unused import in apps/web/src/app/dashboard/shared/[id]/page.tsx: { motion } from framer-motion
+Unused import in apps/web/src/app/dashboard/shared/[id]/page.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/app/dashboard/shared/[id]/page.tsx: { toast } from sonner
+Unused import in apps/web/src/app/dashboard/shared/[id]/page.tsx: { Client } from @stomp/stompjs
+Unused import in apps/web/src/app/dashboard/shared/[id]/page.tsx: { Loader2 } from lucide-react
+Unused import in apps/web/src/app/dashboard/success/page.tsx: React from react
+Unused import in apps/web/src/app/dashboard/success/page.tsx: Link from next/link
+Unused import in apps/web/src/app/dashboard/success/page.tsx: { motion } from framer-motion
+Unused import in apps/web/src/app/dashboard/success/page.tsx: { Confetti } from @/components/ui/Confetti // Assuming a confetti component exists or we can mock it
+Unused import in apps/web/src/app/dashboard/success/page.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/app/dashboard/tags/[id]/page.tsx: * as React from react
+Unused import in apps/web/src/app/dashboard/tags/[id]/page.tsx: { useParams, useRouter } from next/navigation
+Unused import in apps/web/src/app/dashboard/tags/[id]/page.tsx: { motion, useScroll, useSpring } from framer-motion
+Unused import in apps/web/src/app/dashboard/tags/[id]/page.tsx: { HighlightsMasonry } from @/components/dashboard/HighlightsMasonry
+Unused import in apps/web/src/app/dashboard/tags/[id]/page.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/app/dashboard/tags/[id]/page.tsx: { TagEditDialog } from @/components/dashboard/TagEditDialog
+Unused import in apps/web/src/app/dashboard/tags/[id]/page.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/app/dashboard/tags/[id]/page.tsx: { toast } from sonner
+Unused import in apps/web/src/app/dashboard/tags/[id]/page.tsx: { EmptyState } from @/components/dashboard/EmptyState
+Unused import in apps/web/src/app/dashboard/temporal-replay/page.tsx: React, { useMemo } from react
+Unused import in apps/web/src/app/dashboard/temporal-replay/page.tsx: { useDashboardStore, type Highlight } from @/store/dashboard
+Unused import in apps/web/src/app/dashboard/temporal-replay/page.tsx: { Clock } from lucide-react
+Unused import in apps/web/src/app/dashboard/trash/page.tsx: * as React from react
+Unused import in apps/web/src/app/dashboard/trash/page.tsx: { motion, AnimatePresence } from framer-motion
+Unused import in apps/web/src/app/dashboard/trash/page.tsx: { toast } from sonner
+Unused import in apps/web/src/app/dashboard/trash/page.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/app/dashboard/trash/page.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/app/error.tsx: { useEffect } from react
+Unused import in apps/web/src/app/error.tsx: Link from next/link
+Unused import in apps/web/src/app/error.tsx: { motion } from framer-motion
+Unused import in apps/web/src/app/global-error.tsx: { useEffect } from react
+Unused import in apps/web/src/app/layout.tsx: type { Metadata, Viewport } from next
+Unused import in apps/web/src/app/layout.tsx: { Inter } from next/font/google
+Unused import in apps/web/src/app/layout.tsx: { Providers } from @/components/providers/Providers
+Unused import in apps/web/src/app/loading.tsx: { Loader2 } from lucide-react
+Unused import in apps/web/src/app/login/error.tsx: { useEffect } from react
+Unused import in apps/web/src/app/login/page.tsx: * as React from react
+Unused import in apps/web/src/app/login/page.tsx: Link from next/link
+Unused import in apps/web/src/app/login/page.tsx: { useRouter, useSearchParams } from next/navigation
+Unused import in apps/web/src/app/login/page.tsx: { motion } from framer-motion
+Unused import in apps/web/src/app/login/page.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/app/login/page.tsx: { useForm } from react-hook-form
+Unused import in apps/web/src/app/login/page.tsx: { zodResolver } from @hookform/resolvers/zod
+Unused import in apps/web/src/app/login/page.tsx: { z } from zod/v4
+Unused import in apps/web/src/app/login/page.tsx: { toast } from sonner
+Unused import in apps/web/src/app/login/page.tsx: { sendExtensionToken } from @/lib/extension-auth
+Unused import in apps/web/src/app/login/page.tsx: { premiumToast } from @/lib/premium-feedback
+Unused import in apps/web/src/app/login/page.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/app/login/page.tsx: { Loader2 } from lucide-react
+Unused import in apps/web/src/app/not-found.tsx: Link from next/link
+Unused import in apps/web/src/app/not-found.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/app/page.tsx: type { Metadata } from next
+Unused import in apps/web/src/app/page.tsx: { Nav } from @/components/layout/Nav
+Unused import in apps/web/src/app/page.tsx: { Hero } from @/components/sections/Hero
+Unused import in apps/web/src/app/page.tsx: { ShowcasesSection } from @/components/sections/Showcases
+Unused import in apps/web/src/app/page.tsx: { BentoGrid } from @/components/sections/BentoGrid
+Unused import in apps/web/src/app/page.tsx: { Footer } from @/components/layout/Footer
+Unused import in apps/web/src/app/pricing/page.tsx: * as React from react
+Unused import in apps/web/src/app/pricing/page.tsx: Link from next/link
+Unused import in apps/web/src/app/pricing/page.tsx: { motion } from framer-motion
+Unused import in apps/web/src/app/pricing/page.tsx: * as Switch from @radix-ui/react-switch
+Unused import in apps/web/src/app/pricing/page.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/app/pricing/page.tsx: { Nav } from @/components/layout/Nav
+Unused import in apps/web/src/app/pricing/page.tsx: { useAuthStore } from @/store/authStore
+Unused import in apps/web/src/app/pricing/page.tsx: { toast } from sonner
+Unused import in apps/web/src/app/share/f/[id]/page.tsx: type { Metadata } from next
+Unused import in apps/web/src/app/share/f/[id]/page.tsx: { notFound } from next/navigation
+Unused import in apps/web/src/app/share/f/[id]/page.tsx: Link from next/link
+Unused import in apps/web/src/app/share/f/[id]/page.tsx: { getFolder } from @/lib/share-data
+Unused import in apps/web/src/app/share/[hash]/page.tsx: * as React from react
+Unused import in apps/web/src/app/share/[hash]/page.tsx: { useParams, useRouter } from next/navigation
+Unused import in apps/web/src/app/share/[hash]/page.tsx: { motion } from framer-motion
+Unused import in apps/web/src/app/share/[hash]/page.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/app/share/[hash]/page.tsx: { toast } from sonner
+Unused import in apps/web/src/app/share/[hash]/page.tsx: { premiumToast } from @/lib/premium-feedback
+Unused import in apps/web/src/app/share/[hash]/page.tsx: { Loader2 } from lucide-react
+Unused import in apps/web/src/app/share/h/[id]/page.tsx: type { Metadata } from next
+Unused import in apps/web/src/app/share/h/[id]/page.tsx: { notFound } from next/navigation
+Unused import in apps/web/src/app/share/h/[id]/page.tsx: Link from next/link
+Unused import in apps/web/src/app/share/h/[id]/page.tsx: { getHighlight } from @/lib/share-data
+Unused import in apps/web/src/app/signup/page.tsx: * as React from react
+Unused import in apps/web/src/app/signup/page.tsx: Link from next/link
+Unused import in apps/web/src/app/signup/page.tsx: { useRouter, useSearchParams } from next/navigation
+Unused import in apps/web/src/app/signup/page.tsx: { motion } from framer-motion
+Unused import in apps/web/src/app/signup/page.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/app/signup/page.tsx: { useForm } from react-hook-form
+Unused import in apps/web/src/app/signup/page.tsx: { zodResolver } from @hookform/resolvers/zod
+Unused import in apps/web/src/app/signup/page.tsx: { z } from zod/v4
+Unused import in apps/web/src/app/signup/page.tsx: { toast } from sonner
+Unused import in apps/web/src/app/signup/page.tsx: { sendExtensionToken } from @/lib/extension-auth
+Unused import in apps/web/src/app/signup/page.tsx: { premiumToast } from @/lib/premium-feedback
+Unused import in apps/web/src/app/signup/page.tsx: { Loader2 } from lucide-react
+Unused import in apps/web/src/app/welcome/page.tsx: * as React from react
+Unused import in apps/web/src/app/welcome/page.tsx: Link from next/link
+Unused import in apps/web/src/app/welcome/page.tsx: { motion } from framer-motion
+Unused import in apps/web/src/app/welcome/page.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/AutoDraft.tsx: React, { useState, useMemo } from react
+Unused import in apps/web/src/components/AutoDraft.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/components/AutoDraft.tsx: * as Dialog from @radix-ui/react-dialog
+Unused import in apps/web/src/components/AutoDraft.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/AutoDraft.tsx: { motion, AnimatePresence } from framer-motion
+Unused import in apps/web/src/components/dashboard/ActionEngine.tsx: React, { useState } from react
+Unused import in apps/web/src/components/dashboard/ActionEngine.tsx: { CheckCircle2, Loader2, Sparkles } from lucide-react
+Unused import in apps/web/src/components/dashboard/AIContextModal.tsx: * as React from react
+Unused import in apps/web/src/components/dashboard/AIContextModal.tsx: * as Dialog from @radix-ui/react-dialog
+Unused import in apps/web/src/components/dashboard/AIContextModal.tsx: { motion, AnimatePresence } from framer-motion
+Unused import in apps/web/src/components/dashboard/AIContextModal.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/AIContextModal.tsx: { useDashboardStore, type Highlight } from @/store/dashboard
+Unused import in apps/web/src/components/dashboard/BulkActionBar.tsx: * as React from react
+Unused import in apps/web/src/components/dashboard/BulkActionBar.tsx: { motion, AnimatePresence } from framer-motion
+Unused import in apps/web/src/components/dashboard/BulkActionBar.tsx: * as DropdownMenu from @radix-ui/react-dropdown-menu
+Unused import in apps/web/src/components/dashboard/BulkActionBar.tsx: * as Popover from @radix-ui/react-popover
+Unused import in apps/web/src/components/dashboard/BulkActionBar.tsx: { toast } from sonner
+Unused import in apps/web/src/components/dashboard/BulkActionBar.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/BulkActionBar.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/components/dashboard/ConnectDots.tsx: React, { useState } from react
+Unused import in apps/web/src/components/dashboard/ConnectDots.tsx: { Link2 } from lucide-react
+Unused import in apps/web/src/components/dashboard/ConnectDots.tsx: { Spinner } from @/components/ui/Spinner
+Unused import in apps/web/src/components/dashboard/DashboardLayout.tsx: * as React from react
+Unused import in apps/web/src/components/dashboard/DashboardLayout.tsx: { useRouter } from next/navigation
+Unused import in apps/web/src/components/dashboard/DashboardLayout.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/DashboardLayout.tsx: { Sidebar } from ./Sidebar
+Unused import in apps/web/src/components/dashboard/DashboardLayout.tsx: { HighlightsMasonry } from ./HighlightsMasonry
+Unused import in apps/web/src/components/dashboard/DashboardLayout.tsx: { ViewControlBar } from ./ViewControlBar
+Unused import in apps/web/src/components/dashboard/DashboardLayout.tsx: { DashboardHeader } from ./Header
+Unused import in apps/web/src/components/dashboard/DashboardLayout.tsx: { CommandPalette } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/DashboardLayout.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/components/dashboard/DashboardLayout.tsx: { toast } from sonner
+Unused import in apps/web/src/components/dashboard/DeleteAlertDialog.tsx: * as React from react
+Unused import in apps/web/src/components/dashboard/DeleteAlertDialog.tsx: * as AlertDialog from @radix-ui/react-alert-dialog
+Unused import in apps/web/src/components/dashboard/DeleteAlertDialog.tsx: { motion, AnimatePresence } from framer-motion
+Unused import in apps/web/src/components/dashboard/DeleteAlertDialog.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/DevilsAdvocate.tsx: React, { useState } from react
+Unused import in apps/web/src/components/dashboard/DevilsAdvocate.tsx: { AlertTriangle } from lucide-react
+Unused import in apps/web/src/components/dashboard/DocsShareModal.tsx: * as React from react
+Unused import in apps/web/src/components/dashboard/DocsShareModal.tsx: * as Dialog from @radix-ui/react-dialog
+Unused import in apps/web/src/components/dashboard/DocsShareModal.tsx: * as DropdownMenu from @radix-ui/react-dropdown-menu
+Unused import in apps/web/src/components/dashboard/DocsShareModal.tsx: { motion, AnimatePresence } from framer-motion
+Unused import in apps/web/src/components/dashboard/DocsShareModal.tsx: { toast } from sonner
+Unused import in apps/web/src/components/dashboard/DocsShareModal.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/DocsShareModal.tsx: { Loader2 } from lucide-react
+Unused import in apps/web/src/components/dashboard/DuplicateFolderModal.tsx: * as React from react
+Unused import in apps/web/src/components/dashboard/DuplicateFolderModal.tsx: * as AlertDialog from @radix-ui/react-alert-dialog
+Unused import in apps/web/src/components/dashboard/DuplicateFolderModal.tsx: { motion, AnimatePresence } from framer-motion
+Unused import in apps/web/src/components/dashboard/DuplicateFolderModal.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/DuplicateFolderModal.tsx: { Spinner } from @/components/ui/Spinner
+Unused import in apps/web/src/components/dashboard/EmptyState.tsx: * as React from react
+Unused import in apps/web/src/components/dashboard/EmptyState.tsx: Link from next/link
+Unused import in apps/web/src/components/dashboard/EmptyState.tsx: { motion } from framer-motion
+Unused import in apps/web/src/components/dashboard/EmptyState.tsx: { toast } from sonner
+Unused import in apps/web/src/components/dashboard/EmptyState.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/EmptyState.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/components/dashboard/FolderCreateDialog.tsx: * as React from react
+Unused import in apps/web/src/components/dashboard/FolderCreateDialog.tsx: * as Dialog from @radix-ui/react-dialog
+Unused import in apps/web/src/components/dashboard/FolderCreateDialog.tsx: { motion, AnimatePresence } from framer-motion
+Unused import in apps/web/src/components/dashboard/FolderCreateDialog.tsx: { toast } from sonner
+Unused import in apps/web/src/components/dashboard/FolderCreateDialog.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/FolderCreateDialog.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/components/dashboard/FolderCreateDialog.tsx: { Loader2 } from lucide-react
+Unused import in apps/web/src/components/dashboard/FolderSynthesis.tsx: React from react
+Unused import in apps/web/src/components/dashboard/FolderSynthesis.tsx: { Sparkles } from lucide-react
+Unused import in apps/web/src/components/dashboard/FolderSynthesis.tsx: { Spinner } from @/components/ui/Spinner
+Unused import in apps/web/src/components/dashboard/FolderSynthesis.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/FolderSynthesis.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/components/dashboard/FolderSynthesis.tsx: type { Highlight } from @/store/dashboard
+Unused import in apps/web/src/components/dashboard/Header.tsx: * as React from react
+Unused import in apps/web/src/components/dashboard/Header.tsx: Link from next/link
+Unused import in apps/web/src/components/dashboard/Header.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/Header.tsx: { useSearchStore } from @/store/useSearchStore
+Unused import in apps/web/src/components/dashboard/Header.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/components/dashboard/Header.tsx: { useAuthStore } from @/store/authStore
+Unused import in apps/web/src/components/dashboard/Header.tsx: { NotificationBell } from ./NotificationBell
+Unused import in apps/web/src/components/dashboard/HighlightAIPanel.tsx: * as React from react
+Unused import in apps/web/src/components/dashboard/HighlightAIPanel.tsx: { motion, AnimatePresence } from framer-motion
+Unused import in apps/web/src/components/dashboard/HighlightAIPanel.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/HighlightAIPanel.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/components/dashboard/HighlightAIPanel.tsx: type { Highlight } from @/store/dashboard
+Unused import in apps/web/src/components/dashboard/HighlightAIPanel.tsx: { AIContextModal } from ./AIContextModal
+Unused import in apps/web/src/components/dashboard/HighlightsMasonry.tsx: * as React from react
+Unused import in apps/web/src/components/dashboard/HighlightsMasonry.tsx: { useRouter } from next/navigation
+Unused import in apps/web/src/components/dashboard/HighlightsMasonry.tsx: { motion, AnimatePresence } from framer-motion
+Unused import in apps/web/src/components/dashboard/HighlightsMasonry.tsx: * as Dialog from @radix-ui/react-dialog
+Unused import in apps/web/src/components/dashboard/HighlightsMasonry.tsx: * as DropdownMenu from @radix-ui/react-dropdown-menu
+Unused import in apps/web/src/components/dashboard/HighlightsMasonry.tsx: { toast } from sonner
+Unused import in apps/web/src/components/dashboard/HighlightsMasonry.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/HighlightsMasonry.tsx: { Badge } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/HighlightsMasonry.tsx: { useHotkeys } from @/hooks/useHotkeys
+Unused import in apps/web/src/components/dashboard/HighlightsMasonry.tsx: { BulkActionBar } from ./BulkActionBar
+Unused import in apps/web/src/components/dashboard/HighlightsMasonry.tsx: { EmptyState } from ./EmptyState
+Unused import in apps/web/src/components/dashboard/HighlightsMasonry.tsx: { ShareDialog, ShareIcon } from ./ShareDialog
+Unused import in apps/web/src/components/dashboard/HighlightsMasonry.tsx: { HighlightAIPanel } from ./HighlightAIPanel
+Unused import in apps/web/src/components/dashboard/HighlightsMasonry.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/components/dashboard/HighlightsMasonry.tsx: { LoadingSkeleton } from ./LoadingSkeleton
+Unused import in apps/web/src/components/dashboard/HighlightsMasonry.tsx: type { Highlight, Folder, Tag } from @/store/dashboard
+Unused import in apps/web/src/components/dashboard/HighlightsMasonry.tsx: { DevilsAdvocate } from ./DevilsAdvocate
+Unused import in apps/web/src/components/dashboard/HighlightsMasonry.tsx: { RequestAccessModal } from ./RequestAccessModal
+Unused import in apps/web/src/components/dashboard/HighlightsMasonry.tsx: { Lock, ShieldAlert } from lucide-react
+Unused import in apps/web/src/components/dashboard/HighlightsMasonry.tsx: { formatSourceUrl } from @/lib/url
+Unused import in apps/web/src/components/dashboard/LoadingSkeleton.tsx: * as React from react
+Unused import in apps/web/src/components/dashboard/LoadingSkeleton.tsx: { motion } from framer-motion
+Unused import in apps/web/src/components/dashboard/LoadingSkeleton.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/ManageAccessModal.tsx: * as React from react
+Unused import in apps/web/src/components/dashboard/ManageAccessModal.tsx: * as Dialog from @radix-ui/react-dialog
+Unused import in apps/web/src/components/dashboard/ManageAccessModal.tsx: { motion, AnimatePresence } from framer-motion
+Unused import in apps/web/src/components/dashboard/ManageAccessModal.tsx: { X, Users, Shield, Trash2, Check, AlertCircle, Loader2, UserPlus, Search } from lucide-react
+Unused import in apps/web/src/components/dashboard/ManageAccessModal.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/ManageAccessModal.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/components/dashboard/ManageAccessModal.tsx: { toast } from sonner
+Unused import in apps/web/src/components/dashboard/NewHighlightDialog.tsx: * as React from react
+Unused import in apps/web/src/components/dashboard/NewHighlightDialog.tsx: * as Dialog from @radix-ui/react-dialog
+Unused import in apps/web/src/components/dashboard/NewHighlightDialog.tsx: * as Popover from @radix-ui/react-popover
+Unused import in apps/web/src/components/dashboard/NewHighlightDialog.tsx: { motion, AnimatePresence } from framer-motion
+Unused import in apps/web/src/components/dashboard/NewHighlightDialog.tsx: { toast } from sonner
+Unused import in apps/web/src/components/dashboard/NewHighlightDialog.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/NewHighlightDialog.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/components/dashboard/NewHighlightDialog.tsx: { Folder } from @/store/types
+Unused import in apps/web/src/components/dashboard/NewTagDialog.tsx: * as React from react
+Unused import in apps/web/src/components/dashboard/NewTagDialog.tsx: * as Dialog from @radix-ui/react-dialog
+Unused import in apps/web/src/components/dashboard/NewTagDialog.tsx: { toast } from sonner
+Unused import in apps/web/src/components/dashboard/NewTagDialog.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/NewTagDialog.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/components/dashboard/NewTagDialog.tsx: { Loader2 } from lucide-react
+Unused import in apps/web/src/components/dashboard/NotificationBell.tsx: * as React from react
+Unused import in apps/web/src/components/dashboard/NotificationBell.tsx: * as Popover from @radix-ui/react-popover
+Unused import in apps/web/src/components/dashboard/NotificationBell.tsx: { useRouter } from next/navigation
+Unused import in apps/web/src/components/dashboard/NotificationBell.tsx: { toast } from sonner
+Unused import in apps/web/src/components/dashboard/NotificationBell.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/NotificationBell.tsx: { useDashboardStore, type NotificationItem } from @/store/dashboard
+Unused import in apps/web/src/components/dashboard/NotificationBell.tsx: { useShallow } from zustand/react/shallow
+Unused import in apps/web/src/components/dashboard/NotificationBell.tsx: { Spinner } from @/components/ui/Spinner
+Unused import in apps/web/src/components/dashboard/RenameFolderDialog.tsx: * as React from react
+Unused import in apps/web/src/components/dashboard/RenameFolderDialog.tsx: * as Dialog from @radix-ui/react-dialog
+Unused import in apps/web/src/components/dashboard/RenameFolderDialog.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/RenameFolderDialog.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/components/dashboard/RequestAccessModal.tsx: * as React from react
+Unused import in apps/web/src/components/dashboard/RequestAccessModal.tsx: * as Dialog from @radix-ui/react-dialog
+Unused import in apps/web/src/components/dashboard/RequestAccessModal.tsx: { motion, AnimatePresence } from framer-motion
+Unused import in apps/web/src/components/dashboard/RequestAccessModal.tsx: { toast } from sonner
+Unused import in apps/web/src/components/dashboard/RequestAccessModal.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/RequestAccessModal.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/components/dashboard/RequestAccessModal.tsx: { Loader2, ShieldCheck, ShieldAlert, Check } from lucide-react
+Unused import in apps/web/src/components/dashboard/SettingSkeleton.tsx: * as React from react
+Unused import in apps/web/src/components/dashboard/SettingSkeleton.tsx: { motion } from framer-motion
+Unused import in apps/web/src/components/dashboard/SettingSkeleton.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/ShareDialog.tsx: * as React from react
+Unused import in apps/web/src/components/dashboard/ShareDialog.tsx: * as Dialog from @radix-ui/react-dialog
+Unused import in apps/web/src/components/dashboard/ShareDialog.tsx: { motion } from framer-motion
+Unused import in apps/web/src/components/dashboard/ShareDialog.tsx: { toast } from sonner
+Unused import in apps/web/src/components/dashboard/ShareDialog.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/ShareDialog.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/components/dashboard/ShareDialog.tsx: { DocsShareModal } from ./DocsShareModal
+Unused import in apps/web/src/components/dashboard/Sidebar.tsx: * as React from react
+Unused import in apps/web/src/components/dashboard/Sidebar.tsx: Link from next/link
+Unused import in apps/web/src/components/dashboard/Sidebar.tsx: { usePathname, useRouter } from next/navigation
+Unused import in apps/web/src/components/dashboard/Sidebar.tsx: * as DropdownMenu from @radix-ui/react-dropdown-menu
+Unused import in apps/web/src/components/dashboard/Sidebar.tsx: * as ContextMenu from @radix-ui/react-context-menu
+Unused import in apps/web/src/components/dashboard/Sidebar.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/Sidebar.tsx: { Avatar, AvatarFallback, AvatarImage } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/Sidebar.tsx: { Badge } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/Sidebar.tsx: { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/Sidebar.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/components/dashboard/Sidebar.tsx: { useAuthStore } from @/store/authStore
+Unused import in apps/web/src/components/dashboard/Sidebar.tsx: type { Folder, SmartCollection, Tag } from @/store/dashboard
+Unused import in apps/web/src/components/dashboard/Sidebar.tsx: { FolderCreateDialog } from ./FolderCreateDialog
+Unused import in apps/web/src/components/dashboard/Sidebar.tsx: { DeleteAlertDialog } from ./DeleteAlertDialog
+Unused import in apps/web/src/components/dashboard/Sidebar.tsx: { DuplicateFolderModal } from ./DuplicateFolderModal
+Unused import in apps/web/src/components/dashboard/Sidebar.tsx: { NewTagDialog } from ./NewTagDialog
+Unused import in apps/web/src/components/dashboard/Sidebar.tsx: { TagEditDialog } from ./TagEditDialog
+Unused import in apps/web/src/components/dashboard/Sidebar.tsx: { RenameFolderDialog } from ./RenameFolderDialog
+Unused import in apps/web/src/components/dashboard/Sidebar.tsx: { ShareDialog, ShareIcon } from ./ShareDialog
+Unused import in apps/web/src/components/dashboard/Sidebar.tsx: { ShieldAlert } from lucide-react
+Unused import in apps/web/src/components/dashboard/Sidebar.tsx: { Spinner } from @/components/ui/Spinner
+Unused import in apps/web/src/components/dashboard/Sidebar.tsx: { RequestAccessModal } from ./RequestAccessModal
+Unused import in apps/web/src/components/dashboard/Sidebar.tsx: { ManageAccessModal } from ./ManageAccessModal
+Unused import in apps/web/src/components/dashboard/TagEditDialog.tsx: * as React from react
+Unused import in apps/web/src/components/dashboard/TagEditDialog.tsx: * as Dialog from @radix-ui/react-dialog
+Unused import in apps/web/src/components/dashboard/TagEditDialog.tsx: { toast } from sonner
+Unused import in apps/web/src/components/dashboard/TagEditDialog.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/TagEditDialog.tsx: { useDashboardStore, Tag } from @/store/dashboard
+Unused import in apps/web/src/components/dashboard/TagEditDialog.tsx: { Loader2 } from lucide-react
+Unused import in apps/web/src/components/dashboard/ViewControlBar.tsx: * as React from react
+Unused import in apps/web/src/components/dashboard/ViewControlBar.tsx: * as Popover from @radix-ui/react-popover
+Unused import in apps/web/src/components/dashboard/ViewControlBar.tsx: * as ToggleGroup from @radix-ui/react-toggle-group
+Unused import in apps/web/src/components/dashboard/ViewControlBar.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/dashboard/ViewControlBar.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/components/dashboard/ViewControlBar.tsx: { toast } from sonner
+Unused import in apps/web/src/components/layout/Footer.tsx: Link from next/link
+Unused import in apps/web/src/components/layout/Footer.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/layout/Nav.tsx: * as React from react
+Unused import in apps/web/src/components/layout/Nav.tsx: Link from next/link
+Unused import in apps/web/src/components/layout/Nav.tsx: { usePathname, useRouter } from next/navigation
+Unused import in apps/web/src/components/layout/Nav.tsx: { motion } from framer-motion
+Unused import in apps/web/src/components/layout/Nav.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/layout/Nav.tsx: { Button } from @cortex/ui
+Unused import in apps/web/src/components/layout/Nav.tsx: { useSearchStore } from @/store/useSearchStore
+Unused import in apps/web/src/components/providers/LenisProvider.tsx: * as React from react
+Unused import in apps/web/src/components/providers/LenisProvider.tsx: { usePathname } from next/navigation
+Unused import in apps/web/src/components/providers/LenisProvider.tsx: Lenis from lenis
+Unused import in apps/web/src/components/providers/Providers.tsx: { useAuthStore } from @/store/authStore
+Unused import in apps/web/src/components/providers/Providers.tsx: { useEffect, useRef } from react
+Unused import in apps/web/src/components/providers/Providers.tsx: { sendExtensionToken } from @/lib/extension-auth
+Unused import in apps/web/src/components/providers/Providers.tsx: { LenisProvider } from @/components/providers/LenisProvider
+Unused import in apps/web/src/components/providers/Providers.tsx: { QueryProvider } from @/components/providers/QueryProvider
+Unused import in apps/web/src/components/providers/Providers.tsx: { SearchProvider } from @/components/providers/SearchProvider
+Unused import in apps/web/src/components/providers/Providers.tsx: { Toaster } from sonner
+Unused import in apps/web/src/components/providers/Providers.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/components/providers/Providers.tsx: { GlobalLoader } from @/components/ui/GlobalLoader
+Unused import in apps/web/src/components/providers/QueryProvider.tsx: * as React from react
+Unused import in apps/web/src/components/providers/SearchProvider.tsx: * as React from react
+Unused import in apps/web/src/components/providers/SearchProvider.tsx: { useRouter } from next/navigation
+Unused import in apps/web/src/components/providers/SearchProvider.tsx: { CommandPalette, type MentionSource } from @cortex/ui
+Unused import in apps/web/src/components/providers/SearchProvider.tsx: { useSearchStore } from @/store/useSearchStore
+Unused import in apps/web/src/components/providers/SearchProvider.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/components/providers/SearchProvider.tsx: { FolderCreateDialog } from @/components/dashboard/FolderCreateDialog
+Unused import in apps/web/src/components/providers/SearchProvider.tsx: { NewHighlightDialog } from @/components/dashboard/NewHighlightDialog
+Unused import in apps/web/src/components/providers/SessionGuard.tsx: * as React from react
+Unused import in apps/web/src/components/providers/SessionGuard.tsx: { useRouter } from next/navigation
+Unused import in apps/web/src/components/providers/SessionGuard.tsx: { motion, AnimatePresence } from framer-motion
+Unused import in apps/web/src/components/providers/SessionGuard.tsx: { sendExtensionToken } from @/lib/extension-auth
+Unused import in apps/web/src/components/sections/BentoGrid.tsx: * as React from react
+Unused import in apps/web/src/components/sections/BentoGrid.tsx: { motion, useInView } from framer-motion
+Unused import in apps/web/src/components/sections/BentoGrid.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/sections/BentoGrid.tsx: { SpotlightCard } from @/components/ui/SpotlightCard
+Unused import in apps/web/src/components/sections/Hero.tsx: * as React from react
+Unused import in apps/web/src/components/sections/Hero.tsx: Link from next/link
+Unused import in apps/web/src/components/sections/Hero.tsx: { motion } from framer-motion
+Unused import in apps/web/src/components/sections/Hero.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/sections/Hero.tsx: { Button } from @cortex/ui
+Unused import in apps/web/src/components/sections/Hero.tsx: { Badge } from @cortex/ui
+Unused import in apps/web/src/components/sections/Showcases.tsx: * as React from react
+Unused import in apps/web/src/components/sections/Showcases.tsx: { motion, useInView } from framer-motion
+Unused import in apps/web/src/components/sections/Showcases.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/ui/GlobalLoader.tsx: * as React from react
+Unused import in apps/web/src/components/ui/GlobalLoader.tsx: { motion, AnimatePresence } from framer-motion
+Unused import in apps/web/src/components/ui/GlobalLoader.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/components/ui/PremiumLoader.tsx: * as React from react
+Unused import in apps/web/src/components/ui/PremiumLoader.tsx: { motion, AnimatePresence } from framer-motion
+Unused import in apps/web/src/components/ui/PremiumLoader.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/ui/PremiumLoader.tsx: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/components/ui/Spinner.tsx: * as React from react
+Unused import in apps/web/src/components/ui/Spinner.tsx: { motion } from framer-motion
+Unused import in apps/web/src/components/ui/Spinner.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/components/ui/SpotlightCard.tsx: * as React from react
+Unused import in apps/web/src/components/ui/SpotlightCard.tsx: { motion, useMotionTemplate, useMotionValue } from framer-motion
+Unused import in apps/web/src/components/ui/SpotlightCard.tsx: { cn } from @cortex/ui
+Unused import in apps/web/src/hooks/__tests__/useServerSync.test.ts: { describe, it, expect, vi, beforeEach, afterEach } from vitest
+Unused import in apps/web/src/hooks/__tests__/useServerSync.test.ts: { useServerSync } from ../useServerSync
+Unused import in apps/web/src/hooks/useExtensionSync.ts: { useEffect } from react
+Unused import in apps/web/src/hooks/useExtensionSync.ts: { useDashboardStore, type Folder, type Tag } from @/store/dashboard
+Unused import in apps/web/src/hooks/useHotkeys.ts: * as React from react
+Unused import in apps/web/src/hooks/useHotkeys.ts: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/hooks/useHotkeys.ts: { useSearchStore } from @/store/useSearchStore
+Unused import in apps/web/src/hooks/useLenis.ts: { useEffect } from react
+Unused import in apps/web/src/hooks/useLenis.ts: Lenis from lenis
+Unused import in apps/web/src/hooks/useResourceSync.ts: { useEffect, useRef } from react
+Unused import in apps/web/src/hooks/useResourceSync.ts: { Client } from @stomp/stompjs
+Unused import in apps/web/src/hooks/useResourceSync.ts: { useAuthStore } from @/store/authStore
+Unused import in apps/web/src/hooks/useServerSync.ts: { useEffect, useRef } from react
+Unused import in apps/web/src/hooks/useServerSync.ts: { useDashboardStore, type Highlight } from @/store/dashboard
+Unused import in apps/web/src/hooks/useServerSync.ts: type { AuthUser } from @/store/authStore
+Unused import in apps/web/src/hooks/useWebSocket.ts: { useEffect, useRef } from react
+Unused import in apps/web/src/hooks/useWebSocket.ts: { Client } from @stomp/stompjs
+Unused import in apps/web/src/hooks/useWebSocket.ts: { useDashboardStore, type Highlight, type Folder, type Tag, type NotificationItem } from @/store/dashboard
+Unused import in apps/web/src/lib/api-persist.ts: { mutateOrQueue } from @/lib/sync-queue
+Unused import in apps/web/src/lib/auth.ts: { z } from zod/v4
+Unused import in apps/web/src/lib/cross-tab-sync.ts: { useDashboardStore, type Folder, type Highlight, type Tag } from @/store/dashboard
+Unused import in apps/web/src/lib/premium-feedback.ts: { toast } from sonner
+Unused import in apps/web/src/lib/proxy.ts: { NextRequest, NextResponse } from next/server
+Unused import in apps/web/src/lib/proxy.ts: { API_BASE } from @/lib/auth
+Unused import in apps/web/src/lib/proxy.ts: { getSession } from @/lib/session
+Unused import in apps/web/src/lib/secure-vault.test.ts: { describe, it, expect, vi, beforeEach } from vitest
+Unused import in apps/web/src/lib/secure-vault.test.ts: { shredClientVault, clearVaultKey } from ./secure-vault
+Unused import in apps/web/src/lib/secure-vault.test.ts: { del as idbDel } from idb-keyval
+Unused import in apps/web/src/lib/secure-vault.ts: CryptoJS from crypto-js
+Unused import in apps/web/src/lib/secure-vault.ts: { get as idbGet, set as idbSet, del as idbDel } from idb-keyval
+Unused import in apps/web/src/lib/session.ts: type { SessionOptions, IronSession } from iron-session
+Unused import in apps/web/src/lib/session.ts: { getIronSession } from iron-session
+Unused import in apps/web/src/lib/session.ts: { cookies } from next/headers
+Unused import in apps/web/src/lib/syncBridge.test.ts: { describe, it, expect, vi, beforeEach, afterEach } from vitest
+Unused import in apps/web/src/lib/syncBridge.test.ts: { pushToExtension, registerOnlineFlush } from ./syncBridge
+Unused import in apps/web/src/lib/sync-queue.ts: { create } from zustand
+Unused import in apps/web/src/lib/sync-queue.ts: { persist, createJSONStorage } from zustand/middleware
+Unused import in apps/web/src/lib/sync-queue.ts: { z } from zod/v4
+Unused import in apps/web/src/lib/sync-queue.ts: { secureIdbStorage } from @/lib/secure-vault
+Unused import in apps/web/src/lib/sync-queue.ts: { toast } from sonner
+Unused import in apps/web/src/lib/websocket.test.ts: { describe, it, expect, vi, beforeEach } from vitest
+Unused import in apps/web/src/lib/websocket.test.ts: { activateWebsocket } from ./websocket
+Unused import in apps/web/src/lib/websocket.test.ts: { useSyncStore } from @/store/useSyncStore
+Unused import in apps/web/src/lib/websocket.test.ts: { Client } from @stomp/stompjs
+Unused import in apps/web/src/lib/websocket.ts: { Client } from @stomp/stompjs
+Unused import in apps/web/src/lib/websocket.ts: { useSyncStore } from @/store/useSyncStore
+Unused import in apps/web/src/middleware.ts: { NextRequest, NextResponse } from next/server
+Unused import in apps/web/src/store/authStore.ts: { create } from zustand
+Unused import in apps/web/src/store/authStore.ts: { useDashboardStore } from @/store/dashboard
+Unused import in apps/web/src/store/dashboard.ts: { create } from zustand
+Unused import in apps/web/src/store/dashboard.ts: { devtools } from zustand/middleware
+Unused import in apps/web/src/store/dashboard.ts: { DashboardState } from ./types
+Unused import in apps/web/src/store/dashboard.ts: { createUISlice } from ./slices/uiSlice
+Unused import in apps/web/src/store/dashboard.ts: { createFolderSlice } from ./slices/folderSlice
+Unused import in apps/web/src/store/dashboard.ts: { createTagSlice } from ./slices/tagSlice
+Unused import in apps/web/src/store/dashboard.ts: { createHighlightSlice } from ./slices/highlightSlice
+Unused import in apps/web/src/store/dashboard.ts: { createNotificationSlice } from ./slices/notificationSlice
+Unused import in apps/web/src/store/dashboard.ts: { createAccessRequestSlice } from ./slices/accessRequestSlice
+Unused import in apps/web/src/store/dashboard.ts: { createSmartCollectionSlice } from ./slices/smartCollectionSlice
+Unused import in apps/web/src/store/dashboard.ts: { createAPIKeySlice } from ./slices/apiKeySlice
+Unused import in apps/web/src/store/slices/accessRequestSlice.ts: { StateCreator } from zustand
+Unused import in apps/web/src/store/slices/accessRequestSlice.ts: { DashboardState } from ../types
+Unused import in apps/web/src/store/slices/accessRequestSlice.ts: { apiFetch } from ../helpers
+Unused import in apps/web/src/store/slices/apiKeySlice.ts: { StateCreator } from zustand
+Unused import in apps/web/src/store/slices/apiKeySlice.ts: { DashboardState } from ../types
+Unused import in apps/web/src/store/slices/apiKeySlice.ts: { apiFetch } from ../helpers
+Unused import in apps/web/src/store/slices/folderSlice.ts: { StateCreator } from zustand
+Unused import in apps/web/src/store/slices/folderSlice.ts: { DashboardState, Folder } from ../types
+Unused import in apps/web/src/store/slices/folderSlice.ts: { apiFetch, nextEmoji, dedupById } from ../helpers
+Unused import in apps/web/src/store/slices/highlightSlice.ts: { StateCreator } from zustand
+Unused import in apps/web/src/store/slices/highlightSlice.ts: { DashboardState, Highlight, Tag } from ../types
+Unused import in apps/web/src/store/slices/highlightSlice.ts: { apiFetch } from ../helpers
+Unused import in apps/web/src/store/slices/notificationSlice.ts: { StateCreator } from zustand
+Unused import in apps/web/src/store/slices/notificationSlice.ts: { DashboardState, NotificationItem } from ../types
+Unused import in apps/web/src/store/slices/smartCollectionSlice.ts: { StateCreator } from zustand
+Unused import in apps/web/src/store/slices/smartCollectionSlice.ts: { DashboardState, SmartCollection } from ../types
+Unused import in apps/web/src/store/slices/smartCollectionSlice.ts: { apiFetch, nextLocalId } from ../helpers
+Unused import in apps/web/src/store/slices/tagSlice.ts: { StateCreator } from zustand
+Unused import in apps/web/src/store/slices/tagSlice.ts: { DashboardState, Tag } from ../types
+Unused import in apps/web/src/store/slices/tagSlice.ts: { apiFetch, dedupById } from ../helpers
+Unused import in apps/web/src/store/slices/uiSlice.ts: { StateCreator } from zustand
+Unused import in apps/web/src/store/slices/uiSlice.ts: { DashboardState } from ../types
+Unused import in apps/web/src/store/useSearchStore.ts: { create } from zustand
+Unused import in apps/web/src/store/useSyncStore.ts: { create } from zustand

@@ -7,7 +7,7 @@ import { motion } from "framer-motion";
 import { cn } from "@cortex/ui";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod/v4";
+import { z } from "zod";
 import { toast } from "sonner";
 import { sendExtensionToken } from "@/lib/extension-auth";
 import { premiumToast } from "@/lib/premium-feedback";
