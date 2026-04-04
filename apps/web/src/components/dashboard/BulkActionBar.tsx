@@ -91,13 +91,13 @@ export function BulkActionBar() {
   const handleBulkTag = React.useCallback((tagId: string) => {
     // If ALL selected highlights have this tag → remove it. Otherwise → add it.
     const selectedHighlights = highlights.filter((h) => selectedIds.includes(h.id));
-    const allHaveTag = selectedHighlights.every((h) => h.tags?.includes(tagId));
+    const allHaveTag = selectedHighlights.every((h) => h.tags?.some(t => t.id === tagId));
     selectedHighlights.forEach((h) => {
       const currentTags = h.tags ?? [];
       const newTags = allHaveTag
-        ? currentTags.filter((t) => t !== tagId)
-        : currentTags.includes(tagId) ? currentTags : [...currentTags, tagId];
-      updateHighlight(h.id, { tags: newTags });
+        ? currentTags.filter((t) => t.id !== tagId)
+        : currentTags.some(t => t.id === tagId) ? currentTags : [...currentTags, tags.find(t => t.id === tagId)!].filter(Boolean);
+      updateHighlight(h.id, { tags: newTags.map(t => t.id) } as any);
     });
     const tag = tags.find((t) => t.id === tagId);
     if (allHaveTag) {
@@ -259,7 +259,7 @@ export function BulkActionBar() {
                 ) : (
                   tags.map((tag) => {
                     const selectedHighlights = highlights.filter((h) => selectedIds.includes(h.id));
-                    const allHave = selectedHighlights.every((h) => h.tags?.includes(tag.id));
+                    const allHave = selectedHighlights.every((h) => h.tags?.some(t => t.id === tag.id));
                     return (
                       <button
                         key={tag.id}

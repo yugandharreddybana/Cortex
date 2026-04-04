@@ -222,6 +222,56 @@ Cortex is continuously evolving. Based on our current architecture and user feed
    - *Status*: PDF.js integration testing in `apps/extension`.
 
 ---
+## 🚀 Quick Start Guide
+
+### Prerequisites
+- Node.js 18+ and `pnpm` >= 10.0.0
+- Java 21 & Maven
+- PostgreSQL Database
+- Docker (optional for local DB/Ollama)
+
+### Environment Setup
+1. Copy the example environment variables file and fill in your secrets:
+   ```bash
+   cp .env.example .env.local
+   # Create a backend env as well
+   cp .env.example apps/api/.env
+   ```
+2. Generate a secure 32-character session password:
+   ```bash
+   openssl rand -base64 32
+   ```
+
+### 1. Start the Java Backend (`apps/api`)
+```bash
+cd apps/api
+mvn spring-boot:run
+# API server starts on http://localhost:8080
+```
+
+### 2. Start the Next.js Frontend (`apps/web`)
+```bash
+# Install dependencies from monorepo root
+pnpm install
+
+# Start the development server
+pnpm dev --filter @cortex/web
+# Frontend available at http://localhost:3000
+```
+
+### 3. Load the Browser Extension (`apps/extension`)
+```bash
+# Build the extension
+pnpm build --filter @cortex/extension
+```
+Load the `apps/extension/dist` folder as an unpacked extension in Chrome via `chrome://extensions`.
+
+### Running Tests
+- **Frontend/Extension**: `pnpm test` (Runs Vitest suites)
+- **Backend API**: `cd apps/api && mvn test`
+- **End-to-End**: `./API_TEST_SUITE.sh` or Playwright via `cd e2e && pnpm exec playwright test`
+
+---
 ## 📂 Project Structure Overview
 
 Cortex is organized using `pnpm` workspaces into a monorepo setup:

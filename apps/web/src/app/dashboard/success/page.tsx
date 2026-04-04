@@ -3,10 +3,9 @@
 import React from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
-import { Confetti } from "@/components/ui/Confetti"; // Assuming a confetti component exists or we can mock it
 import { cn } from "@cortex/ui";
 
-const ease = [0.16, 1, 0.3, 1];
+const ease = [0.16, 1, 0.3, 1] as [number, number, number, number];
 
 export default function SubscriptionSuccessPage() {
   return (

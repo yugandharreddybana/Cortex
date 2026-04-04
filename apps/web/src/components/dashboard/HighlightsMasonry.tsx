@@ -111,7 +111,7 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
     });
 
     return list;
-  }, [allHighlights, filterFn, searchQuery, activeTagFilters, sortOrder]);
+  }, [allHighlights, filterFn, activeTagFilters, sortOrder]);
 
   const [activeHighlight, setActiveHighlight] = React.useState<Highlight | null>(null);
   const [renameTarget, setRenameTarget] = React.useState<Highlight | null>(null);
@@ -474,6 +474,7 @@ function HighlightCard({
         if (!vid) return null;
         return (
           <div className="relative rounded-lg overflow-hidden mb-3 -mx-1 -mt-1">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={`https://img.youtube.com/vi/${vid}/maxresdefault.jpg`}
               alt="Video thumbnail"

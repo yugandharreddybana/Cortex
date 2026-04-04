@@ -31,6 +31,7 @@ public class FolderDeepClonePerformanceTest {
     @Mock private FolderRepository folderRepository;
     @Mock private HighlightRepository highlightRepository;
     @Mock private UserRepository userRepository;
+    @Mock private com.cortex.api.repository.HighlightTagRepository highlightTagRepository;
 
     @InjectMocks
     private FolderService folderService;
