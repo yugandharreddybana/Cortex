@@ -71,12 +71,12 @@ public class CommentServiceTest {
         when(userRepo.findById(1L)).thenReturn(Optional.of(owner));
         when(commentRepo.save(any(Comment.class))).thenAnswer(inv -> inv.getArgument(0));
         when(reactionService.getReactionsDTO(any())).thenReturn(java.util.Collections.emptyList());
+        when(securityService.hasHighlightAccess(anyLong(), anyString())).thenReturn(true);
  
         CommentDTO result = commentService.addComment(10L, "Test comment", 1L);
  
         assertNotNull(result);
         assertEquals("Test comment", result.text());
-        verify(securityService, never()).hasHighlightAccess(anyLong(), anyString());
     }
 
     @Test
@@ -132,6 +132,7 @@ public class CommentServiceTest {
         comment.setHighlight(highlight);
 
         when(commentRepo.findById(100L)).thenReturn(Optional.of(comment));
+        when(securityService.hasHighlightAccess(10L, "EDITOR")).thenReturn(true);
 
         commentService.deleteComment(100L, 1L); // 1L is highlight owner
 
@@ -148,7 +149,7 @@ public class CommentServiceTest {
         comment.setHighlight(highlight);
 
         when(commentRepo.findById(100L)).thenReturn(Optional.of(comment));
-        when(securityService.hasFolderAccess(20L, "EDITOR")).thenReturn(true);
+        when(securityService.hasHighlightAccess(10L, "EDITOR")).thenReturn(true);
 
         commentService.deleteComment(100L, 3L); // 3L is folder editor
 
@@ -165,7 +166,7 @@ public class CommentServiceTest {
         comment.setHighlight(highlight);
 
         when(commentRepo.findById(100L)).thenReturn(Optional.of(comment));
-        when(securityService.hasFolderAccess(20L, "EDITOR")).thenReturn(false);
+        when(securityService.hasHighlightAccess(10L, "EDITOR")).thenReturn(false);
 
         ResponseStatusException ex = assertThrows(ResponseStatusException.class, () -> {
             commentService.deleteComment(100L, 4L); // 4L is random user

@@ -28,6 +28,6 @@ export async function getSession(): Promise<IronSession<SessionData>> {
   const cookieStore = await cookies();
   // Cast through `unknown` — Next.js 15's ReadonlyRequestCookies satisfies
   // iron-session's internal CookieStore interface at runtime but TS can't see it.
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  // eslint-disable-next-line
   return getIronSession<SessionData>(cookieStore as unknown as any, sessionOptions);
 }

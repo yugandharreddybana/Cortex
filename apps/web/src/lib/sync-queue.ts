@@ -75,13 +75,13 @@ function normalizeHighlights(raw: unknown[]) {
             ? r.folder_id
             : undefined,
       note: typeof r.note === "string" ? r.note : undefined,
-      tags: Array.isArray(r.tags) ? (r.tags as string[]) : [],
+      tags: Array.isArray(r.tags) ? (r.tags as any[]) : [],
       isCode: Boolean(r.isCode),
       isFavorite: Boolean(r.isFavorite),
       isArchived: Boolean(r.isArchived),
       isPinned: Boolean(r.isPinned),
       highlightColor: typeof r.highlightColor === "string" ? r.highlightColor : undefined,
-    };
+    } as any;
   });
 }
 

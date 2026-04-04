@@ -114,7 +114,7 @@ export function RequestAccessModal({ open, onOpenChange, folderId, folderName, c
                     Request access
                   </Dialog.Title>
                   <Dialog.Description className="text-xs text-white/40 mb-4">
-                    Choose the level of access you need for "{folderName}". The owner will be notified.
+                    Choose the level of access you need for &quot;{folderName}&quot;. The owner will be notified.
                   </Dialog.Description>
 
                   {currentRole && (

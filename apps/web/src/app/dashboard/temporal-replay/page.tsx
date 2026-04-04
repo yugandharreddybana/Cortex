@@ -62,7 +62,7 @@ export default function TemporalReplayPage() {
                     </span>
                   </div>
                   <blockquote className="text-sm text-white/80 leading-relaxed border-l-2 border-accent/40 pl-3 italic">
-                    "{h.text}"
+                    &quot;{h.text}&quot;
                   </blockquote>
                 </div>
               ))}

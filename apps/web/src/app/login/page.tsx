@@ -74,7 +74,7 @@ function LoginContent() {
       }
     } catch {}
     setAuthChecked(true);
-  }, []); // Empty deps — function never changes
+  }, [returnTo, router]);
 
   React.useEffect(() => {
     checkAuthAndRedirect();

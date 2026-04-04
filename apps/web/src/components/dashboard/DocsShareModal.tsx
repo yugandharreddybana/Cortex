@@ -3,7 +3,7 @@
 /**
  * DocsShareModal — permission management and sharing dialog for highlights/folders.
  * Used in: ShareDialog.tsx (the "Manage access" button opens this modal).
- * TODO: Wire to notes/docs view when that feature is implemented.
+ * // TODO(future): Wire to notes/docs view when that feature is implemented.
  */
 
 import * as React from "react";

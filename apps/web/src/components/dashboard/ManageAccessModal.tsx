@@ -47,20 +47,7 @@ export function ManageAccessModal({
 
   const bulkManagePermissions = useDashboardStore((s) => s.bulkManagePermissions);
 
-  React.useEffect(() => {
-    if (open) {
-      fetchPermissions();
-      fetchCollaborators();
-    } else {
-      // Reset state on close
-      setPendingUpdates({});
-      setPendingRemovals(new Set());
-      setInviteEmail("");
-      setShowSuggestions(false);
-    }
-  }, [open, resourceId]);
-
-  const fetchCollaborators = async () => {
+  const fetchCollaborators = React.useCallback(async () => {
     try {
       const resp = await fetch("/api/permissions/collaborators");
       if (resp.ok) {
@@ -69,9 +56,9 @@ export function ManageAccessModal({
     } catch (err) {
       console.error("Failed to fetch collaborators:", err);
     }
-  };
+  }, []);
 
-  const fetchPermissions = async () => {
+  const fetchPermissions = React.useCallback(async () => {
     setIsLoading(true);
     try {
       const resp = await fetch(`/api/permissions/${resourceId}?type=${resourceType}`);
@@ -96,7 +83,20 @@ export function ManageAccessModal({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [resourceId, resourceType]);
+
+  React.useEffect(() => {
+    if (open) {
+      fetchPermissions();
+      fetchCollaborators();
+    } else {
+      // Reset state on close
+      setPendingUpdates({});
+      setPendingRemovals(new Set());
+      setInviteEmail("");
+      setShowSuggestions(false);
+    }
+  }, [open, fetchPermissions, fetchCollaborators]);
 
   const handleRoleChange = (userId: number, newRole: string) => {
     setPendingUpdates((prev) => ({ ...prev, [userId]: newRole }));

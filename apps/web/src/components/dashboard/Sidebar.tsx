@@ -305,7 +305,7 @@ function RecursiveFolderNode({
       return getChildren(fId).some((child: FolderWithActions) => checkActive(child.id));
     };
     return children.some((child: FolderWithActions) => checkActive(child.id));
-  }, [pathname, folder.id, children, getChildren]);
+  }, [pathname, children, getChildren]);
 
   const [expanded, setExpanded] = React.useState(true);
 
