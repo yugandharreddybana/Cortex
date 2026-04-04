@@ -108,9 +108,12 @@ public class PresenceController {
     }
 
     private String resolveEmail(Principal principal) {
+        if (principal == null || principal.getName() == null) return null;
         try {
             Long userId = Long.parseLong(principal.getName());
-            return userRepository.findById(userId).map(User::getEmail).orElse(null);
+            return userRepository.findById(java.util.Objects.requireNonNull(userId))
+                    .map(User::getEmail)
+                    .orElse(null);
         } catch (NumberFormatException e) {
             return null;
         }

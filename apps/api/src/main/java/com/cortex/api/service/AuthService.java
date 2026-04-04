@@ -87,6 +87,7 @@ public class AuthService {
         return new AuthResponse(token, toDTO(user));
     }
 
+    @Transactional
     public AuthResponse login(LoginRequest request) {
         log.info("[LOGIN] Attempt for email: {}", request.email());
         if (request.email() == null || request.email().isBlank()) {

@@ -25,7 +25,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -96,7 +95,7 @@ public class FolderController {
 
         // Real-time broadcast to all folder members/followers
         if (dto.parentId != null) {
-            notificationService.broadcastResourceActivity("folder", dto.parentId, "FOLDER_CREATED", created);
+            notificationService.broadcastResourceActivity("folder", java.util.Objects.requireNonNull(dto.parentId), "FOLDER_CREATED", created);
         } else {
             // Root folder creation - send to user topic (already handled by sendToUser)
         }
@@ -122,7 +121,7 @@ public class FolderController {
         webSocketService.sendToUser(auth.getName(), "/topic/folders/updated", updated);
 
         // Real-time broadcast to all members viewing/using this folder
-        notificationService.broadcastResourceActivity("folder", id, "FOLDER_UPDATED", updated);
+        notificationService.broadcastResourceActivity("folder", java.util.Objects.requireNonNull(id), "FOLDER_UPDATED", updated);
 
         return updated;
     }
@@ -138,7 +137,7 @@ public class FolderController {
         webSocketService.sendToUser(auth.getName(), "/topic/folders/updated", patched);
 
         // Real-time broadcast to all members
-        notificationService.broadcastResourceActivity("folder", id, "FOLDER_UPDATED", patched);
+        notificationService.broadcastResourceActivity("folder", java.util.Objects.requireNonNull(id), "FOLDER_UPDATED", patched);
 
         return patched;
     }

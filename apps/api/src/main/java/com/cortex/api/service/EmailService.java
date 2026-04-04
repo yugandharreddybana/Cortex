@@ -125,7 +125,6 @@ public class EmailService {
                     commentText,
                     deepLink);
 
-            // TODO: Integrate with SendGrid / AWS SES / Gmail API
             log.info("[Email] Sending comment notification to: {}", recipientEmail);
             sendEmail(recipientEmail, subject, body);
 

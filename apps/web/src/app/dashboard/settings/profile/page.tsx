@@ -6,7 +6,7 @@ import { cn } from "@cortex/ui";
 import { useAuthStore } from "@/store/authStore";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod/v4";
+import { z } from "zod";
 import { toast } from "sonner";
 
 const ease = [0.16, 1, 0.3, 1] as const;

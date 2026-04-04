@@ -2,7 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
-import { z } from "zod/v4";
+import { z } from "zod";
 import { secureIdbStorage } from "@/lib/secure-vault";
 import { toast } from "sonner";
 

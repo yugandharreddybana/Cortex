@@ -1,0 +1,28 @@
+Unused import in apps/extension/src/background/index.ts: { activateWebsocket } from ../lib/websocket
+Unused import in apps/extension/src/background/index.ts: { secureGet, secureSet, setVaultKeyFromSessionSeed } from ../lib/secure-storage
+Unused import in apps/extension/src/content/index.tsx: React from react
+Unused import in apps/extension/src/content/index.tsx: { createRoot, type Root } from react-dom/client
+Unused import in apps/extension/src/content/index.tsx: { SidebarCapture } from ./SidebarCapture
+Unused import in apps/extension/src/content/index.tsx: { runLocator } from ../locator
+Unused import in apps/extension/src/content/SidebarCapture.tsx: React, { useCallback, useEffect, useRef, useState } from react
+Unused import in apps/extension/src/content/SidebarCapture.tsx: { motion, AnimatePresence } from framer-motion
+Unused import in apps/extension/src/content/SidebarCapture.tsx: { getAIContext } from ./ai-detect
+Unused import in apps/extension/src/lib/secure-storage.ts: CryptoJS from crypto-js
+Unused import in apps/extension/src/lib/storageManager.ts: { secureGet, secureSet } from ./secure-storage
+Unused import in apps/extension/src/lib/syncQueue.ts: { secureGet, secureSet } from ./secure-storage
+Unused import in apps/extension/src/lib/websocket.ts: { Client } from @stomp/stompjs
+Unused import in apps/extension/src/lib/websocket.ts: { secureGet, secureSet } from ./secure-storage
+Unused import in apps/extension/src/lib/websocket.ts.orig: { Client } from @stomp/stompjs
+Unused import in apps/extension/src/lib/websocket.ts.orig: { secureGet, secureSet } from ./secure-storage
+Unused import in apps/extension/src/locator.ts: { destroyCookieBanners } from ./utils/cookieBuster
+Unused import in apps/extension/src/popup/App.tsx: React, { useEffect, useState, useCallback } from react
+Unused import in apps/extension/src/popup/App.tsx: { motion, AnimatePresence } from framer-motion
+Unused import in apps/extension/src/popup/main.tsx: React from react
+Unused import in apps/extension/src/popup/main.tsx: { createRoot } from react-dom/client
+Unused import in apps/extension/src/popup/main.tsx: { App } from ./App
+Unused import in apps/extension/src/__tests__/ai-detect.test.ts: { describe, it, expect, vi, beforeEach, afterEach } from vitest
+Unused import in apps/extension/src/__tests__/ai-detect.test.ts: { isAISite, getAIContext } from ../content/ai-detect
+Unused import in apps/extension/src/__tests__/phase4.test.ts: { describe, it, expect, vi, beforeEach } from vitest
+Unused import in apps/extension/src/__tests__/scenario6.test.ts: { describe, it, expect, vi, beforeEach } from vitest
+Unused import in apps/extension/src/__tests__/scenario7.test.ts: { describe, it, expect, vi, beforeEach } from vitest
+Unused import in apps/extension/src/__tests__/scenario7.test.ts: { processSyncQueue, type SyncQueueItem } from ../lib/syncQueue

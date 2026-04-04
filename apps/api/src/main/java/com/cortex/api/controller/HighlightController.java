@@ -202,10 +202,11 @@ public class HighlightController {
             applyTags(h, dto.tagIds, user);
         }
 
-        highlightRepo.save(h);
+        final Highlight toSave = h;
+        highlightRepo.save(toSave);
         em.flush();
-        em.refresh(h);
-        HighlightDTO updated = toDTO(h);
+        em.refresh(toSave);
+        HighlightDTO updated = toDTO(toSave);
         webSocketService.sendToUser(auth.getName(), "/topic/highlights/updated", updated);
 
         // Real-time broadcast to anyone viewing THIS highlight
@@ -232,7 +233,7 @@ public class HighlightController {
     @PatchMapping("/{id}")
     @PreAuthorize("@securityService.hasHighlightAccess(#id, 'EDITOR')")
     public HighlightDTO patch(Authentication auth,
-                              @PathVariable long id,
+                              @PathVariable Long id,
                               @RequestBody HighlightDTO dto) {
         User user = resolveUser(auth);
         Highlight h = highlightRepo.findById(id)
@@ -244,10 +245,11 @@ public class HighlightController {
             applyTags(h, dto.tagIds, user);
         }
 
-        highlightRepo.save(h);
+        final Highlight toSave = h;
+        highlightRepo.save(toSave);
         em.flush();
-        em.refresh(h);
-        HighlightDTO patched = toDTO(h);
+        em.refresh(toSave);
+        HighlightDTO patched = toDTO(toSave);
         webSocketService.sendToUser(auth.getName(), "/topic/highlights/updated", patched);
 
         // Real-time broadcast to anyone viewing THIS highlight
@@ -273,9 +275,9 @@ public class HighlightController {
     @PostMapping("/{id}/restore")
     @Transactional
     @PreAuthorize("@securityService.hasHighlightAccess(#id, 'EDITOR')")
-    public ResponseEntity<HighlightDTO> restore(Authentication auth, @PathVariable long id) {
+    public ResponseEntity<HighlightDTO> restore(Authentication auth, @PathVariable Long id) {
         Long userId = Long.parseLong(auth.getName());
-        Highlight h = highlightRepo.findById(id)
+        Highlight h = highlightRepo.findById(java.util.Objects.requireNonNull(id))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
         if (h.isDeleted() && h.getUser().getId().equals(userId)) {
@@ -294,8 +296,8 @@ public class HighlightController {
         notificationService.broadcastResourceActivity("highlight", id, "HIGHLIGHT_RESTORED", restored);
         
         if (h.getFolderId() != null) {
-            triggerFolderSynthesis(h.getFolderId());
-            notificationService.broadcastResourceActivity("folder", h.getFolderId(), "HIGHLIGHT_RESTORED", restored);
+            triggerFolderSynthesis(java.util.Objects.requireNonNull(h.getFolderId()));
+            notificationService.broadcastResourceActivity("folder", java.util.Objects.requireNonNull(h.getFolderId()), "HIGHLIGHT_RESTORED", restored);
         }
 
         return ResponseEntity.ok(restored);
