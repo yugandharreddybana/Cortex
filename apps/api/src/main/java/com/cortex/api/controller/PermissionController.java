@@ -23,7 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.HashSet;
-import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 @RestController
@@ -36,19 +35,22 @@ public class PermissionController {
     private final FolderRepository folderRepo;
     private final SecurityService securityService;
     private final NotificationService notificationService;
+    private final com.cortex.api.service.PermissionService permissionService;
 
     public PermissionController(ResourcePermissionRepository permissionRepo,
                                  UserRepository userRepo,
                                  HighlightRepository highlightRepo,
                                  FolderRepository folderRepo,
                                  SecurityService securityService,
-                                 NotificationService notificationService) {
+                                 NotificationService notificationService,
+                                 com.cortex.api.service.PermissionService permissionService) {
         this.permissionRepo = permissionRepo;
         this.userRepo = userRepo;
         this.highlightRepo = highlightRepo;
         this.folderRepo = folderRepo;
         this.securityService = securityService;
         this.notificationService = notificationService;
+        this.permissionService = permissionService;
     }
 
     /** GET /api/v1/permissions/{resourceId}?type=HIGHLIGHT|FOLDER — list all permissions */
@@ -77,11 +79,11 @@ public class PermissionController {
     @Transactional
     public ResponseEntity<PermissionDTO> grant(Authentication auth,
                                                 @RequestBody GrantRequest req) {
+        User granter = userRepo.findById(Long.parseLong(auth.getName()))
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
+ 
         if (req.resourceType == null || req.resourceType.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "resourceType is required");
-        }
-        if (req.accessLevel == null || req.accessLevel.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "accessLevel is required");
         }
         SharedLink.ResourceType resourceType;
         try {
@@ -89,65 +91,12 @@ public class PermissionController {
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid resource type: " + req.resourceType);
         }
+        
         requireOwner(auth, req.resourceId, resourceType);
-
-        User invitee = userRepo.findByEmail(req.email)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
-
-        // Don't allow granting OWNER
-        AccessLevel level;
-        try {
-            level = AccessLevel.valueOf(req.accessLevel.toUpperCase());
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid access level: " + req.accessLevel);
-        }
-        if (level == AccessLevel.OWNER) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot grant OWNER access");
-        }
-
-        // Upsert: update if exists, create if not
-        ResourcePermission perm = permissionRepo
-                .findByUserIdAndResourceIdAndResourceType(invitee.getId(), req.resourceId, resourceType)
-                .orElseGet(() -> {
-                    ResourcePermission p = new ResourcePermission();
-                    p.setUser(invitee);
-                    p.setResourceId(req.resourceId);
-                    p.setResourceType(resourceType);
-                    return p;
-                });
-
-        perm.setAccessLevel(level);
-        perm = permissionRepo.save(perm);
-
-        // Emit real-time share invite notification to the invitee
-        User granter = userRepo.findById(Long.parseLong(auth.getName())).orElse(null);
-        String granterEmail = granter != null ? granter.getEmail() : "Someone";
-        String granterName = (granter != null && granter.getFullName() != null && !granter.getFullName().isBlank())
-                ? granter.getFullName() : granterEmail;
-        String resourceTitle;
-        if (resourceType == SharedLink.ResourceType.HIGHLIGHT) {
-            resourceTitle = highlightRepo.findById(req.resourceId)
-                    .map(h -> h.getSource() != null ? h.getSource() : "a highlight").orElse("a highlight");
-        } else {
-            resourceTitle = folderRepo.findById(req.resourceId)
-                    .map(f -> f.getName() != null ? f.getName() : "a folder").orElse("a folder");
-        }
-        notificationService.emitShareInvite(
-                invitee,
-                granterName,
-                granterEmail,
-                resourceTitle,
-                req.resourceId,
-                resourceType.name(),
-                perm.getId()
-        );
-
-        // Critical-path email: bypasses the 60-minute batch queue
-        if (resourceType == SharedLink.ResourceType.FOLDER) {
-            notificationService.triggerFolderAccessGrantedEmail(
-                    invitee, granter, resourceTitle, req.resourceId);
-        }
-
+ 
+        ResourcePermission perm = permissionService.grantAccess(
+                granter, req.email, req.resourceId, resourceType, req.accessLevel);
+ 
         return ResponseEntity.status(HttpStatus.CREATED).body(toDTO(perm));
     }
 
@@ -316,6 +265,7 @@ public class PermissionController {
     }
 
     /** GET /api/v1/permissions/collaborators — list all unique users shared with/by me */
+    @Transactional
     @GetMapping("/collaborators")
     public List<CollaboratorDTO> getCollaborators(Authentication auth) {
         Long userId = Long.parseLong(auth.getName());
@@ -342,7 +292,8 @@ public class PermissionController {
         }
 
         return collaborators.stream()
-                .filter(u -> !u.getId().equals(userId)) // exclude self
+                .filter(java.util.Objects::nonNull)
+                .filter(u -> u.getId() != null && !u.getId().equals(userId)) // exclude self and invalid IDs
                 .map(u -> {
                     CollaboratorDTO dto = new CollaboratorDTO();
                     dto.id = u.getId();
@@ -471,12 +422,12 @@ public class PermissionController {
             if (this == o) return true;
             if (o == null || getClass() != o.getClass()) return false;
             CollaboratorDTO that = (CollaboratorDTO) o;
-            return id.equals(that.id);
+            return java.util.Objects.equals(id, that.id);
         }
-
+ 
         @Override
         public int hashCode() {
-            return id.hashCode();
+            return java.util.Objects.hashCode(id);
         }
     }
 }

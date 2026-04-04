@@ -34,13 +34,16 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     /**
      * Find the un-responded ACCESS_REQUEST notification for an owner + requestId.
-     * Used to mark the notification as responded after the owner approves or rejects.
+     * Used to mark the notification(s) as responded after the owner approves or rejects.
+     * Returns a list to prevent NonUniqueResultException if duplicates exist.
      */
     @Query("SELECT n FROM Notification n WHERE n.user.id = :ownerId AND n.type = 'ACCESS_REQUEST' " +
-           "AND n.metadata LIKE %:requestIdFragment% AND (n.responded IS NULL OR n.responded = '')")
-    java.util.Optional<Notification> findPendingAccessRequestNotification(
+           "AND (n.metadata LIKE %:exactIdFragment1% OR n.metadata LIKE %:exactIdFragment2%) " +
+           "AND (n.responded IS NULL OR n.responded = '')")
+    List<Notification> findPendingAccessRequestNotifications(
             @Param("ownerId") Long ownerId,
-            @Param("requestIdFragment") String requestIdFragment);
+            @Param("exactIdFragment1") String exactIdFragment1,
+            @Param("exactIdFragment2") String exactIdFragment2);
 
     /**
      * Daily cleanup: delete read notifications older than the given cutoff.

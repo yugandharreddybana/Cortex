@@ -1,13 +1,19 @@
 package com.cortex.api.service;
 
-import com.cortex.api.entity.BatchedEmailEvent;
+import com.cortex.api.entity.Comment;
 import com.cortex.api.entity.AccessLevel;
 import com.cortex.api.entity.Folder;
 import com.cortex.api.entity.Highlight;
 import com.cortex.api.entity.Notification;
 import com.cortex.api.entity.User;
+import com.cortex.api.entity.ResourcePermission;
+import com.cortex.api.entity.PermissionStatus;
+import com.cortex.api.entity.SharedLink;
+import com.cortex.api.entity.BatchedEmailEvent;
 import com.cortex.api.repository.BatchedEmailEventRepository;
+import com.cortex.api.repository.FolderRepository;
 import com.cortex.api.repository.NotificationRepository;
+import com.cortex.api.repository.ResourcePermissionRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
@@ -15,6 +21,9 @@ import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.HashSet;
+import java.util.Set;
+import java.util.List;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -56,15 +65,21 @@ public class NotificationService {
     private final BatchedEmailEventRepository batchRepo;
     private final SimpMessagingTemplate messaging;
     private final EmailService emailService;
+    private final ResourcePermissionRepository permissionRepo;
+    private final FolderRepository folderRepo;
 
     public NotificationService(NotificationRepository notifRepo,
                                 BatchedEmailEventRepository batchRepo,
                                 SimpMessagingTemplate messaging,
-                                EmailService emailService) {
+                                EmailService emailService,
+                                ResourcePermissionRepository permissionRepo,
+                                FolderRepository folderRepo) {
         this.notifRepo    = notifRepo;
         this.batchRepo    = batchRepo;
         this.messaging    = messaging;
         this.emailService = emailService;
+        this.permissionRepo = permissionRepo;
+        this.folderRepo = folderRepo;
     }
 
     // ─────────────────────────────────────── Layer 1: instant in-app ─────────
@@ -120,6 +135,23 @@ public class NotificationService {
     }
 
     /**
+     * Send a non-actor, non-resource specific notification from the "Cortex System".
+     */
+    public Notification sendSystemNotification(User recipient, String title, String message, String subType) {
+        Notification n = new Notification();
+        n.setUser(recipient);
+        n.setMessage(message);
+        n.setActionUrl("/dashboard/trash"); // Default for system alerts like retention
+        n.setType("SYSTEM");
+        n.setActionType("ALERT");
+        n.setMetadata("{\"title\":\"" + escapeJson(title) + "\",\"subType\":\"" + escapeJson(subType) + "\"}");
+        n = notifRepo.save(n);
+        broadcast(recipient, n);
+        log.info("[Notification Engine] System notification sent to user={} : {}", recipient.getId(), title);
+        return n;
+    }
+
+    /**
      * Persist a SHARE_INVITE notification with structured metadata, then push
      * it in real time. Used when a user is granted access to a folder or highlight.
      */
@@ -129,7 +161,13 @@ public class NotificationService {
         Notification n = new Notification();
         n.setUser(recipient);
         n.setMessage(senderName + " shared \"" + resourceTitle + "\" with you");
-        n.setActionUrl("/dashboard");
+        
+        // Correctly point to the resource, not just the generic dashboard
+        String actionUrl = resourceType.equalsIgnoreCase("FOLDER") 
+                ? "/dashboard/folders/" + resourceId 
+                : "/dashboard/read/" + resourceId;
+        n.setActionUrl(actionUrl);
+        
         n.setType("SHARE_INVITE");
         n.setActionType("SHARED");
         n.setTargetEntityId(resourceId);
@@ -211,7 +249,12 @@ public class NotificationService {
         Notification n = new Notification();
         n.setUser(recipient);
         n.setMessage(actorName + " updated your access to \"" + resourceTitle + "\" to " + newLevel);
-        n.setActionUrl("/dashboard/folders/" + resourceId);
+        
+        String actionUrl = resourceType.equalsIgnoreCase("FOLDER")
+                ? "/dashboard/folders/" + resourceId
+                : "/dashboard/read/" + resourceId;
+        n.setActionUrl(actionUrl);
+        
         n.setType("ACCESS_UPDATED");
         n.setActionType("EDITED");
         n.setTargetEntityId(resourceId);
@@ -240,7 +283,7 @@ public class NotificationService {
         String recipientEmail = recipient.getEmail();
         String granterName    = resolveDisplayName(granter);
         log.info("[Notification Engine] Triggering immediate access-granted email → {} for folder={}",
-                obfuscate(recipientEmail), folderId);
+                obfuscate(recipientEmail), String.valueOf(folderId));
         emailService.sendFolderAccessGrantedEmail(recipientEmail, granterName, folderName, String.valueOf(folderId));
     }
 
@@ -322,23 +365,203 @@ public class NotificationService {
      * Delete a notification from the DB and push a NOTIFICATION_DELETED WebSocket
      * event to all sessions for this user so every open tab removes it immediately.
      */
-    public void emitHighlightModificationNotification(User owner, User editor, Folder folder, Highlight highlight, String action) {
+    public void emitHighlightModificationNotification(User owner, User actor, Folder folder, Highlight highlight, String action) {
+        String actorName = resolveDisplayName(actor);
         Notification n = new Notification();
         n.setUser(owner);
-        String editorName = resolveDisplayName(editor);
-        n.setMessage(editorName + " " + action + " a highlight in folder \"" + folder.getName() + "\"");
+        n.setMessage(actorName + " " + action + " a highlight in folder \"" + folder.getName() + "\"");
         n.setActionUrl("/dashboard/read/" + highlight.getId());
         n.setType("FOLDER_ACTIVITY");
         n.setActionType("HIGHLIGHT_MODIFIED");
         n.setTargetEntityId(folder.getId());
-        n.setActorId(editor.getId());
+        n.setActorId(actor.getId());
         n.setMetadata("{\"highlightId\":\"" + highlight.getId() + "\""
                 + ",\"folderId\":\"" + folder.getId() + "\""
                 + ",\"folderName\":\"" + escapeJson(folder.getName()) + "\""
                 + ",\"action\":\"" + escapeJson(action) + "\""
-                + ",\"editorName\":\"" + escapeJson(editorName) + "\"}");
+                + ",\"actorName\":\"" + escapeJson(actorName) + "\"}");
         n = notifRepo.save(n);
         broadcast(owner, n);
+    }
+
+    public void emitCommentActivityNotification(User owner, User actor, Folder folder, Highlight highlight, String action) {
+        String actorName = resolveDisplayName(actor);
+        Notification n = new Notification();
+        n.setUser(owner);
+        n.setMessage(actorName + " " + action + " a comment on your highlight in \"" + folder.getName() + "\"");
+        n.setActionUrl("/dashboard/read/" + highlight.getId());
+        n.setType("FOLDER_ACTIVITY");
+        n.setActionType("COMMENT_MODIFIED");
+        n.setTargetEntityId(folder.getId());
+        n.setActorId(actor.getId());
+        n.setMetadata("{\"highlightId\":\"" + highlight.getId() + "\""
+                + ",\"folderId\":\"" + folder.getId() + "\""
+                + ",\"folderName\":\"" + escapeJson(folder.getName()) + "\""
+                + ",\"action\":\"" + escapeJson(action) + "\""
+                + ",\"actorName\":\"" + escapeJson(actorName) + "\"}");
+        n = notifRepo.save(n);
+        broadcast(owner, n);
+    }
+
+    public void emitCommentReactionNotification(User actor, Comment comment, String emoji) {
+        User owner = comment.getAuthor();
+        if (owner.getId().equals(actor.getId())) return; // Don't notify self
+
+        String actorName = resolveDisplayName(actor);
+        Notification n = new Notification();
+        n.setUser(owner);
+        n.setMessage(actorName + " reacted to your comment: " + emoji);
+        n.setActionUrl("/dashboard/read/" + comment.getHighlight().getId());
+        n.setType("COMMENT_REACTION");
+        n.setActionType("REACTION_ADDED");
+        n.setTargetEntityId(comment.getId());
+        n.setActorId(actor.getId());
+        n.setMetadata("{\"commentId\":\"" + comment.getId() + "\""
+                + ",\"highlightId\":\"" + comment.getHighlight().getId() + "\""
+                + ",\"emoji\":\"" + emoji + "\""
+                + ",\"actorName\":\"" + escapeJson(actorName) + "\"}");
+        n = notifRepo.save(n);
+        broadcast(owner, n);
+    }
+
+    public void emitFolderActivityNotification(User owner, User actor, Folder folder, String action) {
+        String actorName = resolveDisplayName(actor);
+        Notification n = new Notification();
+        n.setUser(owner);
+        n.setMessage(actorName + " " + action + " the folder \"" + folder.getName() + "\"");
+        n.setActionUrl("/dashboard/folders/" + folder.getId());
+        n.setType("FOLDER_ACTIVITY");
+        n.setActionType("FOLDER_MODIFIED");
+        n.setTargetEntityId(folder.getId());
+        n.setActorId(actor.getId());
+        n.setMetadata("{\"folderId\":\"" + folder.getId() + "\""
+                + ",\"folderName\":\"" + escapeJson(folder.getName()) + "\""
+                + ",\"action\":\"" + escapeJson(action) + "\""
+                + ",\"actorName\":\"" + escapeJson(actorName) + "\"}");
+        n = notifRepo.save(n);
+        broadcast(owner, n);
+    }
+
+    /**
+     * Broadcast activity to all members of a shared folder except the actor.
+     */
+    public void notifyAllFolderMembers(User actor, Folder folder, Highlight highlight, String action, String detail, String actionType) {
+        if (folder == null) return;
+        
+        Set<User> members = getFolderMembersHierarchical(folder);
+        // Exclude the actor from the list
+        members.removeIf(u -> u.getId().equals(actor.getId()));
+        
+        if (members.isEmpty()) {
+            log.debug("[Notification Engine] No shared members to notify for action {} on folder {}", action, folder.getId());
+            return;
+        }
+
+        String actorName = resolveDisplayName(actor);
+        String highlightTitle = highlight != null ? highlight.getText().substring(0, Math.min(highlight.getText().length(), 40)) + "..." : null;
+        String actionUrl = highlight != null ? "/dashboard/read/" + highlight.getId() : "/dashboard/folders/" + folder.getId();
+
+        for (User recipient : members) {
+            if (recipient == null) continue;
+
+            // 1. Create In-App Notification
+            Notification n = new Notification();
+            n.setUser(recipient);
+            if (actor != null) n.setActorId(actor.getId());
+            if (folder != null) n.setTargetEntityId(folder.getId());
+            n.setType("FOLDER_ACTIVITY");
+            n.setActionType(actionType);
+            n.setActionUrl(actionUrl);
+            
+            String msgText = actorName + " " + action + " in \"" + folder.getName() + "\"";
+            if (highlight != null) {
+                msgText = actorName + " " + action + " on a highlight in \"" + folder.getName() + "\"";
+            }
+            n.setMessage(msgText);
+            
+            if (actor != null && folder.getId() != null && folder.getName() != null) {
+                logBatchedAction(recipient, actor, folder.getId(), folder.getName());
+            }
+            
+            n.setMetadata("{\"folderId\":\"" + folder.getId() + "\""
+                + ",\"folderName\":\"" + escapeJson(folder.getName()) + "\""
+                + ",\"action\":\"" + escapeJson(action) + "\""
+                + ",\"actorName\":\"" + escapeJson(actorName) + "\""
+                + (highlightTitle != null ? ",\"highlightTitle\":\"" + escapeJson(highlightTitle) + "\"" : "")
+                + "}");
+            
+            notifRepo.save(n);
+            broadcast(recipient, n);
+
+            // 2. Dispatch Email (Only for low-volume/critical actions)
+            // High-volume actions (HIGHLIGHT_MODIFIED, etc.) are already logged for the digest via logBatchedAction()
+            if (!isHighVolumeAction(actionType)) {
+                emailService.sendCollaborationActivityEmail(
+                    recipient.getEmail(), 
+                    actorName, 
+                    folder.getName(), 
+                    action, 
+                    detail, 
+                    actionUrl
+                );
+            }
+        }
+        
+        log.info("[Notification Engine] Notified {} members for action {} in folder {}", members.size(), action, folder.getId());
+    }
+
+    /**
+     * Broadcast a real-time activity event for a specific resource.
+     * Unlike notifications, these are transient and used to update the UI
+     * for users currently viewing the resource.
+     */
+    public void broadcastResourceActivity(String resourceType, Long resourceId, String eventType, Object data) {
+        String topic = "/topic/resource-updates/" + resourceType.toLowerCase() + "/" + resourceId;
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("type", eventType);
+        payload.put("data", data);
+        payload.put("timestamp", Instant.now().toString());
+
+        messaging.convertAndSend(topic, payload);
+        log.debug("[Notification Engine] Broadcasted {} activity to topic={}", eventType, topic);
+    }
+
+    /**
+     * Collects all users who have access to a folder (Owner + Shared Collaborators).
+     * Includes hierarchical permissions by traversing parents.
+     */
+    private Set<User> getFolderMembersHierarchical(Folder folder) {
+        Set<User> members = new HashSet<>();
+        Folder current = folder;
+        int depth = 0;
+        
+        while (current != null && depth < 50) {
+            // Add owner of this level
+            members.add(current.getUser());
+            
+            // Add all explicit collaborators at this level
+            List<ResourcePermission> permissions = permissionRepo.findByResourceIdAndResourceType(
+                current.getId(), SharedLink.ResourceType.FOLDER
+            );
+            
+            for (ResourcePermission p : permissions) {
+                if (p.getStatus() == PermissionStatus.ACCEPTED) {
+                    members.add(p.getUser());
+                }
+            }
+            
+            // Move up — if a folder is shared, its children share the same members
+            Folder parent = current.getParentFolder();
+            if (parent != null && parent.getId() != null) {
+                Long parentId = parent.getId();
+                current = folderRepo.findById(java.util.Objects.requireNonNull(parentId, "parentId cannot be null")).orElse(null);
+            } else {
+                current = null;
+            }
+            depth++;
+        }
+        
+        return members;
     }
 
     public void deleteAndBroadcastDeletion(Notification n, User recipient) {
@@ -355,11 +578,18 @@ public class NotificationService {
         log.info("[Notification Engine] Deleted notification id={} user={}", notifId, recipient.getId());
     }
 
+    /**
+     * Broadcast an update for an existing notification (e.g. when responded).
+     */
+    public void broadcastUpdate(User recipient, Notification n) {
+        broadcast(recipient, n);
+    }
+
     private void broadcast(User recipient, Notification n) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("id",            n.getId().toString());
         payload.put("message",       n.getMessage());
-        payload.put("isRead",        false);
+        payload.put("isRead",        n.isRead());
         payload.put("actionUrl",     n.getActionUrl()     != null ? n.getActionUrl()     : "");
         payload.put("type",          n.getType()          != null ? n.getType()          : "GENERAL");
         payload.put("actionType",    n.getActionType()    != null ? n.getActionType()    : "");
@@ -390,6 +620,13 @@ public class NotificationService {
     private static String escapeJson(String s) {
         if (s == null) return "";
         return s.replace("\\", "\\\\").replace("\"", "\\\"");
+    }
+
+    private boolean isHighVolumeAction(String actionType) {
+        if (actionType == null) return false;
+        return actionType.equals("HIGHLIGHT_MODIFIED") || 
+               actionType.equals("COMMENT_MODIFIED") || 
+               actionType.equals("TAG_MODIFIED");
     }
 }
 

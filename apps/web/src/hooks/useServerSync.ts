@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { useDashboardStore, type Highlight } from "@/store/dashboard";
+import type { AuthUser } from "@/store/authStore";
 
 /**
  * useServerSync — on mount, fetches the user's highlights, folders, and tags
@@ -9,20 +10,29 @@ import { useDashboardStore, type Highlight } from "@/store/dashboard";
  *
  * Server is the sole source of truth — no local merge or offline push.
  */
-export function useServerSync() {
+export function useServerSync(user: AuthUser | null, authFetched: boolean) {
+  const lastUserId = useRef<string | null>(null);
   const hydrated = useRef(false);
 
   useEffect(() => {
-    if (hydrated.current) return;
-    hydrated.current = true;
-
-    // Skip the network call if the store already has data (e.g. populated
-    // by a previous mount or the login page prefetch). Use getState() here
-    // so we don't subscribe to the store and cause unnecessary re-renders.
-    const state = useDashboardStore.getState();
-    if (state.highlights.length > 0 || state.folders.length > 0 || state.tags.length > 0) {
+    // Wait for auth to settle. If we're not logged in, don't even try to sync.
+    if (!authFetched || !user) {
+      hydrated.current = false;
       return;
     }
+    
+    // Reset hydration state if the user has changed (e.g. switch account)
+    if (user.id !== lastUserId.current) {
+      hydrated.current = false;
+      lastUserId.current = user.id;
+    }
+
+    const state = useDashboardStore.getState();
+    const isStoreEmpty = state.highlights.length === 0 && state.folders.length === 0 && state.tags.length === 0;
+
+    // Only sync if we haven't hydrated yet OR if the store was cleared/reset
+    if (hydrated.current && !isStoreEmpty) return;
+    hydrated.current = true;
 
     const timer = setTimeout(() => {
       async function pull() {
@@ -60,7 +70,7 @@ export function useServerSync() {
     return () => {
       clearTimeout(timer);
     };
-  }, []);
+  }, [user, authFetched]);
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -139,7 +149,8 @@ interface ServerHighlight {
   folder: string | null;
   folderId: string | number | null;
   note: string | null;
-  tags: (string | number)[];
+  tags: ServerTag[];
+
   isCode: boolean;
   isFavorite: boolean;
   isArchived: boolean;
@@ -176,7 +187,12 @@ function mapServerHighlight(h: ServerHighlight): Highlight {
     folder:         h.folder ?? undefined,
     folderId:       h.folderId != null ? String(h.folderId) : undefined,
     note:           h.note ?? undefined,
-    tags:           (h.tags ?? []).map(String),
+    tags:           (h.tags ?? []).map(t => ({
+      id:    String(t.id),
+      name:  t.name,
+      color: t.color ?? "",
+    })),
+
     isCode:         h.isCode,
     isFavorite:     h.isFavorite,
     isArchived:     h.isArchived,

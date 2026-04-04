@@ -16,7 +16,9 @@ import { GlobalLoader } from "@/components/ui/GlobalLoader";
 // These endpoints are polled silently in the background.
 // They must NOT trigger the global spinner or error toasts.
 const SILENT_URL_PATTERNS = [
+    "/api/notifications",
     "/api/notifications/unread-count",
+    "/api/notifications/read-all",
     "/api/auth/me",
     "/api/auth/ws-token",
     "/api/auth/refresh",
@@ -63,9 +65,9 @@ if (typeof window !== "undefined") {
                     } else if (response.status === 403) {
                         premiumToast.unauthorized();
                     } else if (response.status === 409) {
-                        if (url.includes('/folders')) premiumToast.folderExists(data.name || "Unknown");
+                        if (url.includes('/folders') && !url.includes('/request-access') && !url.includes('/access-requests')) premiumToast.folderExists(data.name || "Unknown");
                         else if (url.includes('/tags')) premiumToast.tagExists(data.name || "Unknown");
-                        else premiumToast.genericError("Conflict", "This item already exists.");
+                        //else premiumToast.genericError("Conflict", "This item already exists.");
                     } else if (data?.message && data.message !== "No message available") {
                         premiumToast.genericError(data.message);
                     } else {

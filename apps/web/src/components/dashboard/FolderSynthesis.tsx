@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import { Sparkles, Loader2 } from "lucide-react";
+import { Sparkles } from "lucide-react";
+import { Spinner } from "@/components/ui/Spinner";
 import { cn } from "@cortex/ui";
 import { useDashboardStore } from "@/store/dashboard";
 import type { Highlight } from "@/store/dashboard";
@@ -71,7 +72,7 @@ export function FolderSynthesis({ folderId, highlights }: FolderSynthesisProps) 
             >
               {loading ? (
                 <span className="flex items-center gap-2">
-                  <Loader2 className="w-3 h-3 animate-spin" />
+                  <Spinner size="xs" variant="accent" />
                   Generating…
                 </span>
               ) : synthesis ? (
@@ -102,7 +103,7 @@ export function FolderSynthesis({ folderId, highlights }: FolderSynthesisProps) 
 
         {loading && (
           <div className="flex items-center gap-2 text-xs text-purple-300/60">
-            <Loader2 className="w-3 h-3 animate-spin" />
+            <Spinner size="xs" variant="accent" />
             Analyzing highlights…
           </div>
         )}

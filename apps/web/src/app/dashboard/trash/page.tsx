@@ -148,9 +148,16 @@ export default function TrashPage() {
               >
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm text-white/70 leading-relaxed italic">
-                    &ldquo;{truncate(h.text)}&rdquo;
-                  </p>
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <p className="text-sm text-white/70 leading-relaxed italic truncate">
+                      &ldquo;{truncate(h.text)}&rdquo;
+                    </p>
+                    {h.deletedAt && new Date(h.deletedAt).getTime() < Date.now() - 27 * 24 * 60 * 60 * 1000 && (
+                      <span className="shrink-0 px-1.5 py-0.5 rounded text-[9px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/20 uppercase tracking-wider">
+                        Expiring Soon
+                      </span>
+                    )}
+                  </div>
                   <div className="flex items-center gap-2 mt-1.5">
                     <span className="text-[11px] text-white/30">{h.source}</span>
                     {h.savedAt && (

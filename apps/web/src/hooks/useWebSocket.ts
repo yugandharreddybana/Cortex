@@ -250,7 +250,13 @@ function normalizeHighlight(raw: Record<string, unknown>): Highlight {
     folder:         raw.folder != null ? String(raw.folder) : undefined,
     folderId:       raw.folderId != null ? String(raw.folderId) : undefined,
     note:           raw.note != null ? String(raw.note) : undefined,
-    tags:           Array.isArray(raw.tags) ? (raw.tags as (string | number)[]).map(String) : [],
+    tags:           Array.isArray(raw.tags) 
+                      ? raw.tags.map((t: any) => ({
+                          id:    String(t.id ?? ""),
+                          name:  String(t.name ?? ""),
+                          color: String(t.color ?? ""),
+                        }))
+                      : [],
     isCode:         Boolean(raw.isCode),
     isFavorite:     Boolean(raw.isFavorite),
     isArchived:     Boolean(raw.isArchived),

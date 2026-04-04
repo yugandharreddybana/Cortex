@@ -31,8 +31,12 @@ const passwordSchema = z.object({
 });
 type PasswordValues = z.infer<typeof passwordSchema>;
 
+import { SettingSkeleton } from "@/components/dashboard/SettingSkeleton";
+
 export default function ProfilePage() {
   const user           = useAuthStore((s) => s.user);
+  const isLoading      = useAuthStore((s) => s.isLoading);
+  const hasFetched     = useAuthStore((s) => s.hasFetched);
   const updateUser     = useAuthStore((s) => s.updateUser);
   const changePassword = useAuthStore((s) => s.changePassword);
 
@@ -137,6 +141,10 @@ export default function ProfilePage() {
     "focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/30",
     "transition-colors duration-150",
   );
+
+  if (!hasFetched || (isLoading && !user)) {
+    return <SettingSkeleton />;
+  }
 
   return (
     <div className="p-6 lg:p-8 max-w-2xl">

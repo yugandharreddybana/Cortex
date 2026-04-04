@@ -11,10 +11,14 @@ import com.cortex.api.entity.ResourcePermission;
 import com.cortex.api.entity.ResourceType;
 import com.cortex.api.entity.SharedLink;
 import com.cortex.api.entity.User;
+import com.cortex.api.entity.Tag;
+import com.cortex.api.entity.HighlightTag;
 import com.cortex.api.repository.FolderRepository;
 import com.cortex.api.repository.HighlightRepository;
 import com.cortex.api.repository.ResourcePermissionRepository;
 import com.cortex.api.repository.UserRepository;
+import com.cortex.api.repository.TagRepository;
+import com.cortex.api.repository.HighlightTagRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -28,6 +32,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -40,42 +45,55 @@ public class FolderService {
     private final HighlightRepository highlightRepository;
     private final ResourcePermissionRepository permissionRepository;
     private final PermissionService permissionService;
-    private final EmailService emailService;
     private final UserRepository userRepository;
     private final NotificationService notificationService;
+    private final TagRepository tagRepository;
+    private final HighlightTagRepository highlightTagRepository;
 
     @Autowired
     public FolderService(FolderRepository folderRepository,
                          HighlightRepository highlightRepository,
                          ResourcePermissionRepository permissionRepository,
                          PermissionService permissionService,
-                         EmailService emailService,
                          UserRepository userRepository,
-                         NotificationService notificationService) {
+                         NotificationService notificationService,
+                         TagRepository tagRepository,
+                         HighlightTagRepository highlightTagRepository) {
         this.folderRepository = folderRepository;
         this.highlightRepository = highlightRepository;
         this.permissionRepository = permissionRepository;
         this.permissionService = permissionService;
-        this.emailService = emailService;
         this.userRepository = userRepository;
         this.notificationService = notificationService;
+        this.tagRepository = tagRepository;
+        this.highlightTagRepository = highlightTagRepository;
     }
 
     public List<Folder> getFoldersByUserId(Long userId) {
         List<Folder> ownFolders = folderRepository.findByUserId(userId);
 
         // Also include folders shared with this user that have been accepted
-        List<Long> sharedFolderIds = permissionRepository
+        List<Long> sharedRootIds = permissionRepository
                 .findByUserIdAndResourceTypeAndStatus(userId, SharedLink.ResourceType.FOLDER, PermissionStatus.ACCEPTED)
                 .stream().map(ResourcePermission::getResourceId).toList();
 
-        if (sharedFolderIds.isEmpty()) {
+        if (sharedRootIds.isEmpty()) {
             return ownFolders;
         }
 
-        List<Folder> sharedFolders = folderRepository.findAllById(sharedFolderIds);
+        // Expand to all descendants if a parent is shared
+        List<Long> allAccessibleIds = folderRepository.findAllDescendantIdsByParentIds(sharedRootIds);
+        
+        // Fetch the folders and deduplicate against ownFolders
+        List<Folder> sharedTreeFolders = folderRepository.findAllById(allAccessibleIds);
+        
+        Set<Long> ownIds = ownFolders.stream().map(Folder::getId).collect(Collectors.toSet());
+        List<Folder> filteredShared = sharedTreeFolders.stream()
+                .filter(f -> !ownIds.contains(f.getId()))
+                .toList();
+
         List<Folder> combined = new ArrayList<>(ownFolders);
-        combined.addAll(sharedFolders);
+        combined.addAll(filteredShared);
         return combined;
     }
 
@@ -101,34 +119,36 @@ public class FolderService {
 
     @Transactional
     public Folder createFolder(Folder folder) {
-        // Validate uniqueness: (user_id, parent_folder_id, name)
         Long userId = java.util.Objects.requireNonNull(folder.getUser().getId(), "userId cannot be null");
         String folderName = java.util.Objects.requireNonNull(folder.getName(), "folder name cannot be null");
         Folder parentFolder = folder.getParentFolder();
         Long parentId = (parentFolder != null) ? parentFolder.getId() : null;
         
+        // 1. Depth Validation
+        if (parentId != null) {
+            int currentDepth = calculateDepth(parentId);
+            if (currentDepth >= 10) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Maximum folder depth (10) reached.");
+            }
+        }
+
+        // 2. Uniqueness Validation
+        log.info("[Folder Creation] Validation check: user={} name='{}' parent={}", userId, folderName, parentId);
         boolean exists = folderRepository.existsByUserAndParentAndName(userId, folderName, parentId);
-        
         if (exists) {
-            log.warn("[Folder Creation] Duplicate folder name '{}' for user {} at parent {}: 409 Conflict",
-                    folder.getName(), folder.getUser().getId(), parentId);
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "A folder with this name already exists at this level"
-            );
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A folder with this name already exists at this level");
         }
 
         try {
             Folder newFolder = folderRepository.save(folder);
-            log.info("[Folder Creation] Created folder {} (id={}) as child of {} by user {}",
-                    newFolder.getName(), newFolder.getId(), parentId, newFolder.getUser().getId());
+            log.info("[Folder Creation] Success: Created folder '{}' (id={}) under parent {} for user {}",
+                    newFolder.getName(), newFolder.getId(), parentId, userId);
             return newFolder;
         } catch (DataIntegrityViolationException e) {
-            log.warn("[Folder Creation] DataIntegrityViolation: likely duplicate unique constraint (user_id, parent_id, name)", e);
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "A folder with this name already exists at this level"
-            );
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "A folder with this name already exists or a database constraint was violated.");
+        } catch (Exception e) {
+            log.error("[Folder Creation] Unexpected error", e);
+            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "Failed to create folder: " + e.getMessage());
         }
     }
 
@@ -140,38 +160,39 @@ public class FolderService {
         if (dto.name != null) f.setName(dto.name);
         if (dto.emoji != null) f.setEmoji(dto.emoji);
 
-        // Always enforce a valid linkAccess (never null)
+        // ... linkAccess and defaultLinkRole logic remains same ...
         if (dto.linkAccess != null && !dto.linkAccess.isEmpty()) {
-            try {
-                f.setLinkAccess(com.cortex.api.entity.LinkAccess.valueOf(dto.linkAccess));
-            } catch (IllegalArgumentException e) {
-                f.setLinkAccess(com.cortex.api.entity.LinkAccess.RESTRICTED);
-            }
-        } else if (f.getLinkAccess() == null) {
-            f.setLinkAccess(com.cortex.api.entity.LinkAccess.RESTRICTED);
-        }
+            try { f.setLinkAccess(com.cortex.api.entity.LinkAccess.valueOf(dto.linkAccess)); }
+            catch (IllegalArgumentException e) { f.setLinkAccess(com.cortex.api.entity.LinkAccess.RESTRICTED); }
+        } else if (f.getLinkAccess() == null) { f.setLinkAccess(com.cortex.api.entity.LinkAccess.RESTRICTED); }
 
-        // Always enforce a valid defaultLinkRole (never null)
         if (dto.defaultLinkRole != null && !dto.defaultLinkRole.isEmpty()) {
-            try {
-                f.setDefaultLinkRole(com.cortex.api.entity.AccessLevel.valueOf(dto.defaultLinkRole));
-            } catch (IllegalArgumentException e) {
-                f.setDefaultLinkRole(com.cortex.api.entity.AccessLevel.VIEWER);
-            }
-        } else if (f.getDefaultLinkRole() == null) {
-            f.setDefaultLinkRole(com.cortex.api.entity.AccessLevel.VIEWER);
-        }
+            try { f.setDefaultLinkRole(com.cortex.api.entity.AccessLevel.valueOf(dto.defaultLinkRole)); }
+            catch (IllegalArgumentException e) { f.setDefaultLinkRole(com.cortex.api.entity.AccessLevel.VIEWER); }
+        } else if (f.getDefaultLinkRole() == null) { f.setDefaultLinkRole(com.cortex.api.entity.AccessLevel.VIEWER); }
 
-        // Only change parent when the JSON explicitly includes "parentId".
-        // null = move to root, non-null = move under that parent.
-        // When parentId is absent (e.g. rename/emoji/pin updates), don't touch it.
+        // Moved logic with safety checks
         if (dto.parentIdPresent) {
             if (dto.parentId != null) {
-                Folder parentFolder = folderRepository.findByIdAndUserId(Long.valueOf(dto.parentId), user.getId())
-                        .orElseThrow(() -> new ResponseStatusException(
-                                HttpStatus.BAD_REQUEST,
-                                "Parent folder not found or not owned by you"
-                        ));
+                Long newParentId = Long.valueOf(dto.parentId);
+                
+                // 1. Prevents moving folder to itself
+                if (folderId.equals(newParentId)) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "A folder cannot be its own parent.");
+                }
+
+                // 2. Cyclic check: Prevents moving folder into one of its children
+                if (isDescendantOf(newParentId, folderId)) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cyclic folder mapping detected.");
+                }
+
+                // 3. Depth check
+                if (calculateDepth(newParentId) >= 10) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Maximum folder depth (10) reached.");
+                }
+
+                Folder parentFolder = folderRepository.findByIdAndUserId(newParentId, user.getId())
+                        .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "Parent folder not found."));
                 f.setParentFolder(parentFolder);
             } else {
                 f.setParentFolder(null); // Move to root
@@ -179,9 +200,26 @@ public class FolderService {
         }
 
         if (dto.isPinned != f.isPinned()) f.setPinned(dto.isPinned);
-        Folder updatedFolder = folderRepository.save(f);
-        log.info("[Folder] Updated folder {} by user {}", folderId, user.getId());
-        return updatedFolder;
+        return folderRepository.save(f);
+    }
+
+    private boolean isDescendantOf(Long folderId, Long ancestorId) {
+        Folder f = folderRepository.findById(folderId).orElse(null);
+        while (f != null && f.getParentFolder() != null) {
+            if (f.getParentFolder().getId().equals(ancestorId)) return true;
+            f = f.getParentFolder();
+        }
+        return false;
+    }
+
+    private int calculateDepth(Long folderId) {
+        int depth = 1;
+        Folder f = folderRepository.findById(folderId).orElse(null);
+        while (f != null && f.getParentFolder() != null) {
+            depth++;
+            f = f.getParentFolder();
+        }
+        return depth;
     }
 
     /**
@@ -215,7 +253,6 @@ public class FolderService {
                     "You must be an EDITOR or OWNER to delete this folder");
         }
 
-        User owner = folder.getUser();
         User caller = userRepository.findById(java.util.Objects.requireNonNull(callerId, "callerId cannot be null"))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
@@ -240,27 +277,13 @@ public class FolderService {
         // 4. Bulk-delete all folder records (avoids Hibernate object-graph reconciliation issues)
         folderRepository.deleteByIdIn(descendantIds);
 
-        // 5. Send notification to owner if EDITOR (not owner) performed the deletion
-        if (callerRole != AccessLevel.OWNER) {
-            String callerName = caller.getFullName() != null ? caller.getFullName() : caller.getEmail();
-            
-            // Send email to owner
-            emailService.sendEditorDeletedFolderEmail(
-                    owner.getEmail(), callerName, folder.getName(), String.valueOf(folderId));
+        // 5. Notify all folder members that the folder was deleted
+        notificationService.notifyAllFolderMembers(
+            caller, folder, null, "deleted the folder", 
+            "The entire folder tree was removed.", "FOLDER_MODIFIED"
+        );
 
-            // Send instant in-app notification to owner
-            notificationService.createInstantNotification(
-                    owner, caller, "DELETED", folderId,
-                    callerName + " deleted your shared folder \"" + folder.getName() + "\"",
-                    "/dashboard"
-            );
-
-            // Accumulate in the 60-minute digest window
-            notificationService.logBatchedAction(owner, caller, folderId, folder.getName());
-
-            log.info("[Folder Deletion] Editor={} deleted folder={} owned by={}; owner notified",
-                    callerId, folderId, owner.getId());
-        }
+        log.info("[Folder Deletion] Folder tree rooted at {} bulk-deleted by user={}; all members notified", folderId, callerId);
 
         log.info("[Folder Deletion] Folder tree rooted at {} bulk-deleted by user={}", folderId, callerId);
     }
@@ -457,7 +480,30 @@ public class FolderService {
         List<Highlight> sourceHighlights = highlightRepository.findByFolderIdInAndNotDeleted(originalFolderIds);
         
         if (!sourceHighlights.isEmpty()) {
+            // 6. Fetch all tag associations for the subtree in one query
+            List<Long> sourceHighlightIds = sourceHighlights.stream().map(Highlight::getId).toList();
+            List<HighlightTag> sourceHighlightTags = highlightTagRepository.findByHighlightIdIn(sourceHighlightIds);
+            
+            // 7. Ensure newOwner has all necessary tags (by name/color) to prevent data loss
+            java.util.Map<Long, Tag> tagMapping = new java.util.HashMap<>();
+            Set<Tag> neededTags = sourceHighlightTags.stream().map(HighlightTag::getTag).collect(Collectors.toSet());
+            
+            for (Tag srcTag : neededTags) {
+                // Find or create a matching tag for the new owner
+                Tag targetTag = tagRepository.findByNameAndUserId(srcTag.getName(), newOwnerId)
+                        .orElseGet(() -> {
+                            Tag t = new Tag();
+                            t.setUser(newOwner);
+                            t.setName(srcTag.getName());
+                            t.setColor(srcTag.getColor());
+                            return tagRepository.save(t);
+                        });
+                tagMapping.put(srcTag.getId(), targetTag);
+            }
+
             List<Highlight> highlightsToSave = new ArrayList<>();
+            java.util.Map<Long, Highlight> originalToCloneMap = new java.util.HashMap<>();
+
             for (Highlight src : sourceHighlights) {
                 Highlight h = new Highlight();
                 h.setUser(newOwner);
@@ -488,10 +534,26 @@ public class FolderService {
                 h.setLinkAccess(LinkAccess.RESTRICTED);
                 h.setDefaultLinkRole(AccessLevel.VIEWER);
                 highlightsToSave.add(h);
+                originalToCloneMap.put(src.getId(), h);
             }
-            // 6. Batch save all highlights (O(1) database round-trips)
+            // 8. Batch save all highlights (O(1) database round-trips)
             highlightRepository.saveAll(highlightsToSave);
-            log.info("[Deep Clone] Cloned {} highlights into folder subtree", highlightsToSave.size());
+            
+            // 9. Batch save all cloned tag associations
+            List<HighlightTag> newHighlightTags = new ArrayList<>();
+            for (HighlightTag srcHT : sourceHighlightTags) {
+                Highlight cloneH = originalToCloneMap.get(srcHT.getHighlight().getId());
+                Tag cloneT = tagMapping.get(srcHT.getTag().getId());
+                if (cloneH != null && cloneT != null) {
+                    newHighlightTags.add(new HighlightTag(cloneH, cloneT));
+                }
+            }
+            if (!newHighlightTags.isEmpty()) {
+                highlightTagRepository.saveAll(newHighlightTags);
+            }
+
+            log.info("[Deep Clone] Cloned {} highlights and {} tag associations into folder subtree", 
+                    highlightsToSave.size(), newHighlightTags.size());
         }
 
         log.info("[Deep Clone] Optimized clone complete. Root ID={}", rootClone.getId());

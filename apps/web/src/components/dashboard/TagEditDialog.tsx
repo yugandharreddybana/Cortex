@@ -64,10 +64,11 @@ export function TagEditDialog({ tag, open, onOpenChange }: TagEditDialogProps) {
       await updateTag(tag.id, trimmed, color);
       toast.success(`Tag updated`, { id: toastId });
       onOpenChange(false);
-    } catch (err: any) {
+    } catch (err: unknown) {
       console.error(err);
-      toast.error(err.message || "Failed to update tag.", { id: toastId });
-      setError(err.message || "Failed to update tag.");
+      const msg = err instanceof Error ? err.message : "Failed to update tag.";
+      toast.error(msg, { id: toastId });
+      setError(msg);
     } finally {
       setIsSubmitting(false);
     }

@@ -6,13 +6,21 @@ import com.cortex.api.entity.LinkAccess;
 import com.cortex.api.entity.PermissionStatus;
 import com.cortex.api.entity.ResourcePermission;
 import com.cortex.api.entity.SharedLink;
+import com.cortex.api.entity.User;
 import com.cortex.api.repository.FolderRepository;
+import com.cortex.api.repository.HighlightRepository;
 import com.cortex.api.repository.ResourcePermissionRepository;
+import com.cortex.api.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -45,12 +53,21 @@ public class PermissionService {
     private static final int MAX_DEPTH = 50;
 
     private final FolderRepository folderRepo;
+    private final HighlightRepository highlightRepo;
     private final ResourcePermissionRepository permissionRepo;
+    private final UserRepository userRepo;
+    private final NotificationService notificationService;
 
     public PermissionService(FolderRepository folderRepo,
-                             ResourcePermissionRepository permissionRepo) {
+                             HighlightRepository highlightRepo,
+                             ResourcePermissionRepository permissionRepo,
+                             UserRepository userRepo,
+                             NotificationService notificationService) {
         this.folderRepo = folderRepo;
+        this.highlightRepo = highlightRepo;
         this.permissionRepo = permissionRepo;
+        this.userRepo = userRepo;
+        this.notificationService = notificationService;
     }
 
     // ── Public API ─────────────────────────────────────────────────────────────
@@ -147,5 +164,113 @@ public class PermissionService {
     @Transactional
     public boolean isEffectiveOwner(Long userId, Long folderId) {
         return getEffectiveRole(userId, folderId) == AccessLevel.OWNER;
+    }
+ 
+    // ── Invitation logic ───────────────────────────────────────────────────────
+ 
+    /**
+     * Grant or update access for a single user by email.
+     */
+    @Transactional
+    public ResourcePermission grantAccess(User granter, String email, Long resourceId, 
+                                          SharedLink.ResourceType resourceType, String accessLevelName) {
+        User invitee = userRepo.findByEmail(email)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found: " + email));
+ 
+        AccessLevel level;
+        try {
+            level = AccessLevel.valueOf(accessLevelName.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid access level: " + accessLevelName);
+        }
+ 
+        if (level == AccessLevel.OWNER) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Cannot grant OWNER access");
+        }
+ 
+        // Upsert
+        ResourcePermission perm = permissionRepo
+                .findByUserIdAndResourceIdAndResourceType(invitee.getId(), resourceId, resourceType)
+                .orElseGet(() -> {
+                    ResourcePermission p = new ResourcePermission();
+                    p.setUser(invitee);
+                    p.setResourceId(resourceId);
+                    p.setResourceType(resourceType);
+                    return p;
+                });
+ 
+        perm.setAccessLevel(level);
+        perm = permissionRepo.save(perm);
+ 
+        // 1. In-app notification
+        String granterName = (granter.getFullName() != null && !granter.getFullName().isBlank())
+                ? granter.getFullName() : granter.getEmail();
+        String resourceTitle = resolveResourceTitle(resourceId, resourceType);
+ 
+        notificationService.emitShareInvite(
+                invitee,
+                granterName,
+                granter.getEmail(),
+                resourceTitle,
+                resourceId,
+                resourceType.name(),
+                perm.getId()
+        );
+ 
+        // 2. Email notification (immediate)
+        if (resourceType == SharedLink.ResourceType.FOLDER) {
+            notificationService.triggerFolderAccessGrantedEmail(
+                    invitee, granter, resourceTitle, resourceId);
+        }
+ 
+        return perm;
+    }
+    @Transactional
+    public List<InviteResult> bulkInvite(User granter, List<String> emails, Long resourceId, 
+                                         SharedLink.ResourceType resourceType, String accessLevelName) {
+        Objects.requireNonNull(resourceId, "resourceId cannot be null");
+        List<InviteResult> results = new ArrayList<>();
+        for (String email : emails) {
+            InviteResult result = new InviteResult();
+            result.email = email;
+            try {
+                grantAccess(granter, email, resourceId, resourceType, accessLevelName);
+                result.status = "invited";
+                result.emailSent = true;
+            } catch (ResponseStatusException e) {
+                if (e.getStatusCode() == HttpStatus.NOT_FOUND) {
+                    result.status = "not_found";
+                    result.emailSent = false;
+                } else {
+                    result.status = "error";
+                    result.error = e.getReason();
+                    result.emailSent = false;
+                }
+            } catch (Exception e) {
+                result.status = "error";
+                result.error = e.getMessage();
+                result.emailSent = false;
+            }
+            results.add(result);
+        }
+        return results;
+    }
+ 
+    public static class InviteResult {
+        public String email;
+        public String status;
+        public Boolean emailSent;
+        public String error;
+    }
+ 
+    private String resolveResourceTitle(Long resourceId, SharedLink.ResourceType type) {
+        Objects.requireNonNull(resourceId, "resourceId cannot be null");
+        if (type == SharedLink.ResourceType.HIGHLIGHT) {
+            return highlightRepo.findById(resourceId)
+                    .map(h -> h.getSource() != null ? h.getSource() : "a highlight").orElse("a highlight");
+        } else {
+            return folderRepo.findById(resourceId)
+                    .map(f -> f.getName() != null ? f.getName() : "a folder").orElse("a folder");
+        }
     }
 }

@@ -58,7 +58,8 @@ public class AccessRequestService {
                 ownerId, AccessRequestStatus.PENDING);
 
         return requests.stream().map(r -> {
-            String folderName = folderRepo.findById(r.getFolderId())
+            Long fId = r.getFolderId();
+            String folderName = folderRepo.findById(java.util.Objects.requireNonNull(fId))
                     .map(Folder::getName)
                     .orElse("Unknown");
             String requesterName = (r.getRequester().getFullName() != null && !r.getRequester().getFullName().isBlank())
@@ -83,10 +84,10 @@ public class AccessRequestService {
      */
     @Transactional
     public AccessRequest createRequest(Long requesterId, Long folderId, AccessLevel requestedLevel) {
-        User requester = userRepo.findById(requesterId)
+        User requester = userRepo.findById(java.util.Objects.requireNonNull(requesterId))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
 
-        Folder folder = folderRepo.findById(folderId)
+        Folder folder = folderRepo.findById(java.util.Objects.requireNonNull(folderId))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Folder not found"));
 
         // 1. Validate requester is NOT the owner
@@ -152,7 +153,7 @@ public class AccessRequestService {
      */
     @Transactional
     public void respondToRequest(Long ownerId, Long requestId, AccessRequestStatus status) {
-        AccessRequest request = requestRepo.findById(requestId)
+        AccessRequest request = requestRepo.findById(java.util.Objects.requireNonNull(requestId, "requestId is required"))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Request not found"));
 
         if (!request.getOwner().getId().equals(ownerId)) {
@@ -166,18 +167,27 @@ public class AccessRequestService {
         request.setStatus(status);
         requestRepo.save(request);
 
-        // Mark the original ACCESS_REQUEST notification as responded so it shows
-        // the correct badge even after a page reload, then delete it immediately
-        // (both isRead + responded are set) and broadcast removal to all open tabs.
-        String requestIdFragment = "\"requestId\":\"" + requestId + "\"";
-        notificationRepo.findPendingAccessRequestNotification(ownerId, requestIdFragment)
-                .ifPresent(n -> {
-                    n.setResponded(status == AccessRequestStatus.APPROVED ? "approve" : "reject");
-                    n.setRead(true);
-                    notificationRepo.save(n);
-                    // Both conditions met — delete immediately + broadcast to all owner sessions
-                    notificationService.deleteAndBroadcastDeletion(n, request.getOwner());
-                });
+        // 4. Update the original notification(s) to reflect the response
+        String exactIdFragment1 = "\"requestId\":\"" + requestId + "\",";
+        String exactIdFragment2 = "\"requestId\":\"" + requestId + "\"}";
+        List<Notification> pendingNotifs = notificationRepo.findPendingAccessRequestNotifications(ownerId, exactIdFragment1, exactIdFragment2);
+        
+        for (Notification n : pendingNotifs) {
+            String statusLabel = (status == AccessRequestStatus.APPROVED) ? "Approved" : "Declined";
+            n.setResponded(status.name().toLowerCase());
+            n.setRead(true);
+            
+            // Update message to show resolution
+            String originalMsg = n.getMessage();
+            if (originalMsg != null && !originalMsg.contains(" - ")) {
+                n.setMessage(originalMsg + " - " + statusLabel);
+            }
+            
+            notificationRepo.save(n);
+            
+            // Broadcast update to all owner tabs (badge decrement + UI state change)
+            notificationService.broadcastUpdate(request.getOwner(), n);
+        }
 
         Folder folder = folderRepo.findById(request.getFolderId())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Folder no longer exists"));

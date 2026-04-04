@@ -278,10 +278,11 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
                 if (fRes.ok) {
                   const raw = await fRes.json();
                   const freshFolders = (Array.isArray(raw) ? raw : []).map(
-                    (f: Record<string, unknown>) => ({
+                    (f: Record<string, any>) => ({
                       ...f,
                       id:       String(f.id),
                       parentId: f.parentId != null ? String(f.parentId) : null,
+                      accessRole: f.effectiveRole || f.accessRole, // Sync backend effectiveRole to extension accessRole
                     }),
                   );
                   await secureSet("cortex_folders", freshFolders);
@@ -314,7 +315,12 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         folders: Record<string, unknown>[]; tags: Record<string, unknown>[]; highlights: Record<string, unknown>[];
       };
       
-      const normalizedFolders = folders.map(f => ({ ...f, id: String(f.id), parentId: f.parentId != null ? String(f.parentId) : null }));
+      const normalizedFolders = folders.map(f => ({ 
+        ...f, 
+        id: String(f.id), 
+        parentId: f.parentId != null ? String(f.parentId) : null,
+        accessRole: f.effectiveRole || f.accessRole,
+      }));
       const normalizedTags = tags.map(t => ({ ...t, id: String(t.id) }));
       const normalizedHighlights = highlights.map(h => ({ ...h, id: String(h.id), folderId: h.folderId != null ? String(h.folderId) : null }));
 

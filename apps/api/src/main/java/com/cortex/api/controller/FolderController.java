@@ -8,6 +8,7 @@ import com.cortex.api.entity.User;
 import com.cortex.api.repository.UserRepository;
 import com.cortex.api.service.AccessRequestService;
 import com.cortex.api.service.FolderService;
+import com.cortex.api.service.NotificationService;
 import com.cortex.api.service.PermissionService;
 import com.cortex.api.service.WebSocketService;
 import jakarta.transaction.Transactional;
@@ -16,10 +17,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.time.Instant;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @RestController
@@ -31,17 +37,20 @@ public class FolderController {
     private final PermissionService permissionService;
     private final WebSocketService webSocketService;
     private final AccessRequestService accessRequestService;
+    private final NotificationService notificationService;
 
     public FolderController(FolderService folderService,
                             UserRepository userRepo,
                             PermissionService permissionService,
                             WebSocketService webSocketService,
-                            AccessRequestService accessRequestService) {
+                            AccessRequestService accessRequestService,
+                            NotificationService notificationService) {
         this.folderService = folderService;
         this.userRepo = userRepo;
         this.permissionService = permissionService;
         this.webSocketService = webSocketService;
         this.accessRequestService = accessRequestService;
+        this.notificationService = notificationService;
     }
 
     @GetMapping
@@ -71,7 +80,27 @@ public class FolderController {
         }
         Folder newFolder = folderService.createFolder(f);
         FolderDTO created = toDTO(newFolder);
+        
+        // Notify parent folder members if this is a subfolder
+        if (dto.parentId != null) {
+            Folder parent = newFolder.getParentFolder();
+            if (parent != null) {
+                notificationService.notifyAllFolderMembers(
+                    user, parent, null, "created a subfolder \"" + newFolder.getName() + "\" in", 
+                    "New subfolder created", "FOLDER_MODIFIED"
+                );
+            }
+        }
+
         webSocketService.sendToUser(auth.getName(), "/topic/folders", created);
+
+        // Real-time broadcast to all folder members/followers
+        if (dto.parentId != null) {
+            notificationService.broadcastResourceActivity("folder", dto.parentId, "FOLDER_CREATED", created);
+        } else {
+            // Root folder creation - send to user topic (already handled by sendToUser)
+        }
+
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
@@ -83,7 +112,18 @@ public class FolderController {
         User user = resolveUser(auth);
         Folder folder = folderService.updateFolder(id, dto, user);
         FolderDTO updated = toDTO(folder);
+        
+        // Notify folder members of the update
+        notificationService.notifyAllFolderMembers(
+            user, folder, null, "updated the settings of", 
+            "Folder settings updated", "FOLDER_MODIFIED"
+        );
+
         webSocketService.sendToUser(auth.getName(), "/topic/folders/updated", updated);
+
+        // Real-time broadcast to all members viewing/using this folder
+        notificationService.broadcastResourceActivity("folder", id, "FOLDER_UPDATED", updated);
+
         return updated;
     }
 
@@ -96,6 +136,10 @@ public class FolderController {
         Folder folder = folderService.updateFolder(id, dto, user);
         FolderDTO patched = toDTO(folder);
         webSocketService.sendToUser(auth.getName(), "/topic/folders/updated", patched);
+
+        // Real-time broadcast to all members
+        notificationService.broadcastResourceActivity("folder", id, "FOLDER_UPDATED", patched);
+
         return patched;
     }
 

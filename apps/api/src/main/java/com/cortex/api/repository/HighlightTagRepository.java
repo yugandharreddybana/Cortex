@@ -31,4 +31,6 @@ public interface HighlightTagRepository extends JpaRepository<HighlightTag, High
      */
     @Query("SELECT ht.highlight.id FROM HighlightTag ht WHERE ht.tag.id = :tagId AND ht.highlight.user.id = :userId")
     List<Long> findHighlightIdsByTagIdAndUserId(@Param("tagId") Long tagId, @Param("userId") Long userId);
+
+    List<HighlightTag> findByHighlightIdIn(List<Long> highlightIds);
 }

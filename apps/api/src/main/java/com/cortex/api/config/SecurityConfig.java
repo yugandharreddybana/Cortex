@@ -47,7 +47,7 @@ public class SecurityConfig {
             .cors(cors -> cors.configurationSource(request -> {
                 CorsConfiguration config = new CorsConfiguration();
                 config.setAllowedOrigins(allowedOrigins);
-                config.addAllowedOriginPattern("chrome-extension://*");
+                // config.addAllowedOriginPattern("chrome-extension://*"); // REMOVED: Insecure with allowCredentials
                 config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
                 config.setAllowedHeaders(List.of("*"));
                 config.setAllowCredentials(true);
@@ -73,7 +73,8 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(12);
+        // Increased from 12 to 14 for better brute-force resistance
+        return new BCryptPasswordEncoder(14);
     }
 
     @Bean

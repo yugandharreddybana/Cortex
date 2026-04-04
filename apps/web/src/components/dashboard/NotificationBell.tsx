@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { cn } from "@cortex/ui";
 import { useDashboardStore, type NotificationItem } from "@/store/dashboard";
 import { useShallow } from "zustand/react/shallow";
-import { Loader2 } from "lucide-react";
+import { Spinner } from "@/components/ui/Spinner";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -66,7 +66,12 @@ export function NotificationBell() {
   }, [open]);
 
   async function handleClick(notification: Notification) {
-    // Share invite notifications use dedicated accept/decline buttons — skip row click
+    // If it's a pending share/access notification, row click is disabled anyway,
+    // but if it's already responded, the user wants "nothing to happen".
+    const isActionable = notification.type === "SHARE_INVITE" || notification.type === "ACCESS_REQUEST";
+    if (isActionable && notification.responded) return;
+
+    // Share invites also use buttons when pending — row click does nothing then either.
     if (notification.type === "SHARE_INVITE" && !notification.responded) return;
 
     // Mark as read
@@ -138,12 +143,17 @@ export function NotificationBell() {
     }
   }
 
-  async function handleMarkAllRead() {
+  async function handleMarkAllRead(e: React.MouseEvent) {
+    e.preventDefault();
     try {
-      await fetch("/api/notifications/read-all", { method: "PUT" });
-      markAllNotificationsRead();
+      const res = await fetch("/api/notifications/read-all", { method: "PUT" });
+      if (res.ok) {
+        markAllNotificationsRead();
+      } else {
+        toast.error("Failed to mark all notifications as read.");
+      }
     } catch {
-      // silent
+      toast.error("An unexpected error occurred.");
     }
   }
 
@@ -167,6 +177,7 @@ export function NotificationBell() {
     <Popover.Root open={open} onOpenChange={setOpen}>
       <Popover.Trigger asChild>
         <button
+          type="button"
           className={cn(
             "relative w-8 h-8 rounded-lg",
             "flex items-center justify-center",
@@ -200,6 +211,7 @@ export function NotificationBell() {
             <span className="text-sm font-semibold text-white/90">Notifications</span>
             {unreadNotifCount > 0 && (
               <button
+                type="button"
                 onClick={handleMarkAllRead}
                 className="text-[11px] text-white/40 hover:text-white/70 transition-colors"
               >
@@ -212,7 +224,7 @@ export function NotificationBell() {
           <div className="max-h-[420px] overflow-y-auto scrollbar-thin">
             {loading && notifications.length === 0 ? (
               <div className="flex items-center justify-center py-8">
-                <Loader2 className="w-5 h-5 animate-spin text-white/40" />
+                <Spinner size="md" variant="muted" />
               </div>
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 gap-2">
@@ -235,6 +247,7 @@ export function NotificationBell() {
                     )}
                   >
                     <button
+                      type="button"
                       onClick={() => handleClick(n)}
                       disabled={pending}
                       className={cn(
@@ -285,6 +298,7 @@ export function NotificationBell() {
                     {isShareInvite && pending && (
                       <div className="flex gap-2 px-4 pb-3 -mt-1">
                         <button
+                          type="button"
                           onClick={() => handleRespond(n, "accept")}
                           disabled={respondingId !== null}
                           className={cn(
@@ -296,6 +310,7 @@ export function NotificationBell() {
                           {respondingId === n.id + ":accept" ? "…" : "Accept"}
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleRespond(n, "decline")}
                           disabled={respondingId !== null}
                           className={cn(
@@ -313,6 +328,7 @@ export function NotificationBell() {
                     {isAccessRequest && pending && (
                       <div className="flex gap-2 px-4 pb-3 -mt-1">
                         <button
+                          type="button"
                           onClick={() => handleAccessRequestResponse(n, "APPROVE")}
                           disabled={respondingId !== null}
                           className={cn(
@@ -324,6 +340,7 @@ export function NotificationBell() {
                           {respondingId === n.id + ":APPROVE" ? "…" : "Approve"}
                         </button>
                         <button
+                          type="button"
                           onClick={() => handleAccessRequestResponse(n, "REJECT")}
                           disabled={respondingId !== null}
                           className={cn(

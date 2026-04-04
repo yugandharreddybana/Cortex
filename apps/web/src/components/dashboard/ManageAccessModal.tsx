@@ -78,7 +78,7 @@ export function ManageAccessModal({
       if (resp.ok) {
         const data = await resp.json();
         const normalized = Array.isArray(data)
-          ? data.map((p: any) => ({
+          ? data.map((p: PermissionItem) => ({
               ...p,
               id: Number(p.id),
               userId: Number(p.userId),

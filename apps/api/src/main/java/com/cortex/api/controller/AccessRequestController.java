@@ -2,6 +2,8 @@ package com.cortex.api.controller;
 
 import com.cortex.api.entity.AccessRequestStatus;
 import com.cortex.api.service.AccessRequestService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -14,6 +16,8 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/v1/access-requests")
 public class AccessRequestController {
+
+    private static final Logger log = LoggerFactory.getLogger(AccessRequestController.class);
 
     private final AccessRequestService accessRequestService;
 
@@ -43,12 +47,13 @@ public class AccessRequestController {
         Long ownerId = Long.parseLong(auth.getName());
         
         AccessRequestStatus status;
-        try {
-            status = AccessRequestStatus.valueOf(action.toUpperCase());
-            if (status == AccessRequestStatus.PENDING) {
-                throw new IllegalArgumentException();
-            }
-        } catch (IllegalArgumentException e) {
+        String upperAction = action.toUpperCase();
+        if ("APPROVE".equals(upperAction) || "APPROVED".equals(upperAction)) {
+            status = AccessRequestStatus.APPROVED;
+        } else if ("REJECT".equals(upperAction) || "REJECTED".equals(upperAction)) {
+            status = AccessRequestStatus.REJECTED;
+        } else {
+            log.warn("[Access Request] Invalid action '{}' from user {}", action, ownerId);
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, 
                 "Invalid action. Must be APPROVE or REJECT.");
         }

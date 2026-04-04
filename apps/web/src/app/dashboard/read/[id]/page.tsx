@@ -11,7 +11,10 @@ import { useDashboardStore } from "@/store/dashboard";
 import { useAuthStore } from "@/store/authStore";
 import { FolderCreateDialog } from "@/components/dashboard/FolderCreateDialog";
 import { NewTagDialog } from "@/components/dashboard/NewTagDialog";
-import { Loader2, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
+import { Spinner } from "@/components/ui/Spinner";
+import { formatSourceUrl } from "@/lib/url";
+import { useResourceSync } from "@/hooks/useResourceSync";
 
 export interface CommentType {
   id: number;
@@ -21,6 +24,13 @@ export interface CommentType {
   authorFullName: string | null;
   text: string;
   createdAt: string;
+  reactions: ReactionType[];
+}
+ 
+export interface ReactionType {
+  userId: number;
+  userName: string;
+  emoji: string;
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -49,14 +59,14 @@ function formatRelativeDate(value: string | undefined): string {
   if (isNaN(d.getTime())) return value;
   const now = Date.now();
   const diff = now - d.getTime();
-  const mins  = Math.floor(diff / 60000);
+  const mins = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
-  const days  = Math.floor(diff / 86400000);
+  const days = Math.floor(diff / 86400000);
 
-  if (mins  < 1)  return "Just now";
-  if (mins  < 60) return `${mins}m ago`;
+  if (mins < 1) return "Just now";
+  if (mins < 60) return `${mins}m ago`;
   if (hours < 24) return `${hours}h ago`;
-  if (days  < 7)  return `${days}d ago`;
+  if (days < 7) return `${days}d ago`;
   return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
 }
 
@@ -64,32 +74,34 @@ function formatRelativeDate(value: string | undefined): string {
 
 const FONT_OPTIONS = [
   { label: "System", value: "system-ui, -apple-system, sans-serif" },
-  { label: "Serif",  value: "Georgia, 'Times New Roman', serif" },
-  { label: "Mono",   value: "'JetBrains Mono', 'SF Mono', monospace" },
+  { label: "Serif", value: "Georgia, 'Times New Roman', serif" },
+  { label: "Mono", value: "'JetBrains Mono', 'SF Mono', monospace" },
 ];
 
 const SIZE_OPTIONS = [
-  { label: "S",  value: "text-sm leading-relaxed" },
-  { label: "M",  value: "text-base leading-relaxed" },
-  { label: "L",  value: "text-lg leading-loose" },
+  { label: "S", value: "text-sm leading-relaxed" },
+  { label: "M", value: "text-base leading-relaxed" },
+  { label: "L", value: "text-lg leading-loose" },
   { label: "XL", value: "text-xl leading-loose" },
 ];
 
 const THEME_OPTIONS = [
-  { label: "Dark",  bg: "bg-[#0a0a0a]", text: "text-white/80" },
+  { label: "Dark", bg: "bg-[#0a0a0a]", text: "text-white/80" },
   { label: "Sepia", bg: "bg-[#1a1712]", text: "text-[#d4c5a0]" },
   { label: "Light", bg: "bg-[#fafaf9]", text: "text-[#1a1a1a]" },
 ];
 
 const TAG_COLORS: Record<string, { bg: string; text: string; border: string }> = {
-  blue:    { bg: "bg-blue-500/10",    text: "text-blue-400",    border: "border-blue-500/20" },
-  violet:  { bg: "bg-violet-500/10",  text: "text-violet-400",  border: "border-violet-500/20" },
+  blue: { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/20" },
+  violet: { bg: "bg-violet-500/10", text: "text-violet-400", border: "border-violet-500/20" },
   emerald: { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20" },
-  amber:   { bg: "bg-amber-500/10",   text: "text-amber-400",   border: "border-amber-500/20" },
-  pink:    { bg: "bg-pink-500/10",    text: "text-pink-400",    border: "border-pink-500/20" },
-  teal:    { bg: "bg-teal-500/10",    text: "text-teal-400",    border: "border-teal-500/20" },
+  amber: { bg: "bg-amber-500/10", text: "text-amber-400", border: "border-amber-500/20" },
+  pink: { bg: "bg-pink-500/10", text: "text-pink-400", border: "border-pink-500/20" },
+  teal: { bg: "bg-teal-500/10", text: "text-teal-400", border: "border-teal-500/20" },
 };
 
+const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏"];
+ 
 function TagPill({ name, color, onRemove }: { name: string; color: string; onRemove?: () => void }) {
   const isHex = color?.startsWith("#");
   const c = isHex ? null : (TAG_COLORS[color] ?? TAG_COLORS.blue);
@@ -116,11 +128,12 @@ function TagPill({ name, color, onRemove }: { name: string; color: string; onRem
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ReadingModePage() {
-  const params  = useParams();
-  const router  = useRouter();
-  const id      = params.id as string;
+  const params = useParams();
+  const router = useRouter();
+  const id = params.id as string;
 
-  const highlight = useDashboardStore((s) => s.highlights.find((h) => h.id === id));
+  const highlight = useDashboardStore((s) => s.highlights.find((h) => String(h.id) === id));
+
 
   if (!highlight) {
     return (
@@ -142,9 +155,9 @@ export default function ReadingModePage() {
 }
 
 function ReadingModeContent({ highlight }: { highlight: any }) {
-  const router  = useRouter();
-  const tags           = useDashboardStore((s) => s.tags);
-  const folders        = useDashboardStore((s) => s.folders);
+  const router = useRouter();
+  const tags = useDashboardStore((s) => s.tags);
+  const folders = useDashboardStore((s) => s.folders);
   const toggleFavorite = useDashboardStore((s) => s.toggleFavorite);
   const updateHighlight = useDashboardStore((s) => s.updateHighlight);
   const moveHighlight = useDashboardStore((s) => s.moveHighlight);
@@ -181,6 +194,51 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
     }
   }, [highlight?.id]);
 
+  // ── Real-time Sync ──────────────────────────────────────────────────────────
+  const handleResourceEvent = React.useCallback((event: any) => {
+    const { type, data } = event;
+    
+    switch (type) {
+      case "COMMENT_ADDED":
+        setComments(prev => {
+          // Avoid duplicate if we were the sender
+          if (prev.some(c => c.id === data.id)) return prev;
+          return [...prev, data];
+        });
+        break;
+      case "COMMENT_UPDATED":
+        setComments(prev => prev.map(c => c.id === data.id ? data : c));
+        break;
+      case "COMMENT_DELETED":
+        setComments(prev => prev.filter(c => c.id !== data.id));
+        break;
+      case "COMMENT_REACTION_UPDATED":
+        setComments(prev => prev.map(c => {
+          if (c.id === data.commentId) {
+            return { ...c, reactions: data.reactions };
+          }
+          return c;
+        }));
+        break;
+      case "HIGHLIGHT_DELETED":
+        toast.error("This highlight has been deleted by its owner.");
+        router.push("/dashboard");
+        break;
+      case "HIGHLIGHT_UPDATED":
+        // The global useWebSocket hook usually handles store sync,
+        // but if we're on a shared folder, we might need to nudge the store
+        // or the local view. The component re-renders when the store changes.
+        break;
+      case "HIGHLIGHT_RESTORED":
+        // Similar to UPDATED, the store will be updated and this component will re-render.
+        // We log it for debugging and to ensure the path is covered.
+        console.log("Highlight restored via real-time sync", data.id);
+        break;
+    }
+  }, [router]);
+
+  useResourceSync("highlight", highlight?.id, handleResourceEvent);
+
   const handlePostComment = async () => {
     if (!newComment.trim()) return;
     try {
@@ -188,6 +246,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: newComment }),
+        credentials: "include",
       });
       if (res.ok) {
         const added = await res.json();
@@ -209,6 +268,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: editCommentText }),
+        credentials: "include",
       });
       if (res.ok) {
         const updated = await res.json();
@@ -222,16 +282,35 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
     }
   };
 
+  const handleToggleReaction = async (commentId: number, emoji: string) => {
+    try {
+      const res = await fetch(`/api/v1/highlights/${highlight.id}/comments/${commentId}/reactions`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ emoji }),
+        credentials: "include",
+      });
+      if (res.ok) {
+        const updatedReactions = await res.json();
+        setComments(prev => prev.map(c => c.id === commentId ? { ...c, reactions: updatedReactions } : c));
+      }
+    } catch {
+      toast.error("Failed to update reaction.");
+    }
+  };
+ 
   // Layout State
-  const [fontIdx,  setFontIdx]  = React.useState(0);
-  const [sizeIdx,  setSizeIdx]  = React.useState(1);
+  const [fontIdx, setFontIdx] = React.useState(0);
+  const [sizeIdx, setSizeIdx] = React.useState(1);
   const [themeIdx, setThemeIdx] = React.useState(0);
 
   // Edit Modal State
   const [editOpen, setEditOpen] = React.useState(false);
   const [isTagOnly, setIsTagOnly] = React.useState(false);
-  const [editFolderId, setEditFolderId] = React.useState<string | null>(highlight.folderId ?? null);
-  const [editTags, setEditTags] = React.useState<string[]>(highlight.tags ?? []);
+  const [editFolderId, setEditFolderId] = React.useState<string | null>(highlight?.folderId ?? null);
+  const [editTags, setEditTags] = React.useState<string[]>(highlight?.tags?.map((t: any) => String(t.id)) ?? []);
+
+
   const [tagQuery, setTagQuery] = React.useState("");
   const [tagPopoverOpen, setTagPopoverOpen] = React.useState(false);
   const [folderPopoverOpen, setFolderPopoverOpen] = React.useState(false);
@@ -243,26 +322,33 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
 
   // Sync state when modal opens
   React.useEffect(() => {
-    if (editOpen) {
+    if (editOpen && highlight) {
       setEditFolderId(highlight.folderId ?? null);
-      setEditTags(highlight.tags ?? []);
+      setEditTags(highlight.tags?.map((t: any) => String(t.id)) ?? []);
     }
   }, [editOpen, highlight]);
 
+
+
   const handleSaveEdit = () => {
-    const folder = folders.find(f => f.id === editFolderId);
-    
-    // Process folder move if it changed
-    if (editFolderId !== (highlight.folderId ?? null)) {
-      moveHighlight(highlight.id, editFolderId ?? undefined as any, folder ? folder.name : undefined as any);
+    if (!highlight) return;
+    const folder = folders.find(f => String(f.id) === String(editFolderId));
+
+    const patch: any = {
+      tagIds: editTags
+    };
+
+    // Only include folderId if it actually changed to avoid redundant backend activity
+    if (String(editFolderId) !== String(highlight.folderId ?? "null")) {
+      patch.folderId = editFolderId ?? null;
+      patch.folder = folder ? folder.name : null;
     }
-    
-    updateHighlight(highlight.id, {
-      tags: editTags
-    });
+
+    updateHighlight(highlight.id, patch);
     setEditOpen(false);
     toast.success("Highlight updated successfully");
   };
+
 
   const [isDeleting, setIsDeleting] = React.useState(false);
   const handleDelete = async () => {
@@ -270,9 +356,9 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
       toast.error("You do not have permission to delete this highlight.");
       return;
     }
-    
+
     if (!confirm("Are you sure you want to delete this highlight?")) return;
-    
+
     setIsDeleting(true);
     try {
       deleteHighlight(highlight.id);
@@ -293,7 +379,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
         <div key={f.id} className="group flex items-center w-full mb-0.5 relative">
           {/* Depth indentation */}
           <div style={{ width: depth * 16, flexShrink: 0 }} />
-          
+
           {/* Depth left border indicator */}
           {depth > 0 && (
             <div
@@ -318,7 +404,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
             <span className="text-base leading-none shrink-0">{f.emoji || "📁"}</span>
             <span className="flex-1 truncate">{f.name}</span>
           </button>
-          
+
           <button
             onClick={(e) => {
               e.stopPropagation();
@@ -330,7 +416,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
             title="Create Subfolder"
           >
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M6 2v8M2 6h8" strokeLinecap="round"/>
+              <path d="M6 2v8M2 6h8" strokeLinecap="round" />
             </svg>
           </button>
         </div>,
@@ -344,8 +430,8 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
   const scaleX = useSpring(scrollYProgress, { stiffness: 200, damping: 30 });
 
   const theme = THEME_OPTIONS[themeIdx];
-  const font  = FONT_OPTIONS[fontIdx];
-  const size  = SIZE_OPTIONS[sizeIdx];
+  const font = FONT_OPTIONS[fontIdx];
+  const size = SIZE_OPTIONS[sizeIdx];
 
   const filteredTags = tags.filter(
     (t: any) =>
@@ -385,8 +471,30 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
         </div>
 
         <div className="flex items-center gap-2">
+          {/* Source Link Shortcut */}
+          {highlight.url && highlight.url !== "#" && (
+            <a
+              href={formatSourceUrl(highlight.url, highlight.text)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className={cn(
+                "h-9 px-3 rounded-lg flex items-center gap-2 transition-all duration-150",
+                "bg-accent/10 border border-accent/20 text-accent hover:bg-accent/20",
+                "font-medium text-xs whitespace-nowrap"
+              )}
+              title="Open Original Source"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                <polyline points="15 3 21 3 21 9" />
+                <line x1="10" y1="14" x2="21" y2="3" />
+              </svg>
+              <span className="hidden sm:inline">Source</span>
+            </a>
+          )}
+
           {/* Edit Button */}
-          <button 
+          <button
             onClick={() => {
               if (!canEdit) return;
               setIsTagOnly(false);
@@ -409,7 +517,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
           </button>
 
           {/* Delete Button */}
-          <button 
+          <button
             onClick={handleDelete}
             disabled={isDeleting || !canEdit}
             title={!canEdit ? "You must have editor access to delete this highlight." : undefined}
@@ -424,7 +532,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
               isDeleting && "opacity-50 cursor-not-allowed"
             )}>
             {isDeleting ? (
-              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              <Spinner size="xs" variant="accent" />
             ) : (
               <Trash2 className="w-3.5 h-3.5" />
             )}
@@ -530,7 +638,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
           {isViewer && (
             <div className="mb-6 flex items-center gap-2 px-4 py-3 rounded-xl bg-blue-500/[0.08] border border-blue-500/20 text-blue-200/80 text-sm">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-blue-400">
-                <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
               </svg>
               <span>This is a shared highlight with <strong>View-only</strong> access. You cannot edit it or add new comments.</span>
             </div>
@@ -543,10 +651,12 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
             </span>
           </div>
 
-          {/* Source & metadata */}
-          <div className="mb-8">
-            <div className="flex items-start justify-between gap-3 mb-2">
-              <h1 className={cn("text-2xl font-bold tracking-tight", theme.text)}>{highlight.source}</h1>
+          {/* Highlight Content & Context */}
+          <div className="mb-10">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <h1 className={cn("text-2xl font-bold tracking-tight leading-snug", theme.text)}>
+                {highlight.fullText || highlight.text}
+              </h1>
               {/* Favorite toggle */}
               <button
                 onClick={() => toggleFavorite(highlight.id)}
@@ -566,13 +676,38 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                 </svg>
               </button>
             </div>
+            
             <div className="flex items-center gap-4 text-xs text-white/40 flex-wrap">
+              {/* Source name link (Primary shortcut) */}
+              {highlight.url && highlight.url !== "#" ? (
+                <a
+                  href={formatSourceUrl(highlight.url, highlight.text)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 font-bold text-accent transition-all hover:text-accent-foreground hover:underline decoration-accent/30 underline-offset-4"
+                >
+                  <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                    <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" />
+                    <path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" />
+                  </svg>
+                  {highlight.source}
+                </a>
+              ) : (
+                <span className="flex items-center gap-1.5 font-semibold text-white/30">
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
+                    <circle cx="6" cy="6" r="5" strokeWidth="1"/>
+                  </svg>
+                  {highlight.source}
+                </span>
+              )}
+
               <span className="flex items-center gap-1.5">
                 <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
                   <circle cx="6" cy="6" r="4.5" /><path d="M6 3.5v3l2 1" />
                 </svg>
                 {formatRelativeDate(highlight.savedAt)}
               </span>
+              
               {highlight.folder && (
                 <span className="flex items-center gap-1.5">
                   <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
@@ -581,29 +716,25 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                   {highlight.folder}
                 </span>
               )}
-              {highlight.url && highlight.url !== "#" && (
-                <a
-                  href={highlight.url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex items-center gap-1.5 text-accent/80 hover:text-accent transition-colors"
-                >
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round">
-                    <path d="M9 3L3 9M9 3H5M9 3v4" />
-                  </svg>
-                  Read original source
-                </a>
-              )}
             </div>
-            
+
             {/* Display Tags cleanly on the page */}
             {highlight.tags && highlight.tags.length > 0 ? (
               <div className="mt-4 flex flex-wrap gap-1.5">
-                {highlight.tags.map((tid: string) => {
-                  const t = tags.find((x: any) => String(x.id) === String(tid));
+                {highlight.tags.map((tagRef: any) => {
+                  // Handle both string IDs (legacy/demo) and full TagDTO objects (shared highlights)
+                  const isObject = typeof tagRef === "object" && tagRef !== null;
+                  const tagId = isObject ? String(tagRef.id) : String(tagRef);
+                  
+                  // Try to find in local store first for most up-to-date name/color or if we only have an ID
+                  const localTag = tags.find((x: any) => String(x.id) === tagId);
+                  
+                  // Use local tag if found, else use the object from the highlight itself
+                  const t = localTag || (isObject ? tagRef : null);
+                  
                   if (!t) return null;
                   return (
-                    <TagPill key={tid} name={t.name} color={t.color} />
+                    <TagPill key={tagId} name={t.name} color={t.color} />
                   );
                 })}
               </div>
@@ -620,8 +751,8 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                     <p className="text-xs text-white/30 mt-1">No tags assigned to this highlight</p>
                   </div>
                 </div>
-                {!isViewer && (
-                  <button 
+                {canEdit && (
+                  <button
                     onClick={() => {
                       setIsTagOnly(true);
                       setEditOpen(true);
@@ -663,27 +794,6 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
             );
           })()}
 
-          {/* Highlight text */}
-          <div className="mb-14">
-            {highlight.isCode ? (
-              <pre className={cn(
-                "font-mono text-sm whitespace-pre-wrap",
-                "p-6 rounded-xl",
-                "bg-white/[0.03] border border-white/[0.08]",
-                theme.text,
-              )}>
-                {highlight.fullText || highlight.text}
-              </pre>
-            ) : (
-              <blockquote className={cn(
-                size.value,
-                theme.text,
-                "border-l-4 border-accent/40 pl-6 leading-relaxed relative",
-              )}>
-                {highlight.fullText || highlight.text}
-              </blockquote>
-            )}
-          </div>
 
           {/* Comments Section */}
           <div className="pt-8 border-t border-white/[0.08]">
@@ -708,15 +818,15 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                     </button>
                   );
                 }
-                
+
                 return null;
               })()}
             </div>
-            
+
             <div className="space-y-4">
               {isFetchingComments ? (
                 <div className="flex justify-center py-6">
-                  <Loader2 className="animate-spin text-white/30" />
+                  <Spinner size="md" variant="accent" />
                 </div>
               ) : comments.map((comment) => {
                 const isMyComment = currentUser && String(currentUser.id) === String(comment.authorId);
@@ -758,12 +868,12 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                             value={editCommentText}
                             onChange={(e) => setEditCommentText(e.target.value)}
                             onKeyDown={(e) => {
-                                if (e.key === "Enter" && !e.shiftKey) {
-                                  e.preventDefault();
-                                  handleUpdateComment(comment.id);
-                                } else if (e.key === "Escape") {
-                                  setEditingCommentId(null);
-                                }
+                              if (e.key === "Enter" && !e.shiftKey) {
+                                e.preventDefault();
+                                handleUpdateComment(comment.id);
+                              } else if (e.key === "Escape") {
+                                setEditingCommentId(null);
+                              }
                             }}
                             className={cn(
                               "w-full text-sm bg-black/40 border border-white/10 rounded-md p-3",
@@ -792,6 +902,97 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                           {comment.text}
                         </p>
                       )}
+ 
+                      {/* Reactions Display */}
+                      {comment.reactions && comment.reactions.length > 0 && (
+                        <div className="mt-4 flex flex-wrap gap-2">
+                          {Array.from(new Set(comment.reactions.map(r => r.emoji))).map(emoji => {
+                            const count = comment.reactions.filter(r => r.emoji === emoji).length;
+                            const users = comment.reactions.filter(r => r.emoji === emoji).map(r => r.userName);
+                            const hasReacted = currentUser && comment.reactions.some(r => r.emoji === emoji && String(r.userId) === String(currentUser.id));
+
+                            return (
+                              <Popover.Root key={emoji}>
+                                <Popover.Trigger asChild>
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      handleToggleReaction(comment.id, emoji);
+                                    }}
+                                    className={cn(
+                                      "flex items-center gap-1.5 px-2 py-1 rounded-full text-xs transition-all",
+                                      "border border-white/10 hover:border-white/20",
+                                      hasReacted ? "bg-accent/20 border-accent/40 text-accent" : "bg-white/5 text-white/60 hover:bg-white/10"
+                                    )}
+                                    title={`Reacted by: ${users.join(", ")}`}
+                                  >
+                                    <span>{emoji}</span>
+                                    {count > 1 && <span className="font-bold">{count}</span>}
+                                  </button>
+                                </Popover.Trigger>
+                                <Popover.Portal>
+                                  <Popover.Content
+                                    side="top"
+                                    sideOffset={6}
+                                    className="z-50 bg-[#1c1c1c] border border-white/10 rounded-lg p-2 shadow-xl animate-in fade-in zoom-in-95 duration-100"
+                                  >
+                                    <div className="text-[10px] text-white/40 font-medium uppercase tracking-widest mb-1 px-1">Reacted by</div>
+                                    <div className="flex flex-col gap-1">
+                                      {users.map((u, i) => (
+                                        <div key={i} className="text-xs text-white/80 px-1">{u}</div>
+                                      ))}
+                                    </div>
+                                    <Popover.Arrow className="fill-[#1c1c1c]" />
+                                  </Popover.Content>
+                                </Popover.Portal>
+                              </Popover.Root>
+                            );
+                          })}
+                        </div>
+                      )}
+ 
+                      {/* Reaction Picker Button */}
+                      <div className="mt-3 flex items-center justify-end">
+                        <Popover.Root>
+                          <Popover.Trigger asChild>
+                            <button className="p-1.5 rounded-full text-white/20 hover:text-white/60 hover:bg-white/5 transition-all">
+                              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>
+                              </svg>
+                            </button>
+                          </Popover.Trigger>
+                          <Popover.Portal>
+                            <Popover.Content
+                              side="top"
+                              align="end"
+                              sideOffset={8}
+                              className={cn(
+                                "z-50 flex gap-1 p-1.5 rounded-full",
+                                "bg-[#1c1c1c] border border-white/10",
+                                "shadow-[0_8px_30px_rgba(0,0,0,0.5)]",
+                                "animate-in fade-in slide-in-from-bottom-2 duration-150"
+                              )}
+                            >
+                              {QUICK_EMOJIS.map(emoji => {
+                                const hasReacted = currentUser && comment.reactions?.some(r => r.emoji === emoji && String(r.userId) === String(currentUser.id));
+                                return (
+                                  <button
+                                    key={emoji}
+                                    onClick={() => handleToggleReaction(comment.id, emoji)}
+                                    className={cn(
+                                      "w-8 h-8 flex items-center justify-center rounded-full text-lg transition-all",
+                                      "hover:bg-white/10 hover:scale-125 active:scale-95",
+                                      hasReacted && "bg-accent/20"
+                                    )}
+                                  >
+                                    {emoji}
+                                  </button>
+                                );
+                              })}
+                            </Popover.Content>
+                          </Popover.Portal>
+                        </Popover.Root>
+                      </div>
                     </div>
                   </div>
                 );
@@ -809,12 +1010,12 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                       value={newComment}
                       onChange={(e) => setNewComment(e.target.value)}
                       onKeyDown={(e) => {
-                          if (e.key === "Enter" && !e.shiftKey) {
-                            e.preventDefault();
-                            handlePostComment();
-                          } else if (e.key === "Escape") {
-                            setIsAddingComment(false);
-                          }
+                        if (e.key === "Enter" && !e.shiftKey) {
+                          e.preventDefault();
+                          handlePostComment();
+                        } else if (e.key === "Escape") {
+                          setIsAddingComment(false);
+                        }
                       }}
                       className={cn(
                         "w-full text-sm bg-black/40 border border-white/10 rounded-xl rounded-tl-sm p-4",
@@ -855,7 +1056,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                 {isTagOnly ? "Assign Tags" : "Edit Highlight Details"}
               </Dialog.Title>
               <Dialog.Description className="text-sm text-white/50">
-                {isTagOnly 
+                {isTagOnly
                   ? "Select one or more tags to categorize this highlight."
                   : "Make changes to your highlight's organization and metadata."}
               </Dialog.Description>
@@ -866,7 +1067,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
               {!isTagOnly && (
                 <div className="flex flex-col gap-2 relative">
                   <label className="text-xs font-semibold uppercase tracking-widest text-white/40">Folder</label>
-                  
+
                   <Popover.Root open={folderPopoverOpen} onOpenChange={setFolderPopoverOpen}>
                     <Popover.Trigger asChild>
                       <button className="w-full flex items-center justify-between bg-white/[0.03] border border-white/[0.08] hover:bg-white/[0.06] rounded-xl px-3 py-2 text-sm text-white/80 outline-none focus:border-accent/50 transition-all">
@@ -881,11 +1082,11 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                           )}
                         </span>
                         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
-                          <path d="M2.5 4.5l3.5 3.5 3.5-3.5" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M2.5 4.5l3.5 3.5 3.5-3.5" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </button>
                     </Popover.Trigger>
-                    
+
                     <Popover.Portal>
                       <Popover.Content align="start" sideOffset={6} className="z-[70] w-[450px] flex flex-col rounded-xl bg-[#1e1e1e] border border-white/[0.09] shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] p-2">
                         {/* Create Folder (Pinned to top) */}
@@ -951,7 +1152,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                     );
                   })}
                 </div>
-                
+
                 <Popover.Root open={tagPopoverOpen} onOpenChange={setTagPopoverOpen}>
                   <Popover.Trigger asChild>
                     <button className="flex items-center gap-2 px-3 py-2 rounded-xl bg-white/[0.03] border border-white/[0.06] text-xs text-white/50 hover:text-white/80 hover:bg-white/[0.06] transition-all w-max">
@@ -1022,20 +1223,20 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
             </div>
 
             <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-2">
-              <button 
+              <button
                 onClick={() => setEditOpen(false)}
                 className="mt-2 sm:mt-0 px-4 py-2 rounded-xl text-sm font-medium text-white/50 hover:text-white hover:bg-white/[0.05] transition-colors"
               >
                 Cancel
               </button>
-              <button 
+              <button
                 onClick={handleSaveEdit}
                 className="px-4 py-2 rounded-xl text-sm font-medium bg-accent hover:bg-accent/90 text-white shadow-lg shadow-accent/20 transition-all"
               >
                 Save Changes
               </button>
             </div>
-            
+
             <Dialog.Close className="absolute right-4 top-4 rounded-sm opacity-70 border-none transition-opacity hover:opacity-100 focus:outline-none">
               <svg width="15" height="15" viewBox="0 0 15 15" fill="none" xmlns="http://www.w3.org/2000/svg">
                 <path d="M11.7816 4.03157C12.0062 3.80702 12.0062 3.44295 11.7816 3.2184C11.5571 2.99385 11.193 2.99385 10.9685 3.2184L7.50005 6.68688L4.03164 3.21846C3.80708 2.99391 3.44301 2.99391 3.21846 3.21846C2.99391 3.44301 2.99391 3.80708 3.21846 4.03164L6.68688 7.50005L3.21846 10.9685C2.99391 11.193 2.99391 11.5571 3.21846 11.7816C3.44301 12.0061 3.80708 12.0061 4.03164 11.7816L7.50005 8.31322L10.9685 11.7816C11.193 12.0061 11.5571 12.0061 11.7816 11.7816C12.0062 11.5571 12.0062 11.193 11.7816 10.9685L8.31322 7.50005L11.7816 4.03157Z" fill="currentColor" fillRule="evenodd" clipRule="evenodd"></path>

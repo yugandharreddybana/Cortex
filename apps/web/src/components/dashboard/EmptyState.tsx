@@ -17,16 +17,6 @@ interface EmptyStateProps {
 }
 
 export function EmptyState({ icon, title, body, action, isViewer }: EmptyStateProps) {
-  const populateDemoData  = useDashboardStore((s) => s.populateDemoData);
-  const [populated, setPopulated] = React.useState(false);
-
-  function handlePopulate() {
-    populateDemoData();
-    setPopulated(true);
-    toast.success("Demo data added", {
-      description: "We've populated your brain with structured examples to get you started.",
-    });
-  }
 
   return (
     <motion.div
@@ -61,12 +51,12 @@ export function EmptyState({ icon, title, body, action, isViewer }: EmptyStatePr
 
       {/* Copy */}
       <h2 className="text-xl font-semibold tracking-tight text-white/80 mb-3">
-        {title || (isViewer ? "Waiting for shared knowledge..." : "Your indexed brain awaits.")}
+        {title || (isViewer ? "Waiting for shared knowledge..." : "Your index is empty.")}
       </h2>
       <p className="text-sm text-white/40 max-w-xs leading-relaxed mb-8">
         {body || (isViewer 
-          ? "This folder is currently empty. Highlights shared by the owner or editors will appear here in real-time."
-          : "You haven't saved any highlights yet. Install the Chrome extension and start capturing knowledge as you browse.")}
+          ? "This folder is currently empty. Higher-level members have not added any highlights here yet."
+          : "Start building your personal knowledge base. Install the extension to capture insights from anywhere on the web.")}
       </p>
 
       {/* If custom action is provided, show a simple link instead of the full default CTA block */}
@@ -90,8 +80,7 @@ export function EmptyState({ icon, title, body, action, isViewer }: EmptyStatePr
         </div>
       ) : (
         <>
-      {/* Primary CTA */}
-      <div className="flex flex-col sm:flex-row items-center gap-3 mb-8">
+      <div className="flex flex-col sm:flex-row items-center gap-3">
         <Link
           href="https://chromewebstore.google.com"
           target="_blank"
@@ -120,30 +109,6 @@ export function EmptyState({ icon, title, body, action, isViewer }: EmptyStatePr
           Read the Quick Start Guide
         </Link>
       </div>
-
-      {/* Demo data divider */}
-      <div className="flex items-center gap-3 w-full max-w-xs mb-4">
-        <div className="flex-1 h-px bg-white/[0.06]" />
-        <span className="text-[11px] text-white/25 uppercase tracking-widest">or</span>
-        <div className="flex-1 h-px bg-white/[0.06]" />
-      </div>
-
-      {/* Populate demo data */}
-      <button
-        onClick={handlePopulate}
-        disabled={populated}
-        className={cn(
-          "inline-flex items-center gap-2 h-9 px-4 rounded-xl",
-          "text-[12px] font-medium",
-          "border border-white/[0.08] text-white/40",
-          "hover:border-white/[0.14] hover:text-white/65 hover:bg-white/[0.03]",
-          "active:scale-[0.97] transition-all duration-150 transform-gpu",
-          "disabled:opacity-40 disabled:cursor-not-allowed disabled:active:scale-100",
-        )}
-      >
-        <SparkleIcon />
-        {populated ? "Demo data added!" : "Populate with Demo Data"}
-      </button>
       </>
       )}
     </motion.div>

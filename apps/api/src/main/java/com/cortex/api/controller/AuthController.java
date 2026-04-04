@@ -8,10 +8,14 @@ import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletResponse;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/v1/auth")
@@ -24,15 +28,55 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<AuthResponse> signup(@Valid @RequestBody SignupRequest request) {
-        AuthResponse response = authService.signup(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    public ResponseEntity<AuthResponse> signup(@Valid @RequestBody SignupRequest request, HttpServletResponse response) {
+        AuthResponse authResponse = authService.signup(request);
+        setAuthCookie(response, authResponse.getToken());
+        return ResponseEntity.status(HttpStatus.CREATED).body(authResponse);
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request) {
-        AuthResponse response = authService.login(request);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<AuthResponse> login(@Valid @RequestBody LoginRequest request, HttpServletResponse response) {
+        AuthResponse authResponse = authService.login(request);
+        setAuthCookie(response, authResponse.getToken());
+        return ResponseEntity.ok(authResponse);
+    }
+
+    /**
+     * Endpoint for the frontend useAuthStore.fetchUser() to get the current profile.
+     * Mapped to /api/v1/auth/me (rewritten from /api/auth/me in Next.js).
+     */
+    @GetMapping("/me")
+    public ResponseEntity<Map<String, Object>> getCurrentUser(Authentication auth) {
+        if (auth == null || !auth.isAuthenticated()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(Map.of("authenticated", false));
+        }
+        
+        Long userId = Long.parseLong(auth.getName());
+        var userDTO = authService.getUserProfile(userId);
+        
+        return ResponseEntity.ok(Map.of(
+            "authenticated", true,
+            "user", userDTO
+        ));
+    }
+
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(HttpServletResponse response) {
+        Cookie cookie = new Cookie("cortex_session", null);
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);
+        cookie.setMaxAge(0);
+        response.addCookie(cookie);
+        return ResponseEntity.ok().build();
+    }
+
+    private void setAuthCookie(HttpServletResponse response, String token) {
+        Cookie cookie = new Cookie("cortex_session", token);
+        cookie.setPath("/");
+        cookie.setHttpOnly(true);
+        cookie.setSecure(false); // Set to true in production with HTTPS
+        cookie.setMaxAge(86400 * 7); // 7 days
+        response.addCookie(cookie);
     }
 
     @RequestMapping(value = "/login", method = org.springframework.web.bind.annotation.RequestMethod.HEAD)
