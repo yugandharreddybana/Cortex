@@ -47,7 +47,9 @@ describe("ai-detect utilities", () => {
 
     afterEach(() => {
       window.location = originalLocation as any;
-      document.title = originalTitle;
+      if (originalTitle !== null) {
+        document.title = originalTitle;
+      }
     });
 
     it("returns AI context for AI sites", () => {

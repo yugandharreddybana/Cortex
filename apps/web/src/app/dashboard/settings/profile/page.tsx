@@ -195,6 +195,7 @@ export default function ProfilePage() {
             )}
           >
             {avatarPreview ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img src={avatarPreview} alt="Avatar" className="w-full h-full object-cover" />
             ) : (
               initials

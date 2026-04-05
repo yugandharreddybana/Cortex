@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
-import { useDashboardStore, type Folder, type Tag } from "@/store/dashboard";
+import { useDashboardStore, type Folder, type Tag, type Highlight } from "@/store/dashboard";
 
 /**
  * useExtensionSync — listens for window.postMessage events from the
@@ -118,9 +118,9 @@ export function useExtensionSync() {
       useDashboardStore.setState((s) => {
         const existingIds = new Set(s.highlights.map((h) => h.id));
 
-        const newHighlights = mapped
+        const newHighlights: Highlight[] = mapped
           .filter(({ ext }) => !existingIds.has(String(ext.id)) && !ext.isDeleted)
-          .map(({ mapped: m }) => m);
+          .map(({ mapped: m }) => m as unknown as Highlight);
 
         const updateMap = new Map(
           mapped.filter(({ ext }) => existingIds.has(String(ext.id))).map(({ ext, mapped: m }) => [String(ext.id), m]),
@@ -132,7 +132,7 @@ export function useExtensionSync() {
           highlights = highlights
             .map((h) => {
               const updated = updateMap.get(h.id);
-              return updated ? { ...h, ...updated } : h;
+              return updated ? ({ ...h, ...updated } as unknown as Highlight) : h;
             })
             .filter((h) => !h.isDeleted);
         }
@@ -251,7 +251,7 @@ export function useExtensionSync() {
 
     window.addEventListener("message", handleMessage);
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line
     const g = globalThis as any;
     let runtimeListener: ((message: { type: string; payload: unknown }) => void) | null = null;
     if (g.chrome?.runtime?.onMessage) {

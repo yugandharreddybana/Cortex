@@ -6,6 +6,7 @@ const mockSetState = vi.fn();
 vi.mock("@/store/dashboard", () => ({
   useDashboardStore: {
     setState: (...args: any[]) => mockSetState(...args),
+    getState: () => ({ highlights: [], folders: [], tags: [] }),
   },
 }));
 
@@ -48,7 +49,7 @@ describe("useServerSync — error path (Sync Queue Server Fetch)", () => {
     });
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    useServerSync();
+    useServerSync({ id: "user_1" } as any, true);
 
     expect(effectCallback).toBeDefined();
     if (effectCallback) {
@@ -103,7 +104,7 @@ describe("useServerSync — error path (Sync Queue Server Fetch)", () => {
     });
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    useServerSync();
+    useServerSync({ id: "user_1" } as any, true);
     if (effectCallback) {
       cleanupCallback = effectCallback();
     }
@@ -129,7 +130,7 @@ describe("useServerSync — error path (Sync Queue Server Fetch)", () => {
     const fetchMock = vi.fn().mockImplementation(() => Promise.reject(new Error("Network Error")));
     global.fetch = fetchMock as unknown as typeof fetch;
 
-    useServerSync();
+    useServerSync({ id: "user_1" } as any, true);
     if (effectCallback) {
       cleanupCallback = effectCallback();
     }

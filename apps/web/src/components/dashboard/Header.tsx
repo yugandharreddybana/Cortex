@@ -152,6 +152,7 @@ export function DashboardHeader() {
             aria-label="User menu"
           >
             {user?.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
               <img src={user.avatarUrl} alt="" className="w-full h-full object-cover" />
             ) : (
               avatarInitial
