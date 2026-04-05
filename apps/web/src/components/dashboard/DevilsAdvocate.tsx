@@ -48,7 +48,7 @@ export function DevilsAdvocate({ text, url, customPrompt, isAI, onRequireContext
             className="flex items-center gap-1.5 text-[11px] font-medium px-2 py-1 rounded bg-white/5 text-white/50"
           >
             <AlertTriangle size={12} />
-            Devil's Advocate
+            Devil&apos;s Advocate
           </button>
           <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] opacity-0 group-hover/tooltip:opacity-100 transition-opacity bg-black text-white text-[10px] px-2 py-1 rounded shadow-lg z-50 text-center">
             Not available for AI Chat highlights.

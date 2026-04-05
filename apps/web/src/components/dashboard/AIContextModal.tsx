@@ -85,7 +85,7 @@ export function AIContextModal({ highlight, open, onOpenChange, onSuccess }: AIC
                     />
                   </div>
                   <div className="space-y-1.5">
-                    <label className="text-xs font-medium text-white/60">What was the AI's response?</label>
+                    <label className="text-xs font-medium text-white/60">What was the AI&apos;s response?</label>
                     <textarea
                       value={aiResponse}
                       onChange={(e) => setAiResponse(e.target.value)}

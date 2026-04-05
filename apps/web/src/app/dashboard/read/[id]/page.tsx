@@ -1174,7 +1174,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                       <div className="p-1 max-h-48 overflow-y-auto">
                         {filteredTags.length === 0 ? (
                           <div className="px-3 py-3 text-center border-t border-white/[0.06] mt-1">
-                            <p className="text-xs text-white/30 mb-2">No tags found for "{tagQuery}"</p>
+                            <p className="text-xs text-white/30 mb-2">No tags found for &quot;{tagQuery}&quot;</p>
                             <button
                               onClick={() => {
                                 setTagDialogOpen(true);

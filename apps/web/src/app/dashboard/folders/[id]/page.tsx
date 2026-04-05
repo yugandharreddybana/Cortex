@@ -74,7 +74,7 @@ export default function FolderPage() {
   );
 
   React.useEffect(() => {
-    if (folder && (effectiveRole === "VIEWER" || effectiveRole === "COMMENTER")) {
+    if (folder?.id && (effectiveRole === "VIEWER" || effectiveRole === "COMMENTER")) {
       useDashboardStore.getState().checkAccessRequestStatus(folder.id);
     }
   }, [folder?.id, effectiveRole]);
@@ -224,7 +224,7 @@ export default function FolderPage() {
                     </div>
 
                     <AlertDialog.Description className="text-sm text-white/60 leading-relaxed mb-6">
-                      Are you sure you want to delete <span className="text-white font-medium">"{folder.name}"</span>?
+                      Are you sure you want to delete <span className="text-white font-medium">&quot;{folder.name}&quot;</span>?
                       <br /><br />
                       <span className="text-red-400/80 font-medium italic">
                         Warning: All subfolders and highlights present in this folder will be permanently deleted.
