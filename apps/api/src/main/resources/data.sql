@@ -1,4 +1,0 @@
--- Fix null values in folders table before Hibernate applies constraints
--- Ensure table exists first, for H2 compatibility in tests.
--- In production PostgreSQL, we can just execute updates.
--- Spring boot will run this script. If table doesn't exist yet, this will fail in tests where hibernate schema creation happens after data.sql
