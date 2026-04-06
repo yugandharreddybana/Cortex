@@ -52,6 +52,8 @@ spring:
         queue-capacity: 100
 
 cortex:
+  app:
+    url: ${CORTEX_APP_URL:http://localhost:3000}
   jwt:
     secret: ${CORTEX_JWT_SECRET}
     expiration-ms: 604800000        # 7 days
@@ -79,8 +81,8 @@ spring.mail:
 
 logging:
   level:
-    root: INFO
-    com.cortex.api.service.AuthService: DEBUG
-    org.springframework.security: DEBUG
+    root: WARN
+    com.cortex.api: INFO
+    org.springframework.security: WARN
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n"

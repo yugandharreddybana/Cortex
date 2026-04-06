@@ -26,7 +26,7 @@ export function middleware(request: NextRequest) {
     response.cookies.set("cortex_referral_code", refCode, {
       path: "/",
       maxAge: 60 * 60 * 24 * 30, // 30 days
-      httpOnly: false, // need to read it in signup api or client
+      httpOnly: true,
     });
   }
 
@@ -55,7 +55,7 @@ function redirectToLogin(request: NextRequest, pathname: string, refCode: string
     response.cookies.set("cortex_referral_code", refCode, {
       path: "/",
       maxAge: 60 * 60 * 24 * 30,
-      httpOnly: false,
+      httpOnly: true,
     });
   }
   return response;

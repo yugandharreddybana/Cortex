@@ -2,7 +2,7 @@ import { Client } from "@stomp/stompjs";
 import { useSyncStore } from "@/store/useSyncStore";
 
 const client = new Client({
-  brokerURL: "ws://localhost:8082/ws",
+  brokerURL: process.env.NEXT_PUBLIC_WS_URL ?? "ws://localhost:8080/ws",
   onConnect: () => {
     client.subscribe("/user/topic/folders", (message) => {
       const folder = JSON.parse(message.body);

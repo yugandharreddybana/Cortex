@@ -58,17 +58,28 @@ public class AiController {
                 .defaultIfEmpty(ResponseEntity.internalServerError().body("{\"error\": \"Failed to generate outline.\"}"));
     }
 
+    private String sanitize(String input) {
+        if (input == null) return "";
+        return input.replaceAll("[\\p{Cntrl}]", "")
+                   .substring(0, Math.min(input.length(), 5000));
+    }
+
     @PostMapping("/devils-advocate")
     @RequireTier({"starter", "pro", "premium", "team"})
     public Mono<ResponseEntity<String>> devilsAdvocate(
             Authentication auth,
             @RequestBody HighlightRequest request) {
 
-        String urlContext = (request.url() != null && !request.url().isEmpty()) ? "\nSource URL: " + request.url() : "";
-        String customPromptContext = (request.customPrompt() != null && !request.customPrompt().isEmpty()) ? "\nUser Custom Instructions: " + request.customPrompt() : "";
+        String safeUrl = sanitize(request.url());
+        String safePrompt = sanitize(request.customPrompt());
+        String safeText = sanitize(request.text());
+
+        String urlContext = (!safeUrl.isEmpty()) ? "\nSource URL: " + safeUrl : "";
+        String customPromptContext = (!safePrompt.isEmpty()) ? "\nUser Custom Instructions: " + safePrompt : "";
+
         String prompt = String.format(
             "You are a critical thinker. Analyze the text below for hidden biases, logical fallacies, or unverified claims. Provide EXACTLY one sentence warning the user of potential flaws. Then, assign a 'Trust Score' from 1 to 10 (10 being completely factual, 1 being baseless).%s\n\nText: %s%s\n\nOutput STRICTLY in valid JSON matching this schema: {\"score\": number, \"warning\": \"string\"}. Do NOT wrap the JSON in Markdown backticks.",
-            customPromptContext, request.text(), urlContext
+            customPromptContext, safeText, urlContext
         );
 
         return ollamaService.generate(prompt, true)
@@ -90,17 +101,21 @@ public class AiController {
                 .map(h -> {
                     String text = h.getText();
                     if (h.getUrl() != null && !h.getUrl().isEmpty()) {
-                        text += " (Source URL: " + h.getUrl() + ")";
+                        text += " (Source URL: " + sanitize(h.getUrl()) + ")";
                     }
-                    return text;
+                    return sanitize(text);
                 })
                 .collect(Collectors.joining("\n- "));
 
-        String urlContext = (request.url() != null && !request.url().isEmpty()) ? "\nTarget Source URL: " + request.url() : "";
-        String customPromptContext = (request.customPrompt() != null && !request.customPrompt().isEmpty()) ? "\nUser Custom Instructions: " + request.customPrompt() : "";
+        String safeUrl = sanitize(request.url());
+        String safePrompt = sanitize(request.customPrompt());
+        String safeText = sanitize(request.text());
+
+        String urlContext = (!safeUrl.isEmpty()) ? "\nTarget Source URL: " + safeUrl : "";
+        String customPromptContext = (!safePrompt.isEmpty()) ? "\nUser Custom Instructions: " + safePrompt : "";
         String prompt = String.format(
             "You are an analytical engine. I will provide a 'Target Highlight' and a list of 'Recent Highlights'. Find meaningful connections, surprising patterns, or contradictions between them. Write a concise 3-4 sentence paragraph connecting the ideas. Do not list them; synthesize them.%s\n\nTarget Highlight: %s%s\n\nRecent Highlights:\n- %s",
-            customPromptContext, request.text(), urlContext, recentTexts
+            customPromptContext, safeText, urlContext, recentTexts
         );
 
         return ollamaService.generate(prompt)
@@ -115,11 +130,15 @@ public class AiController {
             Authentication auth,
             @RequestBody HighlightRequest request) {
 
-        String urlContext = (request.url() != null && !request.url().isEmpty()) ? "\nSource URL: " + request.url() : "";
-        String customPromptContext = (request.customPrompt() != null && !request.customPrompt().isEmpty()) ? "\nUser Custom Instructions: " + request.customPrompt() : "";
+        String safeUrl = sanitize(request.url());
+        String safePrompt = sanitize(request.customPrompt());
+        String safeText = sanitize(request.text());
+
+        String urlContext = (!safeUrl.isEmpty()) ? "\nSource URL: " + safeUrl : "";
+        String customPromptContext = (!safePrompt.isEmpty()) ? "\nUser Custom Instructions: " + safePrompt : "";
         String prompt = String.format(
             "You are a productivity engine. Extract exactly 3 concrete, actionable steps the user should take based on the text below. Each step must start with a strong verb.%s Return ONLY a valid JSON array of strings. Do NOT wrap the JSON in Markdown backticks.\n\nText: %s%s",
-            customPromptContext, request.text(), urlContext
+            customPromptContext, safeText, urlContext
         );
 
         return ollamaService.generate(prompt, true)
