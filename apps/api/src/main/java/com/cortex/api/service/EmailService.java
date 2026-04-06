@@ -67,38 +67,14 @@ public class EmailService {
     @Value("${spring.profiles.active:}")
     private String activeProfile;
 
-    public EmailService(JavaMailSender mailSender) {
+    private final TestEmailService testEmailService;
+
+    public EmailService(JavaMailSender mailSender, @org.springframework.beans.factory.annotation.Autowired(required = false) TestEmailService testEmailService) {
         this.mailSender = mailSender;
+        this.testEmailService = testEmailService;
     }
 
     // Fake email store for E2E testing
-    private final List<Map<String, String>> sentEmails = Collections.synchronizedList(new ArrayList<>());
-
-    public List<Map<String, String>> getSentEmails() {
-        return new ArrayList<>(sentEmails);
-    }
-
-    public void clearSentEmails() {
-        sentEmails.clear();
-    }
-
-    private void recordTestEmail(String to, String subject, String body) {
-        // Only record if in dev/test, and keep bounded to avoid leaks
-        if (activeProfile != null
-                && (activeProfile.contains("dev") || activeProfile.contains("test") || activeProfile.isEmpty())) {
-            Map<String, String> email = new HashMap<>();
-            email.put("to", to);
-            email.put("subject", subject);
-            email.put("body", body);
-            email.put("timestamp", Instant.now().toString());
-
-            // Avoid memory leak from E2E suite
-            if (sentEmails.size() > 500) {
-                sentEmails.remove(0);
-            }
-            sentEmails.add(email);
-        }
-    }
 
     /**
      * Send a notification email when someone comments on a highlight.
@@ -174,10 +150,8 @@ public class EmailService {
 
             String subject = "Verify your Cortex account";
             String body = "Please click the following link to verify your account: " + verificationLink;
+            log.info("[Email] Sending verification email to: {}", obfuscate(email));
             sendEmail(email, subject, body);
-            log.info("[Email] Sending verification email to: {}", email);
-            sendEmail(email, "Verify your Cortex account",
-                    "Please click the following link to verify your account: " + verificationLink);
 
         } catch (Exception e) {
             log.error("[Email] Failed to send verification email", e);
@@ -259,6 +233,10 @@ public class EmailService {
         log.info("[Email] Sending email to: {}", obfuscate(to));
         log.debug("[Email] Subject: {}", subject);
         log.debug("[Email] Body snippet: {}", text.length() > 50 ? text.substring(0, 50) + "..." : text);
+
+        if (testEmailService != null) {
+            testEmailService.recordTestEmail(to, subject, text);
+        }
 
         try {
             SimpleMailMessage message = new SimpleMailMessage();
@@ -361,8 +339,6 @@ public class EmailService {
             String deepLink = appBaseUrl + "/dashboard";
             String subject = granterName + " shared \"" + folderName + "\" with you on Cortex";
             String body = buildFolderAccessGrantedBody(granterName, folderName, deepLink);
-
-            recordTestEmail(recipientEmail, subject, body);
 
             if (!mailEnabled) {
                 log.info("[Email] Mock: Folder access granted (mail disabled). folder={} granterName={}",

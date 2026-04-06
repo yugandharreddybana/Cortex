@@ -19,7 +19,7 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/api/:path*",
-        destination: "http://localhost:8080/api/v1/:path*",
+        destination: `${process.env.JAVA_API_URL ?? "http://localhost:8080"}/api/v1/:path*`,
       },
     ];
   },

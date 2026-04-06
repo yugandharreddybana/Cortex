@@ -6,6 +6,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
@@ -15,6 +17,8 @@ import java.util.List;
 
 @Component
 public class JwtAuthFilter extends OncePerRequestFilter {
+
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthFilter.class);
 
     private final JwtService jwtService;
 
@@ -32,8 +36,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
         String header = request.getHeader("Authorization");
 
         if (request.getRequestURI().contains("/api/v1/ai/")) {
-            System.out.println("[DEBUG-FILTER] AI Request Hit: " + request.getMethod() + " " + request.getRequestURI());
-            System.out.println("[DEBUG-FILTER] Received Authorization Header: " + (header != null ? header.substring(0, Math.min(20, header.length())) + "..." : "NULL"));
+            log.debug("[FILTER] AI Request Hit: {} {}", request.getMethod(), request.getRequestURI());
         }
 
         // Fallback to cookie if header is still null
@@ -56,7 +59,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
             // Robust check for Iron Session (Next.js) tokens which are NOT JWTs
             if (token.startsWith("Fe26.")) {
-                 System.out.println("[DEBUG-JWT] Session Bypass: Detected Iron Session token (Fe26). Skipping JWT processing.");
+                 log.debug("[JWT] Session Bypass: Detected Iron Session token (Fe26). Skipping JWT processing.");
                  filterChain.doFilter(request, response);
                  return;
             }
@@ -71,14 +74,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
                             userId, null, List.of());
                     SecurityContextHolder.getContext().setAuthentication(auth);
                 } catch (Exception e) {
-                    System.err.println("[DEBUG-JWT] Failed to set authentication for token " + 
-                        (token.length() > 10 ? token.substring(0, 10) + "..." : token) + 
-                        ": " + e.getMessage());
+                    log.warn("[JWT] Failed to set authentication for token: {}", e.getMessage());
                 }
             } else if (dotCount != 2 && !token.isEmpty()) {
                 // Log malformation strictly for diagnostics
-                System.out.println("[DEBUG-JWT] Structural Rejection: Found " + dotCount + 
-                    " dots. Token prefix: " + (token.length() > 20 ? token.substring(0, 20) + "..." : token));
+                log.debug("[JWT] Structural Rejection: Found {} dots. Token prefix: {}", dotCount,
+                    (token.length() > 20 ? token.substring(0, 20) + "..." : token));
             }
         }
 

@@ -39,10 +39,12 @@ test_api() {
     if [ -z "$data" ]; then
         response=$(curl -s -w "\n%{http_code}" -X $method \
             -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $AUTH_TOKEN" \
             "$BASE_URL$endpoint")
     else
         response=$(curl -s -w "\n%{http_code}" -X $method \
             -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $AUTH_TOKEN" \
             -d "$data" \
             "$BASE_URL$endpoint")
     fi
@@ -70,13 +72,15 @@ test_api() {
 echo -e "\n${YELLOW}═══ AUTHENTICATION APIs ═══${NC}"
 
 # Test 1: Signup
+# Use a random email each time
+RANDOM_NUM=$RANDOM
 test_api "POST" "/auth/signup" \
-    '{"email":"testuser@example.com","password":"Test@12345","name":"Test User"}' \
+    "{\"email\":\"testuser${RANDOM_NUM}@example.com\",\"password\":\"Test@12345\",\"fullName\":\"Test User\"}" \
     "200" \
     "Signup new user"
 
 # Extract user info from signup (assuming it returns user data)
-USER_EMAIL="testuser@example.com"
+USER_EMAIL="testuser${RANDOM_NUM}@example.com"
 USER_PASSWORD="Test@12345"
 
 # Test 2: Login
@@ -110,7 +114,7 @@ TOTAL_TESTS=$((TOTAL_TESTS + 1))
 echo -e "\n${YELLOW}═══ HIGHLIGHT APIs ═══${NC}"
 
 # Test 3: Create Highlight
-HIGHLIGHT_DATA='{"text":"This is a test highlight","source":"https://example.com","tags":["test"],"note":"Test note","color":"#FFD700"}'
+HIGHLIGHT_DATA='{"text":"This is a test highlight","source":"https://example.com","tags":[],"note":"Test note","color":"#FFD700"}'
 
 HIGHLIGHT_RESPONSE=$(curl -s -X POST \
     -H "Content-Type: application/json" \

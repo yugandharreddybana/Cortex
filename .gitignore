@@ -32,3 +32,5 @@ pnpm-debug.log*
 # Merge artifacts
 *.orig
 *.rej
+apps/api/cookies.txt
+apps/api/*.txt

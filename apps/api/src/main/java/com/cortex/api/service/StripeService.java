@@ -76,6 +76,7 @@ public class StripeService {
                 .setCustomer(customerId)
                 .setSuccessUrl(successUrl)
                 .setCancelUrl(cancelUrl)
+                .putMetadata("tier", planId)
                 .addLineItem(SessionCreateParams.LineItem.builder()
                         .setQuantity(1L)
                         .setPriceData(SessionCreateParams.LineItem.PriceData.builder()
@@ -140,7 +141,12 @@ public class StripeService {
         if (userOpt.isPresent()) {
             User user = userOpt.get();
             user.setSubscriptionStatus("active");
-            user.setTier("pro"); // Infer 'pro' since our dummy setup defaults to Pro/Team
+
+            String tier = "pro";
+            if (session.getMetadata() != null && session.getMetadata().containsKey("tier")) {
+                tier = session.getMetadata().get("tier");
+            }
+            user.setTier(tier);
 
             // Fallback for currentPeriodEnd if the subscription update webhook arrives late
             if (user.getCurrentPeriodEnd() == null) {
@@ -170,11 +176,6 @@ public class StripeService {
 
             if (!"active".equals(subscription.getStatus()) && !"trialing".equals(subscription.getStatus())) {
                  user.setTier("starter");
-            } else if ("active".equals(subscription.getStatus())) {
-                // Ensure active subscriptions retain their tier. If it was downgraded, restore it.
-                if ("starter".equals(user.getTier())) {
-                    user.setTier("pro");
-                }
             }
 
             userRepository.save(user);
