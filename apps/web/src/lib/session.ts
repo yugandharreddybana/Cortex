@@ -8,26 +8,33 @@ export interface SessionData {
   };
 }
 
-const cookiePassword = process.env.SECRET_COOKIE_PASSWORD;
-if (!cookiePassword || cookiePassword.length < 32) {
-  throw new Error(
-    "SECRET_COOKIE_PASSWORD env var must be set and at least 32 characters long. " +
-      "Generate one with: openssl rand -base64 32",
-  );
+/**
+ * Build session options lazily at request time. We must NOT throw at module
+ * load: Next.js imports every route module during `next build` to collect
+ * page data, and throwing there (e.g. on Vercel before env vars are wired)
+ * fails the build with "Failed to collect page data for /api/[...path]".
+ */
+function buildSessionOptions(): SessionOptions {
+  const cookiePassword = process.env.SECRET_COOKIE_PASSWORD;
+  if (!cookiePassword || cookiePassword.length < 32) {
+    throw new Error(
+      "SECRET_COOKIE_PASSWORD env var must be set and at least 32 characters long. " +
+        "Generate one with: openssl rand -base64 32",
+    );
+  }
+  return {
+    cookieName: "cortex_session",
+    password: cookiePassword,
+    cookieOptions: {
+      secure: process.env.NODE_ENV === "production",
+    },
+  };
 }
-
-export const sessionOptions: SessionOptions = {
-  cookieName: "cortex_session",
-  password: cookiePassword,
-  cookieOptions: {
-    secure: process.env.NODE_ENV === "production",
-  },
-};
 
 export async function getSession(): Promise<IronSession<SessionData>> {
   const cookieStore = await cookies();
   // Cast through `unknown` — Next.js 15's ReadonlyRequestCookies satisfies
   // iron-session's internal CookieStore interface at runtime but TS can't see it.
   // eslint-disable-next-line
-  return getIronSession<SessionData>(cookieStore as unknown as any, sessionOptions);
+  return getIronSession<SessionData>(cookieStore as unknown as any, buildSessionOptions());
 }
