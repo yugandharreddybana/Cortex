@@ -34,7 +34,10 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: update
+      # 'validate' means Hibernate verifies schema matches entities at startup
+      # but NEVER modifies the schema. All schema changes MUST go through
+      # Flyway migrations (src/main/resources/db/migration).
+      ddl-auto: ${JPA_DDL_AUTO:validate}
     open-in-view: false
     properties:
       hibernate:
