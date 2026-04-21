@@ -8,13 +8,18 @@ spring:
     username: ${DB_USER:postgres}
     password: ${DB_PASSWORD:postgres}
     hikari:
-      minimum-idle: 2
-      maximum-pool-size: 20
+      # Sized for Supabase pooler: session mode caps ~15 clients on free tier,
+      # transaction mode (port 6543) also works best with a small pool.
+      # Override per-deployment via DB_POOL_MIN / DB_POOL_MAX env vars.
+      minimum-idle: ${DB_POOL_MIN:1}
+      maximum-pool-size: ${DB_POOL_MAX:5}
       idle-timeout: 30000
       max-lifetime: 1800000
       connection-timeout: 20000
       keepalive-time: 60000
       connection-test-query: SELECT 1
+      # Fail fast on startup instead of blocking health checks.
+      initialization-fail-timeout: 0
       data-source-properties:
         prepareThreshold: 0               # disable server-side prepared stmts (PgBouncer transaction mode)
         preparedStatementCacheQueries: 0
