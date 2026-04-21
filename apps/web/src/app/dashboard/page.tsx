@@ -47,7 +47,7 @@ export default function DashboardPage() {
             Highlights
           </h1>
           <p className="mt-1 text-sm text-white/40">
-            {isLoading ? "Loading your brain…" : `${activeCount} saved · last updated 2 hours ago`}
+            {isLoading ? "Loading your brain…" : `${activeCount} saved${pinnedCount > 0 ? ` · ${pinnedCount} pinned` : ""}`}
           </p>
         </div>
 
@@ -128,7 +128,7 @@ export default function DashboardPage() {
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.3, ease: [0.20, 0.90, 0.30, 1.00] }}
             >
               <div className="flex items-center gap-2 mb-4">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" className="text-accent/70" aria-hidden="true">

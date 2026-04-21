@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import Link from "next/link";
@@ -34,7 +34,7 @@ import { Spinner } from "@/components/ui/Spinner";
 import { RequestAccessModal } from "./RequestAccessModal";
 import { ManageAccessModal } from "./ManageAccessModal";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function XTinyIcon() { return <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M1 1l6 6M7 1L1 7" /></svg>; }
 function DotsHorizontalIcon() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><circle cx="3" cy="7" r="1.1" /><circle cx="7" cy="7" r="1.1" /><circle cx="11" cy="7" r="1.1" /></svg>; }
@@ -59,7 +59,7 @@ function CreditCardIcon() { return ic("M1 5h14v8a1 1 0 01-1 1H2a1 1 0 01-1-1V5zM
 function GiftIcon()       { return ic("M10.833 3.5h-2.11C8.944 2.392 8.01 1.5 6.833 1.5c-1.178 0-2.11.892-2.335 2H2.5A1.5 1.5 0 0 0 1 5v2c0 .828.672 1.5 1.5 1.5h8.333c.828 0 1.5-.672 1.5-1.5V5A1.5 1.5 0 0 0 10.833 3.5ZM6.667 3.5V8.5M10.833 8.5v4.5A1.5 1.5 0 0 1 9.333 14.5H4A1.5 1.5 0 0 1 2.5 13V8.5"); }
 function LogOutIcon()     { return ic("M10 3h3a1 1 0 011 1v8a1 1 0 01-1 1h-3M7 10l3-2-3-2M1 8h9"); }
 
-const dropdownItemCls = "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-white/70 cursor-pointer select-none outline-none hover:bg-white/[0.07] hover:text-white transition-colors duration-100";
+const dropdownItemCls = "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-white/70 cursor-pointer select-none outline-none hover:bg-white/[0.06] hover:text-white transition-all duration-150 ease-spatial";
 function DropdownItem({ children, onSelect }: { children: React.ReactNode; onSelect: () => void }) {
   return <DropdownMenu.Item onSelect={onSelect} className={cn(dropdownItemCls)}>{children}</DropdownMenu.Item>;
 }
@@ -84,7 +84,7 @@ function resolveTagColor(color: string): TagColorConfig | null {
   return TAG_COLOR_MAP[color] ?? TAG_COLOR_MAP.blue; 
 }
 
-// ─── Components ───────────────────────────────────────────────────────────────
+// â”€â”€â”€ Components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 
 
@@ -96,10 +96,10 @@ function UserProfileDropdown() {
   const initials = displayName.split(" ").map(w => w[0]).join("").toUpperCase().slice(0, 2);
 
   return (
-    <div className="p-3 border-t border-white/[0.06]">
+    <div className="p-3 border-t border-white/[0.04]">
       <DropdownMenu.Root>
         <DropdownMenu.Trigger asChild>
-          <button className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ease-snappy hover:bg-white/[0.05]")}>
+          <button className={cn("w-full flex items-center gap-3 px-3 py-2.5 rounded-xl transition-all duration-200 ease-spatial hover:bg-white/[0.04]")}>
             <Avatar className="w-7 h-7 shrink-0">
               <AvatarImage src={user?.avatarUrl || ""} />
               <AvatarFallback className="text-xs">{initials}</AvatarFallback>
@@ -112,7 +112,7 @@ function UserProfileDropdown() {
           </button>
         </DropdownMenu.Trigger>
         <DropdownMenu.Portal>
-          <DropdownMenu.Content side="top" sideOffset={6} align="start" className={cn("z-50 min-w-[220px] rounded-xl overflow-hidden bg-[#1e1e1e] border border-white/[0.09] shadow-[0_-8px_32px_rgba(0,0,0,0.4),0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] p-1")}>
+          <DropdownMenu.Content side="top" sideOffset={6} align="start" className={cn("z-50 min-w-[220px] rounded-2xl overflow-hidden bg-elevated/90 backdrop-blur-2xl border border-white/[0.08] shadow-spatial-lg p-1.5")}>
             <div className="px-3 py-2.5 border-b border-white/[0.07] mb-1">
               <p className="text-xs font-medium text-white/80">{displayName}</p>
               <p className="text-xs text-white/35">{displayEmail}</p>
@@ -121,7 +121,7 @@ function UserProfileDropdown() {
             <DropdownItem onSelect={() => router.push("/dashboard/settings/billing")}><CreditCardIcon /> Subscription</DropdownItem>
             <DropdownItem onSelect={() => router.push("/dashboard/referrals")}><GiftIcon /> Refer a Friend</DropdownItem>
             <DropdownMenu.Separator className="my-1 h-px bg-white/[0.07]" />
-            <DropdownMenu.Item onSelect={() => { useAuthStore.getState().logout(); router.push("/"); }} className={cn("flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-white/50 hover:bg-white/[0.05] hover:text-white/80 transition-colors duration-100")}>
+            <DropdownMenu.Item onSelect={() => { useAuthStore.getState().logout(); router.push("/"); }} className={cn("flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-white/50 hover:bg-white/[0.05] hover:text-white/80 transition-all duration-150 ease-spatial")}>
               <LogOutIcon /> Sign out
             </DropdownMenu.Item>
           </DropdownMenu.Content>
@@ -171,11 +171,11 @@ function FolderTreeMenu({ folders, onSelect, parentId, depth = 0, parentIdToExcl
           return (
             <DropdownMenu.Sub key={folder.id}>
               <DropdownMenu.SubTrigger className={cn("flex items-center gap-2 px-2.5 py-1.5 rounded-lg w-full text-[12px] text-white/70 hover:text-white hover:bg-white/[0.06] cursor-pointer outline-none transition-colors duration-100 data-[state=open]:bg-white/[0.06]")} onClick={(e) => { e.preventDefault(); onSelect(folder.id); }}>
-                <span className="text-sm shrink-0">{folder.emoji}</span><span className="flex-1 truncate text-left">{folder.name}</span><span className="ml-auto text-white/30 text-[10px]">▸</span>
+                <span className="text-sm shrink-0">{folder.emoji}</span><span className="flex-1 truncate text-left">{folder.name}</span><span className="ml-auto text-white/30 text-[10px]">â–¸</span>
               </DropdownMenu.SubTrigger>
               <DropdownMenu.Portal>
-                <DropdownMenu.SubContent sideOffset={4} className={cn("z-50 min-w-[160px] max-h-[280px] overflow-y-auto rounded-xl bg-[#1c1c1c] border border-white/[0.09] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-1")}>
-                  <DropdownMenu.Item className={cn("flex items-center gap-2 px-2.5 py-1.5 rounded-lg w-full mb-1 text-[12px] text-white/70 hover:text-white hover:bg-white/[0.06] cursor-pointer outline-none transition-colors duration-100")} onSelect={() => onSelect(folder.id)}><span className="text-white/40">↳</span> Move into &quot;{folder.name}&quot;</DropdownMenu.Item>
+                <DropdownMenu.SubContent sideOffset={4} className={cn("z-50 min-w-[160px] max-h-[280px] overflow-y-auto rounded-xl bg-elevated/90 backdrop-blur-2xl border border-white/[0.06] shadow-spatial-lg p-1")}>
+                  <DropdownMenu.Item className={cn("flex items-center gap-2 px-2.5 py-1.5 rounded-lg w-full mb-1 text-[12px] text-white/70 hover:text-white hover:bg-white/[0.06] cursor-pointer outline-none transition-colors duration-100")} onSelect={() => onSelect(folder.id)}><span className="text-white/40">â†³</span> Move into &quot;{folder.name}&quot;</DropdownMenu.Item>
                   <FolderTreeMenu folders={folders} onSelect={onSelect} parentId={folder.id} depth={depth + 1} parentIdToExclude={parentIdToExclude} />
                 </DropdownMenu.SubContent>
               </DropdownMenu.Portal>
@@ -215,10 +215,10 @@ function FolderDropdown({ folder, onRename, onDelete, onShare, onDuplicate, onCr
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger asChild>
-        <button className={cn("opacity-0 group-hover/folder:opacity-100 focus:opacity-100 p-1.5 mr-1 rounded-lg shrink-0 text-white/40 hover:text-white/80 hover:bg-white/[0.08] transition-all duration-150")} aria-label={`Options for ${folder.name}`}><DotsHorizontalIcon /></button>
+        <button className={cn("opacity-0 group-hover/folder:opacity-100 focus:opacity-100 p-1.5 mr-1 rounded-lg shrink-0 text-white/30 hover:text-white/70 hover:bg-white/[0.06] transition-all duration-150 ease-spatial")} aria-label={`Options for ${folder.name}`}><DotsHorizontalIcon /></button>
       </DropdownMenu.Trigger>
       <DropdownMenu.Portal>
-        <DropdownMenu.Content sideOffset={4} align="start" className={cn("z-50 min-w-[160px] rounded-xl overflow-hidden bg-[#1e1e1e] border border-white/[0.09] shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] p-1")}>
+        <DropdownMenu.Content sideOffset={4} align="start" className={cn("z-50 min-w-[160px] rounded-2xl overflow-hidden bg-elevated/90 backdrop-blur-2xl border border-white/[0.08] shadow-spatial-lg p-1.5")}>
           {(isOwner || folder.effectiveRole === "EDITOR") && <DropdownItem onSelect={onCreateSubfolder}><PlusIcon /> New Subfolder</DropdownItem>}
           {isOwner && (
             <>
@@ -226,10 +226,10 @@ function FolderDropdown({ folder, onRename, onDelete, onShare, onDuplicate, onCr
               <DropdownItem onSelect={onRename}><PencilIcon /> Rename</DropdownItem>
               <DropdownMenu.Sub>
                 <DropdownMenu.SubTrigger className={cn("flex items-center gap-2.5 px-3 py-2 rounded-lg w-full text-sm text-white/70 cursor-pointer select-none outline-none hover:bg-white/[0.06] focus:bg-white/[0.06] transition-colors duration-100")}>
-                  <MoveIcon /> Move to… <span className="ml-auto text-white/30 text-[10px]">▸</span>
+                  <MoveIcon /> Move toâ€¦ <span className="ml-auto text-white/30 text-[10px]">â–¸</span>
                 </DropdownMenu.SubTrigger>
                 <DropdownMenu.Portal>
-                  <DropdownMenu.SubContent sideOffset={4} className={cn("z-50 min-w-[160px] max-h-[280px] overflow-y-auto rounded-xl bg-[#1c1c1c] border border-white/[0.09] shadow-[0_8px_32px_rgba(0,0,0,0.5)] p-1")}>
+                  <DropdownMenu.SubContent sideOffset={4} className={cn("z-50 min-w-[160px] max-h-[280px] overflow-y-auto rounded-xl bg-elevated/90 backdrop-blur-2xl border border-white/[0.08] shadow-spatial-md p-1.5")}>
                     <FolderTreeMenu folders={allFolders} onSelect={onMove} parentIdToExclude={folder.id} />
                   </DropdownMenu.SubContent>
                 </DropdownMenu.Portal>
@@ -324,24 +324,44 @@ function RecursiveFolderNode({
   const mergedRef = React.useCallback((node: HTMLDivElement | null) => { setDragRef(node); setDropRef(node); }, [setDragRef, setDropRef]);
 
   return (
-    <div ref={mergedRef} style={{ opacity: isDragging ? 0.4 : 1 }} {...attributes} {...listeners}>
+    <div ref={mergedRef} className={cn(isDragging && "opacity-40")} {...attributes} {...listeners}>
       <ContextMenu.Root>
         <ContextMenu.Trigger asChild>
           <div className="flex items-center group/folder relative">
-            <div style={{ width: depth * 16, flexShrink: 0 }} />
+            <div className="shrink-0" style={{ width: depth * 16 }} />
             {children.length > 0 && (
-              <button onClick={() => setExpanded((v) => !v)} className="w-4 h-4 flex items-center justify-center text-white/30 hover:text-white/60 shrink-0 mr-0.5 transition-colors">
-                <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" style={{ transform: expanded ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.15s ease" }}><path d="M2 1L6 4L2 7" /></svg>
+              <button 
+                onClick={() => setExpanded((v) => !v)} 
+                className="w-4 h-4 flex items-center justify-center text-white/30 hover:text-white/60 shrink-0 mr-0.5 transition-colors"
+                title={expanded ? "Collapse folder" : "Expand folder"}
+              >
+                <svg 
+                  width="8" 
+                  height="8" 
+                  viewBox="0 0 8 8" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="1.5" 
+                  strokeLinecap="round" 
+                  className={cn("transition-transform duration-150", expanded ? "rotate-90" : "rotate-0")}
+                >
+                  <path d="M2 1L6 4L2 7" />
+                </svg>
               </button>
             )}
             {children.length === 0 && depth > 0 && <div className="w-4 shrink-0 mr-0.5" />}
-            {depth > 0 && <div className="absolute left-0 top-0 bottom-0 w-[1px] bg-white/[0.06] -z-1" style={{ left: (depth * 16) - 8 }} />}
+            {depth > 0 && (
+              <div 
+                className="absolute top-0 bottom-0 w-[1px] bg-gradient-to-b from-white/[0.06] via-white/[0.04] to-transparent -z-1" 
+                style={{ left: (depth * 16) - 8 }} 
+              />
+            )}
             <Link
               href={href}
               className={cn(
-                "flex-1 flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm transition-all duration-150 ease-snappy min-w-0",
-                isActive ? "bg-white/[0.09] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]" : "text-white/60 hover:bg-white/[0.05] hover:text-white",
-                isOver && !isDragging && "ring-1 ring-accent/50 bg-accent/[0.08]",
+                "flex-1 flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm transition-all duration-200 ease-spatial min-w-0",
+                isActive ? "bg-white/[0.08] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_0_1px_rgba(255,255,255,0.04)]" : "text-white/55 hover:bg-white/[0.04] hover:text-white/90",
+                isOver && !isDragging && "ring-1 ring-accent/40 bg-accent/[0.06]",
               )}
             >
               <span className="text-base leading-none shrink-0">{folder.emoji}</span>
@@ -354,14 +374,14 @@ function RecursiveFolderNode({
                 )}
               </div>
               <span className="bg-white/10 text-white/60 text-[10px] px-1.5 rounded-full tabular-nums leading-4 shrink-0 min-w-[20px] flex items-center justify-center">
-                {isLoading ? "…" : (folderCountMap[folder.id] || 0)}
+                {isLoading ? "â€¦" : (folderCountMap[folder.id] || 0)}
               </span>
             </Link>
             <FolderDropdown folder={folder} onRename={() => onRename(folder)} onDelete={() => onDelete(folder)} onShare={() => onShare(folder)} onDuplicate={() => onDuplicate(folder)} onCreateSubfolder={() => onCreateSubfolder(folder.id)} onPin={() => onPin(folder)} onMove={(targetId: string) => onMove(folder, targetId)} onManageAccess={() => folder._onManageAccess?.()} />
           </div>
         </ContextMenu.Trigger>
         <ContextMenu.Portal>
-          <ContextMenu.Content className={cn("z-50 min-w-[180px] rounded-xl overflow-hidden bg-[#1e1e1e] border border-white/[0.09] shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] p-1")}>
+          <ContextMenu.Content className={cn("z-50 min-w-[180px] rounded-2xl overflow-hidden bg-elevated/90 backdrop-blur-2xl border border-white/[0.08] shadow-spatial-lg p-1.5")}>
             {(!folder.effectiveRole || folder.effectiveRole === "OWNER" || folder.effectiveRole === "EDITOR") && (
               <ContextMenu.Item onSelect={() => onCreateSubfolder(folder.id)} className={cn(dropdownItemCls)}><PlusIcon /> New Subfolder</ContextMenu.Item>
             )}
@@ -398,7 +418,7 @@ function RecursiveFolderNode({
   );
 }
 
-// ─── Main Sidebar ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Main Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 interface SharedWithMeItem {
   viewId: string;
@@ -527,18 +547,18 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
 
   return (
     <>
-      <aside className="w-64 flex-shrink-0 flex flex-col h-screen bg-bg border-r border-white/[0.06]">
-        <div className="flex items-center gap-2 px-4 py-4 border-b border-white/[0.06]">
-          <span className="w-6 h-6 rounded-md bg-accent flex items-center justify-center flex-shrink-0 shadow-glow-sm"><CortexMark /></span>
+      <aside className="w-64 flex-shrink-0 flex flex-col h-screen bg-bg/80 backdrop-blur-xl border-r border-white/[0.05]">
+        <div className="flex items-center gap-2.5 px-5 py-4 border-b border-white/[0.04]">
+          <span className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center flex-shrink-0 shadow-[0_0_12px_rgba(129,140,248,0.3),inset_0_1px_0_rgba(255,255,255,0.15)]"><CortexMark /></span>
           <span className="font-semibold text-sm tracking-tight">Cortex</span>
         </div>
 
         <div className="flex-1 overflow-y-auto min-h-0 custom-scrollbar">
           <div className="px-3 pt-4 pb-2">
-            <button onClick={() => onCmdK?.()} className={cn("w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-muted border border-white/[0.07] bg-white/[0.03] transition-all duration-200 ease-snappy hover:text-secondary hover:border-white/[0.12]")}>
+            <button onClick={() => onCmdK?.()} className={cn("w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-muted border border-white/[0.06] bg-white/[0.02] transition-all duration-200 ease-spatial hover:text-secondary hover:border-white/[0.10] hover:bg-white/[0.04]")}>
               <SearchIcon />
               <span className="flex-1 text-left">Search...</span>
-              <kbd className="text-2xs bg-white/[0.07] border border-white/10 rounded px-1 leading-4 font-mono">⌘K</kbd>
+              <kbd className="text-2xs bg-white/[0.07] border border-white/10 rounded px-1 leading-4 font-mono">âŒ˜K</kbd>
             </button>
           </div>
 
@@ -547,8 +567,8 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
               const isActive = pathname === href;
               const dynamicCount = isLoading ? undefined : (href === "/dashboard" ? String(highlights.filter(h => !h.isArchived).length) : href === "/dashboard/favorites" ? String(highlights.filter(h => h.isFavorite).length) : href === "/dashboard/archive" ? String(highlights.filter(h => h.isArchived).length) : undefined);
               return (
-                <Link key={href} href={href} className={cn("flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-all duration-200 ease-snappy", isActive ? "bg-white/[0.09] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]" : "text-white/60 hover:bg-white/[0.05] hover:text-white")}>
-                  <span className={cn("w-4 h-4 flex-shrink-0", isActive ? "text-white" : "text-white/40")}>{icon}</span>
+                <Link key={href} href={href} className={cn("flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm transition-all duration-200 ease-spatial", isActive ? "bg-white/[0.08] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_0_1px_rgba(255,255,255,0.04)]" : "text-white/55 hover:bg-white/[0.04] hover:text-white/90")}>
+                  <span className={cn("w-4 h-4 flex-shrink-0 transition-colors duration-200", isActive ? "text-white" : "text-white/35")}>{icon}</span>
                   <span className="flex-1">{label}</span>
                   {dynamicCount && <span className="bg-white/10 text-white/60 text-[10px] px-1.5 rounded-full tabular-nums leading-4">{dynamicCount}</span>}
                 </Link>
@@ -564,7 +584,7 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                   const href = `/dashboard/folders/${folder.id}`;
                   const isActive = pathname === href;
                   return (
-                    <Link key={`pinned-${folder.id}`} href={href} className={cn("flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-sm transition-all duration-150 ease-snappy min-w-0", isActive ? "bg-white/[0.09] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]" : "text-white/60 hover:bg-white/[0.05] hover:text-white")}>
+                    <Link key={`pinned-${folder.id}`} href={href} className={cn("flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-sm transition-all duration-200 ease-spatial min-w-0", isActive ? "bg-white/[0.08] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_0_1px_rgba(255,255,255,0.04)]" : "text-white/55 hover:bg-white/[0.04] hover:text-white/90")}>
                       <PinSmallIcon />
                       <span className="text-base leading-none shrink-0">{folder.emoji}</span>
                       <span className="flex-1 truncate text-left">{folder.name}</span>
@@ -581,7 +601,7 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                 <div className="flex items-center justify-between px-3">
                   <div className="flex items-center gap-1.5">
                     <span className="text-2xs font-semibold uppercase tracking-widest text-muted">Folders</span>
-                    <Tooltip><TooltipTrigger asChild><button className="text-white/30 hover:text-white/70 transition-colors"><InfoIcon /></button></TooltipTrigger><TooltipContent side="right"><p>Folders you created and own.</p></TooltipContent></Tooltip>
+                    <Tooltip><TooltipTrigger asChild><button title="Information about folders" className="text-white/30 hover:text-white/70 transition-colors"><InfoIcon /></button></TooltipTrigger><TooltipContent side="right"><p>Folders you created and own.</p></TooltipContent></Tooltip>
                   </div>
                   <button
                     onClick={() => setFolderDialogOpen(true)}
@@ -637,7 +657,7 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                 <div className="px-3 py-2 sticky top-0 bg-bg z-20 border-b border-white/[0.04]">
                   <div className="flex items-center gap-1.5 px-3">
                     <span className="text-2xs font-semibold uppercase tracking-widest text-muted">Shared Folders</span>
-                    <Tooltip><TooltipTrigger asChild><button className="text-white/30 hover:text-white/70 transition-colors"><InfoIcon /></button></TooltipTrigger><TooltipContent side="right"><p>Folders shared with you by other users.</p></TooltipContent></Tooltip>
+                    <Tooltip><TooltipTrigger asChild><button title="Information about shared folders" className="text-white/30 hover:text-white/70 transition-colors"><InfoIcon /></button></TooltipTrigger><TooltipContent side="right"><p>Folders shared with you by other users.</p></TooltipContent></Tooltip>
                   </div>
                 </div>
                 <div className="px-3 pt-2 pb-6">
@@ -679,10 +699,14 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                     const isActive = activeTagFilters.length === sc.tagIds.length && sc.tagIds.every(t => activeTagFilters.includes(t));
                     return (
                       <div key={sc.id} className="flex items-center group/sc">
-                        <button onClick={() => setTagFilterExclusive(sc.tagIds)} className={cn("flex-1 flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm transition-all duration-150 ease-snappy min-w-0", isActive ? "bg-white/[0.09] text-white" : "text-white/60 hover:bg-white/[0.05] hover:text-white")}>
-                          <span className="text-base leading-none shrink-0">⚡</span><span className="flex-1 truncate text-left">{sc.name}</span><span className="bg-white/10 text-white/60 text-[10px] px-1.5 rounded-full tabular-nums leading-4 shrink-0">{sc.tagIds.length}</span>
+                        <button onClick={() => setTagFilterExclusive(sc.tagIds)} className={cn("flex-1 flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm transition-all duration-150 ease-spatial min-w-0", isActive ? "bg-white/[0.09] text-white" : "text-white/60 hover:bg-white/[0.05] hover:text-white")}>
+                          <span className="text-base leading-none shrink-0">âš¡</span><span className="flex-1 truncate text-left">{sc.name}</span><span className="bg-white/10 text-white/60 text-[10px] px-1.5 rounded-full tabular-nums leading-4 shrink-0">{sc.tagIds.length}</span>
                         </button>
-                        <button onClick={() => deleteSmartCollection(sc.id)} className="opacity-0 group-hover/sc:opacity-100 p-1.5 mr-1 rounded-lg shrink-0 text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all duration-150"><XTinyIcon /></button>
+                        <button 
+                          onClick={() => deleteSmartCollection(sc.id)} 
+                          className="opacity-0 group-hover/sc:opacity-100 p-1.5 mr-1 rounded-lg shrink-0 text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all duration-150"
+                          title="Delete collection"
+                        ><XTinyIcon /></button>
                       </div>
                     );
                   })}
@@ -714,7 +738,7 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                             className={cn(
                               "inline-flex items-center gap-1 border rounded-md px-2 py-1 text-xs font-medium cursor-pointer transition-all duration-150",
                               resolved ? `${resolved.bg} ${resolved.text} border ${resolved.border}` : undefined,
-                              isActive && "ring-1 ring-accent/50 shadow-[0_0_8px_rgba(108,99,255,0.25)]"
+                              isActive && "ring-1 ring-accent/50 shadow-[0_0_8px_rgba(129,140,248,0.25)]"
                             )}
                             style={{
                               background: tag.color.startsWith("#") ? `${tag.color}20` : `color-mix(in srgb, ${tag.color} 20%, transparent)`,
@@ -726,6 +750,7 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                             <button
                               onClick={(e) => { e.preventDefault(); e.stopPropagation(); deleteTag(tag.id); }}
                               className="ml-0.5 opacity-0 group-hover/tag:opacity-60 hover:!opacity-100 transition-opacity"
+                              title="Delete tag"
                             >
                               <XTinyIcon />
                             </button>
@@ -733,7 +758,7 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                         </div>
                       </ContextMenu.Trigger>
                       <ContextMenu.Portal>
-                        <ContextMenu.Content className="z-50 min-w-[160px] rounded-xl overflow-hidden bg-[#1e1e1e] border border-white/[0.09] shadow-[0_16px_40px_rgba(0,0,0,0.5)] p-1">
+                        <ContextMenu.Content className="z-50 min-w-[160px] rounded-2xl overflow-hidden bg-elevated/90 backdrop-blur-2xl border border-white/[0.08] shadow-spatial-lg p-1.5">
                           <ContextMenu.Item onSelect={() => setTagEditTarget(tag)} className={dropdownItemCls}>
                             <PencilIcon /> Edit Tag
                           </ContextMenu.Item>
@@ -752,15 +777,30 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
 
           {(sharedWithMe.length > 0 || isLoadingShared) && (
             <div className="mt-4 border-t border-white/[0.04]">
-              <button onClick={() => setSharedExpanded((v) => !v)} className="flex items-center gap-1.5 px-6 py-4 w-full text-left">
-                <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" className="text-white/30" style={{ transform: sharedExpanded ? "rotate(90deg)" : "rotate(0deg)", transition: "transform 0.15s ease" }}><path d="M2 1L6 4L2 7" /></svg>
+              <button 
+                onClick={() => setSharedExpanded((v) => !v)} 
+                className="flex items-center gap-1.5 px-6 py-4 w-full text-left"
+                title={sharedExpanded ? "Collapse shared items" : "Expand shared items"}
+              >
+                <svg 
+                  width="8" 
+                  height="8" 
+                  viewBox="0 0 8 8" 
+                  fill="none" 
+                  stroke="currentColor" 
+                  strokeWidth="1.5" 
+                  strokeLinecap="round" 
+                  className={cn("text-white/30 transition-transform duration-150", sharedExpanded ? "rotate-90" : "rotate-0")}
+                >
+                  <path d="M2 1L6 4L2 7" />
+                </svg>
                 <span className="text-2xs font-semibold uppercase tracking-widest text-muted">Shared with me</span>
                 {isLoadingShared ? <Spinner size="xs" variant="accent" className="ml-auto" /> : <span className="ml-auto bg-white/10 text-white/50 text-[10px] px-1.5 rounded-full tabular-nums leading-4">{sharedWithMe.length}</span>}
               </button>
               {sharedExpanded && (
                 <div className="px-3 pb-10 space-y-0.5">
                   {sharedWithMe.map((item) => (
-                    <Link key={item.viewId} href={`/share/${item.hash}`} className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-sm text-white/60 hover:bg-white/[0.05] hover:text-white transition-all duration-150 ease-snappy min-w-0"><span className="text-base leading-none shrink-0">{item.resourceType === "FOLDER" ? "📂" : "💡"}</span><span className="flex-1 truncate text-left text-xs">{item.preview ?? "Shared item"}</span></Link>
+                    <Link key={item.viewId} href={`/share/${item.hash}`} className="flex items-center gap-2.5 px-3 py-1.5 rounded-xl text-sm text-white/60 hover:bg-white/[0.05] hover:text-white transition-all duration-150 ease-spatial min-w-0"><span className="text-base leading-none shrink-0">{item.resourceType === "FOLDER" ? "ðŸ“‚" : "ðŸ’¡"}</span><span className="flex-1 truncate text-left text-xs">{item.preview ?? "Shared item"}</span></Link>
                   ))}
                 </div>
               )}
@@ -769,7 +809,7 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
           <div className="h-20" />
           {currentUser?.tier === "starter" && (
             <div className="px-4 py-6">
-              <div className="relative group/premium rounded-2xl p-4 overflow-hidden border border-accent/20 bg-accent/[0.03] transition-all duration-300 hover:border-accent/40 hover:bg-accent/[0.06]">
+              <div className="relative group/premium rounded-2xl p-4 overflow-hidden border border-accent/15 bg-accent/[0.03] backdrop-blur-sm transition-all duration-300 ease-spatial hover:border-accent/30 hover:bg-accent/[0.05] hover:shadow-[0_0_20px_rgba(129,140,248,0.08)]">
                 <div className="absolute top-0 right-0 p-3 opacity-10 group-hover/premium:opacity-20 transition-opacity">
                   <StarIcon />
                 </div>
@@ -779,7 +819,7 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                 </p>
                 <Link 
                   href="/pricing"
-                  className="inline-flex items-center justify-center w-full h-8 rounded-lg bg-accent text-[11px] font-semibold text-white shadow-[0_0_15px_rgba(108,99,255,0.3)] transition-transform active:scale-95"
+                  className="inline-flex items-center justify-center w-full h-9 rounded-xl bg-accent text-[11px] font-semibold text-white shadow-[0_0_16px_rgba(129,140,248,0.3),inset_0_1px_0_rgba(255,255,255,0.15)] hover:shadow-[0_0_24px_rgba(129,140,248,0.4),inset_0_1px_0_rgba(255,255,255,0.15)] transition-all duration-200 ease-spatial active:scale-[0.97] transform-gpu"
                 >
                   Get Premium
                 </Link>

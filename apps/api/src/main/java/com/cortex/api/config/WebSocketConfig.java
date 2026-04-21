@@ -1,5 +1,6 @@
 package com.cortex.api.config;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.lang.NonNull;
 import org.springframework.messaging.simp.config.ChannelRegistration;
@@ -14,6 +15,9 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     private final WebSocketAuthInterceptor webSocketAuthInterceptor;
 
+    @Value("${cors.allowed-origins:http://localhost:3000}")
+    private String allowedOriginsRaw;
+
     public WebSocketConfig(WebSocketAuthInterceptor webSocketAuthInterceptor) {
         this.webSocketAuthInterceptor = webSocketAuthInterceptor;
     }
@@ -27,8 +31,12 @@ public class WebSocketConfig implements WebSocketMessageBrokerConfigurer {
 
     @Override
     public void registerStompEndpoints(@NonNull StompEndpointRegistry registry) {
+        String[] origins = allowedOriginsRaw.split(",");
+        String[] allOrigins = new String[origins.length + 1];
+        for (int i = 0; i < origins.length; i++) allOrigins[i] = origins[i].trim();
+        allOrigins[origins.length] = "chrome-extension://*";
         registry.addEndpoint("/ws")
-            .setAllowedOriginPatterns("http://localhost:3000", "http://localhost:*", "chrome-extension://*");
+            .setAllowedOriginPatterns(allOrigins);
     }
 
     @Override

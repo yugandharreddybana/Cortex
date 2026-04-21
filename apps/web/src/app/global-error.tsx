@@ -23,7 +23,7 @@ export default function GlobalError({
         style={{
           margin: 0,
           minHeight: "100vh",
-          background: "#0A0A0A",
+          background: "#06060C",
           display: "flex",
           flexDirection: "column",
           alignItems: "center",
@@ -89,7 +89,7 @@ export default function GlobalError({
             all: "unset",
             padding: "8px 18px",
             borderRadius: 8,
-            background: "#6C63FF",
+            background: "#818CF8",
             color: "#fff",
             fontSize: 13,
             fontWeight: 500,

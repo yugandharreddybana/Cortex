@@ -1,17 +1,17 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import { motion, useInView } from "framer-motion";
 import { cn } from "@cortex/ui";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 
-// ─── Features data ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Features data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const FEATURES = [
   {
     id:      "folders",
     tag:     "Organization",
     heading: "Infinite Folders, Zero Limits.",
-    body:    "Deeply nested, emoji-tagged folders — your personal taxonomy.",
+    body:    "Deeply nested, emoji-tagged folders â€” your personal taxonomy.",
     accent:  "#8B5CF6",
     span:    "md:col-span-2",   // wide
   },
@@ -65,16 +65,16 @@ const FEATURES = [
   },
 ] as const;
 
-// ─── Visual placeholders ───────────────────────────────────────────────────────
+// â”€â”€â”€ Visual placeholders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function FolderTreeVisual() {
   const items = [
-    { depth: 0, icon: "📁", label: "Research",   count: 24 },
-    { depth: 1, icon: "📂", label: "AI / ML",    count: 12 },
-    { depth: 2, icon: "📄", label: "LLM Papers", count:  8 },
-    { depth: 1, icon: "📂", label: "Product",    count:  6 },
-    { depth: 0, icon: "📁", label: "Design",     count: 18 },
-    { depth: 1, icon: "📂", label: "Typography", count:  5 },
+    { depth: 0, icon: "ðŸ“", label: "Research",   count: 24 },
+    { depth: 1, icon: "ðŸ“‚", label: "AI / ML",    count: 12 },
+    { depth: 2, icon: "ðŸ“„", label: "LLM Papers", count:  8 },
+    { depth: 1, icon: "ðŸ“‚", label: "Product",    count:  6 },
+    { depth: 0, icon: "ðŸ“", label: "Design",     count: 18 },
+    { depth: 1, icon: "ðŸ“‚", label: "Typography", count:  5 },
   ];
   return (
     <div className="p-6 space-y-2.5 font-mono text-xs">
@@ -83,7 +83,7 @@ function FolderTreeVisual() {
           key={i}
           initial={{ opacity: 0, x: -8 }}
           animate={{ opacity: 1, x: 0 }}
-          transition={{ delay: 0.3 + i * 0.08, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ delay: 0.3 + i * 0.08, duration: 0.4, ease: [0.20, 0.90, 0.30, 1.00] }}
           style={{ paddingLeft: f.depth * 16 }}
           className="flex items-center justify-between gap-2 group"
         >
@@ -105,8 +105,8 @@ function NLQueryVisual() {
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white/30 shrink-0" aria-hidden="true">
           <circle cx="5" cy="5" r="3.5" /><path d="M8 8l2 2" />
         </svg>
-        <span className="text-xs text-white/35 flex-1">that article about LLM latency…</span>
-        <kbd className="text-[10px] text-white/20 font-mono shrink-0">↵</kbd>
+        <span className="text-xs text-white/35 flex-1">that article about LLM latencyâ€¦</span>
+        <kbd className="text-[10px] text-white/20 font-mono shrink-0">â†µ</kbd>
       </div>
       {[
         { title: "LLM Inference Bottlenecks",        src: "arxiv.org",               tag: "AI / ML"     },
@@ -116,7 +116,7 @@ function NLQueryVisual() {
           <div className="w-5 h-5 rounded bg-white/[0.07] shrink-0 mt-0.5" />
           <div className="min-w-0">
             <p className="text-xs text-white/70 font-medium truncate">{r.title}</p>
-            <p className="text-[10px] text-white/30 mt-0.5">{r.src} · <span className="text-[#A78BFA]/70">{r.tag}</span></p>
+            <p className="text-[10px] text-white/30 mt-0.5">{r.src} Â· <span className="text-[#A78BFA]/70">{r.tag}</span></p>
           </div>
         </div>
       ))}
@@ -180,8 +180,8 @@ function CodeBlockVisual() {
     [3,  "",                             ""                ],
     [4,  "// Response",                  "text-white/25"   ],
     [5,  '{ "data": [',                  "text-white/50"   ],
-    [6,  '  { "id": "h_01J…",',          "text-white/40"   ],
-    [7,  '    "text": "LLMs achieve…",', "text-white/40"   ],
+    [6,  '  { "id": "h_01Jâ€¦",',          "text-white/40"   ],
+    [7,  '    "text": "LLMs achieveâ€¦",', "text-white/40"   ],
     [8,  '    "tags": ["AI", "NLP"]',    "text-emerald-400/70"],
     [9,  "  }",                          "text-white/40"   ],
     [10, "]}",                           "text-white/50"   ],
@@ -212,7 +212,7 @@ function TagsFilterVisual() {
         <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white/30 shrink-0" aria-hidden="true">
           <circle cx="4.5" cy="4.5" r="3" /><path d="M7 7l2 2" />
         </svg>
-        <span className="text-[11px] text-white/30 flex-1">Filter by tag…</span>
+        <span className="text-[11px] text-white/30 flex-1">Filter by tagâ€¦</span>
       </div>
       {/* Tag pills */}
       <div className="flex flex-wrap gap-2">
@@ -234,7 +234,7 @@ function TagsFilterVisual() {
       {/* Active filter bar */}
       <div className="flex items-center gap-2 text-[11px] text-white/35">
         {/* <span className="text-[#EC4899]/70">Design</span> */}
-        <span>·</span>
+        <span>Â·</span>
         <span className="text-[#A78BFA]/70">AI / ML</span>
         <span className="ml-auto text-white/20">55 results</span>
       </div>
@@ -260,7 +260,7 @@ function ReadingModeVisual() {
           ))}
         </div>
         <div className="flex items-center gap-1.5">
-          {(["☀", "◑", "●"] as const).map((icon, i) => (
+          {(["â˜€", "â—‘", "â—"] as const).map((icon, i) => (
             <button
               key={i}
               className={`w-7 h-7 rounded-lg border text-[13px] flex items-center justify-center transition-colors ${i === 2 ? "border-[#14B8A6]/50 bg-[#14B8A6]/10 text-[#14B8A6]" : "border-white/[0.07] text-white/30"}`}
@@ -294,7 +294,7 @@ function ReadingModeVisual() {
   );
 }
 
-// ─── Visuals registry ─────────────────────────────────────────────────────────
+// â”€â”€â”€ Visuals registry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const VISUALS: Record<string, React.ReactNode> = {
   folders:    <FolderTreeVisual />,
   context:    <NLQueryVisual />,
@@ -305,7 +305,7 @@ const VISUALS: Record<string, React.ReactNode> = {
   reading:    <ReadingModeVisual />,
 };
 
-// ─── Section ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export function BentoGrid() {
   const ref = React.useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
@@ -322,7 +322,7 @@ export function BentoGrid() {
         initial={{ opacity: 0, y: 16 }}
         whileInView={{ opacity: 1, y: 0 }}
         viewport={{ once: true, margin: "-80px" }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.6, ease: [0.20, 0.90, 0.30, 1.00] }}
         className="text-center space-y-4 mb-16"
       >
         <span className="text-xs font-semibold uppercase tracking-widest text-accent">
@@ -344,7 +344,7 @@ export function BentoGrid() {
   );
 }
 
-// ─── Card ─────────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 interface BentoCardProps {
   tag:           string;
   heading:       string;
@@ -363,7 +363,7 @@ function BentoCard({ tag, heading, body, accent, span, visual, index, parentInVi
       animate={parentInView ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
       transition={{
         duration: 0.7,
-        ease: [0.16, 1, 0.3, 1],
+        ease: [0.20, 0.90, 0.30, 1.00],
         delay: 0.06 * index,
       }}
       className={span}

@@ -1,11 +1,11 @@
-"use client";
+﻿"use client";
 
 import React from "react";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { cn } from "@cortex/ui";
 
-const ease = [0.16, 1, 0.3, 1] as [number, number, number, number];
+const ease = [0.20, 0.90, 0.30, 1.00] as [number, number, number, number];
 
 export default function SubscriptionSuccessPage() {
   return (
@@ -27,7 +27,7 @@ export default function SubscriptionSuccessPage() {
           initial={{ scale: 0 }}
           animate={{ scale: 1 }}
           transition={{ type: "spring", stiffness: 260, damping: 20, delay: 0.3 }}
-          className="w-20 h-20 bg-accent rounded-full mx-auto mb-8 flex items-center justify-center shadow-[0_0_40px_rgba(108,99,255,0.4)]"
+          className="w-20 h-20 bg-accent rounded-full mx-auto mb-8 flex items-center justify-center shadow-[0_0_40px_rgba(129,140,248,0.35)]"
         >
           <svg
             width="40"

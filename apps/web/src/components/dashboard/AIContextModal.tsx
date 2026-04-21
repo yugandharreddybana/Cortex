@@ -53,8 +53,8 @@ export function AIContextModal({ highlight, open, onOpenChange, onSuccess }: AIC
                 className={cn(
                   "fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50",
                   "w-[90vw] max-w-md rounded-2xl",
-                  "bg-[#1c1c1c] border border-white/[0.08]",
-                  "shadow-2xl overflow-hidden",
+                  "bg-elevated/90 backdrop-blur-2xl border border-white/[0.06]",
+                  "shadow-spatial-lg overflow-hidden",
                   "flex flex-col focus:outline-none",
                 )}
               >

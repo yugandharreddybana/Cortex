@@ -1,9 +1,9 @@
-import Link from "next/link";
+﻿import Link from "next/link";
 import { cn } from "@cortex/ui";
 
 export default function NotFound() {
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center px-6">
+    <div className="min-h-screen bg-bg flex flex-col items-center justify-center px-6">
       {/* Giant 404 */}
       <div className="relative mb-6 select-none">
         {/* Background glow */}
@@ -58,7 +58,7 @@ export default function NotFound() {
           href="/"
           className={cn(
             "h-10 px-5 rounded-xl",
-            "border border-white/[0.09] text-white/55 text-sm font-medium",
+            "border border-white/[0.06] text-white/55 text-sm font-medium",
             "hover:text-white/80 hover:bg-white/[0.04] active:scale-[0.95]",
             "transition-all duration-150 transform-gpu",
           )}

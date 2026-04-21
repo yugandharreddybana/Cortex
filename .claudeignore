@@ -1,0 +1,38 @@
+# Lock files — never read these
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Build output
+dist/
+build/
+.next/
+out/
+.turbo/
+
+# Dependencies
+node_modules/
+
+# Java build artifacts
+target/
+*.class
+*.jar
+
+# Debug/temp artifacts — should not exist in repo but blocking just in case
+thread_dump.txt
+*.patch
+cookies.txt
+api_verification_results.txt
+*_lint_full.txt
+*_lint_full.json
+*_lint_results.txt
+test_range.html
+
+# Editor and OS
+.vscode/
+.DS_Store
+*.log
+*.map
+
+# Extension build icons (binary assets)
+apps/extension/icons/

@@ -34,8 +34,8 @@ export function ViewControlBar() {
     <div
       className={cn(
         "sticky top-0 z-40 h-12",
-        "border-b border-white/10",
-        "bg-[#121212]/80 backdrop-blur-md",
+        "border-b border-white/[0.05]",
+        "bg-bg/70 backdrop-blur-xl",
         "flex items-center justify-between px-4",
       )}
     >
@@ -44,12 +44,12 @@ export function ViewControlBar() {
         <Popover.Trigger asChild>
           <button
             className={cn(
-              "inline-flex items-center gap-1.5 h-7 px-3 rounded-lg",
+              "inline-flex items-center gap-1.5 h-7 px-3 rounded-xl",
               "text-[12px] font-medium",
-              "border transition-all duration-150",
+              "border transition-all duration-200 ease-spatial",
               filterCount > 0
-                ? "bg-accent/10 border-accent/40 text-accent"
-                : "bg-white/[0.04] border-white/[0.08] text-white/50 hover:text-white/80 hover:bg-white/[0.07]",
+                ? "bg-accent/10 border-accent/30 text-accent"
+                : "bg-white/[0.03] border-white/[0.06] text-white/45 hover:text-white/75 hover:bg-white/[0.05]",
             )}
           >
             <FilterIcon />
@@ -67,9 +67,9 @@ export function ViewControlBar() {
             sideOffset={8}
             align="center"
             className={cn(
-              "z-50 w-52 rounded-xl p-3",
-              "bg-[#1c1c1c] border border-white/[0.09]",
-              "shadow-[0_12px_40px_rgba(0,0,0,0.55)]",
+              "z-50 w-52 rounded-2xl p-3",
+              "bg-elevated/90 backdrop-blur-2xl border border-white/[0.08]",
+              "shadow-spatial-lg",
               "data-[state=open]:animate-in data-[state=closed]:animate-out",
               "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
               "data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95",
@@ -151,15 +151,15 @@ export function ViewControlBar() {
         type="single"
         value={viewMode}
         onValueChange={(v) => { if (v) setViewMode(v as "grid" | "list"); }}
-        className="flex items-center gap-0.5 p-0.5 rounded-lg bg-white/[0.04] border border-white/[0.07]"
+        className="flex items-center gap-0.5 p-0.5 rounded-xl bg-white/[0.03] border border-white/[0.06]"
         aria-label="View layout"
       >
         <ToggleGroup.Item
           value="grid"
           className={cn(
-            "w-7 h-7 rounded-md flex items-center justify-center transition-all duration-150",
-            "text-white/50 hover:text-white/80",
-            "data-[state=on]:bg-white/[0.10] data-[state=on]:text-white",
+            "w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200 ease-spatial",
+            "text-white/45 hover:text-white/75",
+            "data-[state=on]:bg-white/[0.08] data-[state=on]:text-white data-[state=on]:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]",
           )}
           aria-label="Grid view"
         >
@@ -168,9 +168,9 @@ export function ViewControlBar() {
         <ToggleGroup.Item
           value="list"
           className={cn(
-            "w-7 h-7 rounded-md flex items-center justify-center transition-all duration-150",
-            "text-white/50 hover:text-white/80",
-            "data-[state=on]:bg-white/[0.10] data-[state=on]:text-white",
+            "w-7 h-7 rounded-lg flex items-center justify-center transition-all duration-200 ease-spatial",
+            "text-white/45 hover:text-white/75",
+            "data-[state=on]:bg-white/[0.08] data-[state=on]:text-white data-[state=on]:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]",
           )}
           aria-label="List view"
         >

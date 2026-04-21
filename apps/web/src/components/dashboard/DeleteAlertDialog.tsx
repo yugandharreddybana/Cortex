@@ -18,7 +18,7 @@ interface DeleteAlertDialogProps {
   isShared?:      boolean;
 }
 
-const ease = [0.16, 1, 0.3, 1] as const;
+const ease = [0.20, 0.90, 0.30, 1.00] as const;
 
 export function DeleteAlertDialog({
   open,
@@ -57,8 +57,8 @@ export function DeleteAlertDialog({
                 className={cn(
                   "relative z-50 pointer-events-auto",
                   "w-full max-w-md",
-                  "rounded-2xl bg-[#171717] border border-white/[0.09]",
-                  "shadow-[0_32px_64px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)]",
+                  "rounded-2xl bg-elevated/90 backdrop-blur-2xl border border-white/[0.06]",
+                  "shadow-spatial-lg",
                   "p-6",
                   "focus:outline-none",
                 )}

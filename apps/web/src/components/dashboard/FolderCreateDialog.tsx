@@ -9,7 +9,7 @@ import { useDashboardStore } from "@/store/dashboard";
 import { Loader2 } from "lucide-react";
 
 // ─── Animation ────────────────────────────────────────────────────────────────
-const ease = [0.16, 1, 0.3, 1] as const;
+const ease = [0.20, 0.90, 0.30, 1.00] as const;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 interface FolderCreateDialogProps {
@@ -104,8 +104,8 @@ export function FolderCreateDialog({ open, onOpenChange, parentId }: FolderCreat
                   // Size
                   "w-full max-w-sm",
                   // Surface
-                  "rounded-2xl bg-[#171717] border border-white/[0.09]",
-                  "shadow-[0_32px_64px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.07)]",
+                  "rounded-2xl bg-elevated/90 backdrop-blur-2xl border border-white/[0.06]",
+                  "shadow-spatial-lg",
                   "p-6",
                   // Focus ring removal
                   "focus:outline-none",
@@ -157,8 +157,8 @@ export function FolderCreateDialog({ open, onOpenChange, parentId }: FolderCreat
                       "h-9 px-5 rounded-xl min-w-[80px]",
                       "text-sm font-medium text-white",
                       "bg-accent hover:bg-accent/90",
-                      "shadow-[0_0_16px_rgba(108,99,255,0.3)]",
-                      "transition-all duration-150",
+                      "shadow-[0_0_16px_rgba(129,140,248,0.25)]",
+                      "transition-all duration-150 ease-spatial",
                       "disabled:opacity-40 disabled:cursor-not-allowed",
                     )}
                   >

@@ -12,7 +12,7 @@ export function Footer() {
   return (
     <footer
       className={cn(
-        "border-t border-white/[0.06]",
+        "border-t border-white/[0.04]",
         "py-16 px-6 lg:px-10",
         "bg-bg",
       )}
@@ -38,7 +38,7 @@ export function Footer() {
                   <li key={item}>
                     <Link
                       href="#"
-                      className="text-sm text-secondary hover:text-primary transition-colors duration-200 ease-snappy"
+                      className="text-sm text-secondary hover:text-primary transition-colors duration-200 ease-spatial"
                     >
                       {item}
                     </Link>
@@ -49,7 +49,7 @@ export function Footer() {
           ))}
         </div>
 
-        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-white/[0.06]">
+        <div className="flex flex-col sm:flex-row items-center justify-between gap-4 pt-8 border-t border-white/[0.04]">
           <p className="text-xs text-muted">
             © {new Date().getFullYear()} Cortex. All rights reserved.
           </p>

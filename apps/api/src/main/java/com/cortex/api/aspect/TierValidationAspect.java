@@ -5,6 +5,8 @@ import com.cortex.api.repository.UserRepository;
 import org.aspectj.lang.JoinPoint;
 import org.aspectj.lang.annotation.Aspect;
 import org.aspectj.lang.annotation.Before;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
@@ -16,6 +18,8 @@ import java.util.Arrays;
 @Aspect
 @Component
 public class TierValidationAspect {
+
+    private static final Logger log = LoggerFactory.getLogger(TierValidationAspect.class);
 
     private final UserRepository userRepository;
 
@@ -31,29 +35,20 @@ public class TierValidationAspect {
         }
 
         String principal = auth.getName();
-        System.out.println("[DEBUG-TIER] Evaluating tier for principal: " + principal);
         User user;
         try {
             Long userId = Long.valueOf(principal);
             user = userRepository.findById(userId)
-                    .orElseThrow(() -> {
-                        System.out.println("[DEBUG-TIER] User ID " + userId + " not found in DB!");
-                        return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found by ID");
-                    });
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
         } catch (NumberFormatException e) {
-            System.out.println("[DEBUG-TIER] Principal is not a number, trying email: " + principal);
             user = userRepository.findByEmail(principal)
-                    .orElseThrow(() -> {
-                        System.out.println("[DEBUG-TIER] Email " + principal + " not found in DB!");
-                        return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found by email");
-                    });
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
         }
 
         String userTier = user.getTier();
         if (userTier == null) {
-            userTier = "starter"; // Default fallback
+            userTier = "starter";
         }
-        System.out.println("[DEBUG-TIER] User resolved successfully. Tier is: " + userTier);
 
         boolean hasRequiredTier = false;
         for (String allowedTier : requireTier.value()) {
@@ -64,12 +59,11 @@ public class TierValidationAspect {
         }
 
         if (!hasRequiredTier) {
-            System.out.println("[DEBUG-TIER] User tier " + userTier + " is theoretically NOT authorized. Requires: " + Arrays.toString(requireTier.value()) + ". Allowing anyway for now.");
-            // throw new ResponseStatusException(
-            //     HttpStatus.PAYMENT_REQUIRED,
-            //     "Upgrade required. This feature requires one of the following tiers: " + Arrays.toString(requireTier.value())
-            // );
+            log.warn("Tier check failed for user {}. Required: {}, has: {}", principal, Arrays.toString(requireTier.value()), userTier);
+            throw new ResponseStatusException(
+                HttpStatus.PAYMENT_REQUIRED,
+                "Upgrade required. This feature requires one of the following tiers: " + Arrays.toString(requireTier.value())
+            );
         }
-        System.out.println("[DEBUG-TIER] User is authorized (or bypassed)!");
     }
 }

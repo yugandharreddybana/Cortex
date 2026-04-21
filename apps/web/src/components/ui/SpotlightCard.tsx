@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import { motion, useMotionTemplate, useMotionValue } from "framer-motion";
@@ -37,7 +37,7 @@ export function SpotlightCard({
       className={cn(
         "group relative rounded-2xl overflow-hidden",
         "bg-white/[0.02] border border-white/[0.06]",
-        "transition-all duration-500 ease-snappy",
+        "transition-all duration-500 ease-spatial",
         "hover:border-white/[0.10]",
         className,
       )}
@@ -74,7 +74,7 @@ export function SpotlightCard({
       <motion.div
         className="relative z-20"
         whileHover={disabled ? undefined : { scale: 1.005 }}
-        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.4, ease: [0.20, 0.90, 0.30, 1.00] }}
       >
         {children}
       </motion.div>

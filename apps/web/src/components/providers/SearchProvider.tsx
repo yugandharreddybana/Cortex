@@ -145,9 +145,22 @@ export function SearchProvider({ children }: { children: React.ReactNode }) {
       label: "Export to Markdown",
       description: "Download all highlights as .md",
       group: "Export",
-      onSelect: () => { /* stub — wire to export API */ },
+      onSelect: () => {
+        const lines = highlights.map((h) => {
+          const meta = [h.source, h.topic].filter(Boolean).join(" · ");
+          return `## ${meta || "Highlight"}\n\n> ${h.text}\n`;
+        });
+        const blob = new Blob(["# Cortex Highlights\n\n", lines.join("\n")], { type: "text/markdown" });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement("a");
+        a.href = url;
+        a.download = "cortex-highlights.md";
+        a.click();
+        URL.revokeObjectURL(url);
+        setIsOpen(false);
+      },
     },
-  ], [router, folders, setIsOpen, setNewFolderOpen, setNewHighlightOpen, setViewMode]);
+  ], [router, folders, highlights, setIsOpen, setNewFolderOpen, setNewHighlightOpen, setViewMode]);
 
   React.useEffect(() => {
     const handler = (e: KeyboardEvent) => {

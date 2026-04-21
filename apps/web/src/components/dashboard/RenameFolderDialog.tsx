@@ -53,8 +53,8 @@ export function RenameFolderDialog({
           className={cn(
             "relative z-50 pointer-events-auto",
             "w-full max-w-sm",
-            "rounded-2xl border border-white/[0.09] bg-[#181818]",
-            "shadow-[0_24px_64px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.07)]",
+            "rounded-2xl border border-white/[0.06] bg-elevated/90 backdrop-blur-2xl",
+            "shadow-spatial-lg",
             "p-6 focus:outline-none",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
@@ -107,8 +107,8 @@ export function RenameFolderDialog({
                   "h-9 px-5 rounded-xl",
                   "text-sm font-medium text-white",
                   "bg-accent hover:bg-accent/90",
-                  "shadow-[0_0_16px_rgba(108,99,255,0.25)]",
-                  "transition-all duration-150",
+                  "shadow-[0_0_16px_rgba(129,140,248,0.25)]",
+                  "transition-all duration-150 ease-spatial",
                 )}
               >
                 Rename

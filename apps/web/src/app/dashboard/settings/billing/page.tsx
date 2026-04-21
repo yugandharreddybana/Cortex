@@ -8,7 +8,7 @@ import { cn } from "@cortex/ui";
 import { toast } from "sonner";
 import { useAuthStore } from "@/store/authStore";
 
-const ease = [0.16, 1, 0.3, 1] as const;
+const ease = [0.20, 0.90, 0.30, 1.00] as const;
 
 const TIER_CONFIG: Record<string, { label: string; price: string }> = {
   starter: { label: "Starter",  price: "Free" },
@@ -26,7 +26,7 @@ export default function BillingPage() {
   const config = TIER_CONFIG[tier] ?? TIER_CONFIG.starter;
   const memberSince = user?.createdAt
     ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
-    : "—";
+    : "â€”";
 
   const handleManageBilling = async () => {
     setLoadingPortal(true);
@@ -64,13 +64,13 @@ export default function BillingPage() {
         </p>
       </motion.div>
 
-      {/* ── Section 1: Current Plan ── */}
+      {/* â”€â”€ Section 1: Current Plan â”€â”€ */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease, delay: 0.05 }}
         className={cn(
-          "border border-white/[0.09] rounded-xl p-6 bg-surface mb-5",
+          "border border-white/[0.06] rounded-xl p-6 bg-surface mb-5",
         )}
       >
         <div className="flex items-center justify-between mb-5">
@@ -109,13 +109,13 @@ export default function BillingPage() {
         </div>
       </motion.div>
 
-      {/* ── Section 2: Change Plan ── */}
+      {/* â”€â”€ Section 2: Change Plan â”€â”€ */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease, delay: 0.1 }}
         className={cn(
-          "border border-white/[0.09] rounded-xl p-6 bg-surface mb-5",
+          "border border-white/[0.06] rounded-xl p-6 bg-surface mb-5",
         )}
       >
         <h2 className="text-sm font-medium text-white/70 mb-1">Change Plan</h2>
@@ -130,8 +130,8 @@ export default function BillingPage() {
               className={cn(
                 "h-9 px-5 rounded-xl text-sm font-medium",
                 "bg-white text-black",
-                "hover:bg-gray-200 active:scale-95",
-                "transition-all duration-150",
+                "hover:bg-white/80 active:scale-95",
+                "transition-all duration-150 ease-spatial",
               )}
             >
               Upgrade to Teams
@@ -163,7 +163,7 @@ export default function BillingPage() {
         </div>
       </motion.div>
 
-      {/* ── Section 3: Danger Zone (only for paid plans) ── */}
+      {/* â”€â”€ Section 3: Danger Zone (only for paid plans) â”€â”€ */}
       {tier !== "starter" && (
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -195,7 +195,7 @@ export default function BillingPage() {
       </motion.div>
       )}
 
-      {/* ── Teams Upgrade Dialog ── */}
+      {/* â”€â”€ Teams Upgrade Dialog â”€â”€ */}
       <Dialog.Root open={teamsOpen} onOpenChange={setTeamsOpen}>
         <AnimatePresence>
           {teamsOpen && (
@@ -219,8 +219,8 @@ export default function BillingPage() {
                     "fixed left-1/2 top-1/2 z-50",
                     "-translate-x-1/2 -translate-y-1/2",
                     "w-full max-w-[480px] mx-4 outline-none",
-                    "bg-[#141414] border border-white/[0.09] rounded-2xl",
-                    "shadow-[0_24px_80px_rgba(0,0,0,0.7)]",
+                    "bg-elevated/90 backdrop-blur-2xl border border-white/[0.06] rounded-2xl",
+                    "shadow-spatial-lg",
                     "overflow-hidden",
                   )}
                 >
@@ -238,7 +238,7 @@ export default function BillingPage() {
                         <p className="text-xs text-white/40">Mock Stripe Checkout</p>
                       </div>
                       <Dialog.Close className="ml-auto w-7 h-7 rounded-lg border border-white/[0.08] text-white/40 hover:text-white/70 hover:border-white/20 transition-colors duration-150 flex items-center justify-center text-base leading-none">
-                        ✕
+                        âœ•
                       </Dialog.Close>
                     </div>
 
@@ -268,7 +268,7 @@ export default function BillingPage() {
                         "Everything in Pro, for everyone",
                       ].map((f) => (
                         <li key={f} className="flex items-start gap-2 text-sm text-white/55">
-                          <span className="text-emerald-400 mt-0.5 shrink-0">✓</span>
+                          <span className="text-emerald-400 mt-0.5 shrink-0">âœ“</span>
                           {f}
                         </li>
                       ))}
@@ -277,7 +277,7 @@ export default function BillingPage() {
                     {/* Mock card line */}
                     <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.03] p-3 mb-5">
                       <div className="w-8 h-5 rounded bg-gradient-to-br from-[#252525] to-[#1a1a1a] border border-white/10 text-[8px] text-white/30 flex items-center justify-center font-mono">VISA</div>
-                      <span className="text-sm text-white/40 font-mono tracking-wider">•••• •••• •••• 4242</span>
+                      <span className="text-sm text-white/40 font-mono tracking-wider">â€¢â€¢â€¢â€¢ â€¢â€¢â€¢â€¢ â€¢â€¢â€¢â€¢ 4242</span>
                     </div>
 
                     <button
@@ -292,13 +292,13 @@ export default function BillingPage() {
                         "bg-accent text-white",
                         "hover:bg-accent/90 active:scale-[0.98]",
                         "transition-all duration-150",
-                        "shadow-[0_0_20px_rgba(108,99,255,0.35)]",
+                        "shadow-[0_0_20px_rgba(129,140,248,0.3)]",
                       )}
                     >
-                      Confirm Upgrade — $75 / mo
+                      Confirm Upgrade â€” $75 / mo
                     </button>
                     <p className="text-center text-[11px] text-white/25 mt-3">
-                      Secured by Stripe · Cancel anytime · No hidden fees
+                      Secured by Stripe Â· Cancel anytime Â· No hidden fees
                     </p>
                   </div>
                 </motion.div>
@@ -308,7 +308,7 @@ export default function BillingPage() {
         </AnimatePresence>
       </Dialog.Root>
 
-      {/* ── Cancel AlertDialog ── */}
+      {/* â”€â”€ Cancel AlertDialog â”€â”€ */}
       <AlertDialog.Root open={cancelOpen} onOpenChange={setCancelOpen}>
         <AnimatePresence>
           {cancelOpen && (
@@ -335,8 +335,8 @@ export default function BillingPage() {
                     "fixed left-1/2 top-1/2 z-50",
                     "-translate-x-1/2 -translate-y-1/2",
                     "w-full max-w-[460px] mx-4",
-                    "bg-[#171717] border border-white/[0.09] rounded-2xl",
-                    "shadow-[0_24px_64px_rgba(0,0,0,0.6)]",
+                    "bg-elevated/90 backdrop-blur-2xl border border-white/[0.06] rounded-2xl",
+                    "shadow-spatial-lg",
                     "p-6 outline-none",
                   )}
                 >
@@ -364,8 +364,8 @@ export default function BillingPage() {
                         className={cn(
                           "h-9 px-5 rounded-xl text-sm font-medium",
                           "bg-white text-black",
-                          "hover:bg-gray-200 active:scale-95",
-                          "transition-all duration-150",
+                          "hover:bg-white/80 active:scale-95",
+                          "transition-all duration-150 ease-spatial",
                         )}
                       >
                         Keep Subscription
@@ -397,7 +397,7 @@ export default function BillingPage() {
 
 function TeamsIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#6C63FF" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#818CF8" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <circle cx="7" cy="6" r="2.5" />
       <path d="M2 15c0-2.761 2.239-4 5-4s5 1.239 5 4" />
       <path d="M12.5 5a2.5 2.5 0 010 5" />

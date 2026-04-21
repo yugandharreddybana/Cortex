@@ -9,18 +9,19 @@ import { cn } from "../../lib/utils";
 
 const variantStyles = {
   primary: [
-    // Base fill
-    "bg-accent text-white",
-    // Multi-layer glass border + glow
-    "shadow-[0_0_0_1px_rgba(108,99,255,0.5),inset_0_1px_0_rgba(255,255,255,0.15),0_4px_12px_rgba(108,99,255,0.35)]",
-    // Hover glow amplification
-    "hover:shadow-[0_0_0_1px_rgba(108,99,255,0.7),inset_0_1px_0_rgba(255,255,255,0.15),0_4px_20px_rgba(108,99,255,0.55)]",
-    "hover:bg-[#7C73FF]",
+    // Luminous indigo fill with spatial glow
+    "bg-accent text-white font-semibold",
+    "shadow-[0_0_0_1px_rgba(99,102,241,0.5),inset_0_1px_0_rgba(255,255,255,0.15),0_2px_8px_rgba(99,102,241,0.35),0_4px_20px_-4px_rgba(99,102,241,0.30)]",
+    // Hover — amplified glow bloom
+    "hover:bg-accent-light",
+    "hover:shadow-[0_0_0_1px_rgba(99,102,241,0.6),inset_0_1px_0_rgba(255,255,255,0.15),0_4px_16px_rgba(99,102,241,0.45),0_8px_32px_-4px_rgba(99,102,241,0.35)]",
   ],
   secondary: [
-    "bg-surface text-primary",
-    "shadow-glass",
-    "hover:bg-overlay hover:shadow-glass-lg",
+    // Glass surface
+    "bg-white/[0.05] text-primary",
+    "border border-white/[0.08]",
+    "shadow-spatial-sm",
+    "hover:bg-white/[0.08] hover:border-white/[0.12] hover:shadow-spatial-md",
   ],
   ghost: [
     "bg-transparent text-secondary",
@@ -28,23 +29,25 @@ const variantStyles = {
   ],
   outline: [
     "bg-transparent text-primary",
-    "border border-white/10",
-    "hover:bg-white/[0.04] hover:border-white/20",
+    "border border-white/[0.10]",
+    "hover:bg-white/[0.04] hover:border-white/[0.18]",
+    "shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]",
   ],
   destructive: [
     "bg-danger/10 text-danger",
-    "border border-danger/30",
-    "hover:bg-danger/20",
+    "border border-danger/20",
+    "hover:bg-danger/20 hover:border-danger/30",
+    "hover:shadow-[0_0_20px_rgba(248,113,113,0.12)]",
   ],
 } as const;
 
 const sizeStyles = {
-  xs: "h-7  px-3   text-xs   gap-1.5 rounded-lg",
-  sm: "h-8  px-3.5 text-sm   gap-2   rounded-xl",
-  md: "h-10 px-5   text-sm   gap-2   rounded-xl",
-  lg: "h-12 px-7   text-base gap-2.5 rounded-2xl",
-  xl: "h-14 px-8   text-lg   gap-3   rounded-2xl",
-  icon: "h-10 w-10 rounded-xl",
+  xs: "h-7  px-3   text-xs   gap-1.5 rounded-lg  min-w-[44px]",
+  sm: "h-9  px-3.5 text-sm   gap-2   rounded-xl  min-w-[44px]",
+  md: "h-11 px-5   text-sm   gap-2   rounded-xl  min-w-[44px]",
+  lg: "h-12 px-7   text-base gap-2.5 rounded-2xl min-w-[44px]",
+  xl: "h-14 px-8   text-lg   gap-3   rounded-2xl min-w-[44px]",
+  icon: "h-11 w-11 rounded-xl min-w-[44px]",
 } as const;
 
 export interface ButtonProps
@@ -67,23 +70,13 @@ export interface ButtonProps
   disabled?: boolean;
 }
 
-// ─── Spinner ──────────────────────────────────────────────────────────────────
+// ─── Orbital Spinner ──────────────────────────────────────────────────────────
 
-const Spinner = () => (
-  <svg
-    className="animate-spin h-4 w-4 text-current"
-    xmlns="http://www.w3.org/2000/svg"
-    fill="none"
-    viewBox="0 0 24 24"
-    aria-hidden="true"
-  >
-    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-    <path
-      className="opacity-75"
-      fill="currentColor"
-      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
-    />
-  </svg>
+const OrbitalSpinner = () => (
+  <div className="relative h-4 w-4 flex-shrink-0" aria-hidden="true">
+    <div className="absolute inset-0 rounded-full border-2 border-current/20" />
+    <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-current animate-spin" />
+  </div>
 );
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -114,19 +107,19 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       // Typography
       "font-medium antialiased",
 
-      // Transition — Apple snappy easing
-      "transition-all duration-250 ease-snappy",
+      // Spatial transition — smooth, responsive
+      "transition-all duration-200 ease-spatial",
 
-      // Hardware-accelerated interaction states
+      // Hardware-accelerated
       "transform-gpu will-change-transform",
       "active:scale-[0.97]",
 
-      // Focus
+      // Focus — luminous ring
       "focus-visible:outline-none",
-      "focus-visible:ring-2 focus-visible:ring-white/20 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+      "focus-visible:ring-2 focus-visible:ring-accent/40 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
 
       // Disabled
-      "disabled:opacity-40 disabled:pointer-events-none disabled:cursor-not-allowed",
+      "disabled:opacity-35 disabled:pointer-events-none",
 
       // Variant + Size
       variantStyles[variant],
@@ -159,18 +152,18 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
             aria-hidden
             className={cn(
               "pointer-events-none absolute inset-0 -translate-x-full",
-              "bg-gradient-to-r from-transparent via-white/10 to-transparent",
-              "group-hover:translate-x-full transition-transform duration-700 ease-snappy",
+              "bg-gradient-to-r from-transparent via-white/[0.08] to-transparent",
+              "hover:translate-x-full transition-transform duration-700 ease-spatial",
             )}
           />
         )}
 
         {/* Content */}
         {loading ? (
-          <>
-            <Spinner />
-            <span className="opacity-60">{children}</span>
-          </>
+          <span className="flex items-center gap-2">
+            <OrbitalSpinner />
+            <span className="opacity-70">{children}</span>
+          </span>
         ) : (
           children
         )}

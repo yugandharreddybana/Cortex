@@ -35,13 +35,13 @@ export function GlobalLoader() {
             <div className="absolute inset-0 bg-accent/20 blur-[30px] rounded-full scale-125" />
 
             {/* Floating Island UI (Spinner Only) */}
-            <div className="relative flex items-center justify-center w-14 h-14 rounded-2xl bg-[#1c1c1c]/90 border border-white/[0.08] shadow-[0_20px_50px_rgba(0,0,0,0.5)] backdrop-blur-xl">
+            <div className="relative flex items-center justify-center w-14 h-14 rounded-2xl bg-elevated/90 border border-white/[0.06] shadow-spatial-lg backdrop-blur-xl">
               <div className="relative w-6 h-6">
                 <motion.div
                   animate={{ rotate: 360 }}
                   transition={{ duration: 0.8, repeat: Infinity, ease: "linear" }}
                   className="absolute inset-0 rounded-full border-2 border-white/10"
-                  style={{ borderTopColor: "#6c63ff" }}
+                  style={{ borderTopColor: "#818CF8" }}
                 />
               </div>
             </div>

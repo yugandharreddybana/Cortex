@@ -229,12 +229,12 @@ export function ShareDialog({ open, onOpenChange, type, id, title }: ShareDialog
               initial={{ opacity: 0, scale: 0.96, y: 8 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 8 }}
-              transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ duration: 0.2, ease: [0.20, 0.90, 0.30, 1.00] }}
               onClick={(e) => e.stopPropagation()}
               className={cn(
                 "w-full max-w-md rounded-2xl",
-                "bg-surface border border-white/10",
-                "shadow-[0_24px_80px_rgba(0,0,0,0.6)]",
+                "bg-elevated/90 backdrop-blur-2xl border border-white/[0.06]",
+                "shadow-spatial-lg",
                 "p-6",
                 "focus:outline-none",
               )}

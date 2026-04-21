@@ -10,7 +10,7 @@ import { Loader2 } from "lucide-react";
 
 type AccessLevel = "VIEWER" | "COMMENTER" | "EDITOR" | "OWNER";
 
-const ease = [0.16, 1, 0.3, 1] as const;
+const ease = [0.20, 0.90, 0.30, 1.00] as const;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -332,7 +332,7 @@ function PresenceAvatars({
             <div key={email} className="group relative">
               <div
                 className={cn(
-                  "w-8 h-8 rounded-full border-2 border-[#0A0A0A] flex items-center justify-center text-xs font-bold text-white",
+                  "w-8 h-8 rounded-full border-2 border-bg flex items-center justify-center text-xs font-bold text-white",
                   color,
                 )}
               >
@@ -347,7 +347,7 @@ function PresenceAvatars({
         })}
         {overflow > 0 && (
           <div className="group relative">
-            <div className="w-8 h-8 rounded-full border-2 border-[#0A0A0A] bg-white/10 flex items-center justify-center text-xs font-medium text-white/70">
+            <div className="w-8 h-8 rounded-full border-2 border-bg bg-white/10 flex items-center justify-center text-xs font-medium text-white/70">
               +{overflow}
             </div>
             {/* Overflow tooltip */}
@@ -407,7 +407,7 @@ function HighlightViewer({
         className={cn(
           "rounded-xl border p-6",
           highlight.isCode
-            ? "bg-[#0d1117] border-white/[0.08] font-mono text-sm"
+            ? "bg-bg border-white/[0.08] font-mono text-sm"
             : "bg-white/[0.03] border-white/[0.06]",
         )}
         style={

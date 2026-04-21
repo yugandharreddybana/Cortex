@@ -76,8 +76,8 @@ export default function DataExportPage() {
       {/* Section */}
       <div
         className={cn(
-          "rounded-2xl border border-white/[0.08] bg-[#141414]",
-          "p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]",
+          "rounded-2xl border border-white/[0.06] bg-surface",
+          "p-6 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]",
         )}
       >
         {/* Icon */}
@@ -170,7 +170,7 @@ export default function DataExportPage() {
 // ─── Icons ────────────────────────────────────────────────────────────────────
 function BrainIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#6C63FF" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="#818CF8" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M9 3C6.24 3 4 5.24 4 8c0 1.54.7 2.92 1.8 3.83V14h6.4v-2.17C13.3 10.92 14 9.54 14 8c0-2.76-2.24-5-5-5z" />
       <path d="M7 14v1.5a1 1 0 002 0V14M9 3V2" />
     </svg>

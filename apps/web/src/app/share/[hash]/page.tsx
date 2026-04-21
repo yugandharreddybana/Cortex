@@ -8,7 +8,7 @@ import { toast } from "sonner";
 import { premiumToast } from "@/lib/premium-feedback";
 import { Loader2 } from "lucide-react";
 
-const ease = [0.16, 1, 0.3, 1] as const;
+const ease = [0.20, 0.90, 0.30, 1.00] as const;
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -154,7 +154,7 @@ export default function SharePage() {
             className={cn(
               "px-5 py-2.5 rounded-xl text-sm font-medium",
               "bg-accent hover:bg-accent/90 text-white",
-              "shadow-[0_0_15px_rgba(108,99,255,0.3)]",
+              "shadow-[0_0_15px_rgba(129,140,248,0.25)]",
               "transition-all duration-200",
             )}
           >
@@ -177,7 +177,7 @@ export default function SharePage() {
       {/* ── Header ── */}
       <header className="border-b border-white/[0.06] bg-bg/80 backdrop-blur-md sticky top-0 z-30">
         <div className="max-w-4xl mx-auto px-6 py-4 flex items-center gap-3">
-          <span className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center shadow-[0_0_14px_rgba(108,99,255,0.3)]">
+          <span className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center shadow-[0_0_14px_rgba(129,140,248,0.25)]">
             <CortexMark />
           </span>
           <span className="font-semibold text-sm tracking-tight">Cortex</span>
@@ -227,7 +227,7 @@ export default function SharePage() {
               className={cn(
                 "px-5 py-2.5 rounded-xl text-sm font-medium",
                 "bg-accent hover:bg-accent/90 text-white",
-                "shadow-[0_0_20px_rgba(108,99,255,0.3)]",
+                "shadow-[0_0_20px_rgba(129,140,248,0.25)]",
                 "transition-all duration-200",
                 "disabled:opacity-50 disabled:cursor-not-allowed",
               )}

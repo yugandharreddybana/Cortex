@@ -170,7 +170,7 @@ export default function FolderPage() {
                 <Popover.Content
                   sideOffset={8}
                   align="start"
-                  className="z-50 w-64 rounded-xl p-4 bg-[#1c1c1c] border border-white/[0.09] shadow-[0_12px_40px_rgba(0,0,0,0.55)] data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
+                  className="z-50 w-64 rounded-xl p-4 bg-elevated/90 backdrop-blur-2xl border border-white/[0.06] shadow-spatial-lg data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
                 >
                   <h4 className="text-sm font-semibold text-white/90 mb-1">
                     {ROLE_INFO[folder.effectiveRole]?.label || "Access Level"}
@@ -213,7 +213,7 @@ export default function FolderPage() {
                 </AlertDialog.Trigger>
                 <AlertDialog.Portal>
                   <AlertDialog.Overlay className="fixed inset-0 z-[100] bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-                  <AlertDialog.Content className="fixed left-[50%] top-[50%] z-[101] w-full max-w-md translate-x-[-50%] translate-y-[-50%] rounded-2xl bg-[#1c1c1c] border border-white/[0.09] p-6 shadow-2xl focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
+                  <AlertDialog.Content className="fixed left-[50%] top-[50%] z-[101] w-full max-w-md translate-x-[-50%] translate-y-[-50%] rounded-2xl bg-elevated/90 backdrop-blur-2xl border border-white/[0.06] p-6 shadow-spatial-lg focus:outline-none data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95">
                     <div className="flex items-center gap-3 mb-4 text-red-400">
                       <div className="p-2 rounded-full bg-red-500/10">
                         <AlertTriangle className="w-6 h-6" />

@@ -154,21 +154,27 @@ export function DashboardLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden bg-bg text-primary">
+      {/* ── Ambient background light source ── */}
+      <div
+        aria-hidden
+        className="pointer-events-none fixed inset-0 z-0 bg-ambient-light opacity-60"
+      />
+
       {/* ── Sidebar ── */}
       <Sidebar onCmdK={() => setCmdOpen(true)} />
 
       {/* ── Main ── */}
       <main
         className={cn(
-          "flex-1 overflow-y-auto flex flex-col",
-          "bg-[#121212]",
+          "flex-1 overflow-y-auto flex flex-col relative z-[1]",
+          "bg-bg",
         )}
       >
         {/* Header */}
         <DashboardHeader />
 
-        {/* Sort pills (FIX 2) */}
-        <div className="flex items-center gap-2 px-6 pt-4 pb-2">
+        {/* Sort pills — glass pill design */}
+        <div className="flex items-center gap-2 px-6 lg:px-8 pt-4 pb-2">
           {(["recent", "oldest", "site"] as const).map((key) => {
             const labels: Record<typeof key, string> = SORT_LABELS;
             return (
@@ -176,11 +182,11 @@ export function DashboardLayout() {
                 key={key}
                 onClick={() => setSortOrder(key)}
                 className={cn(
-                  "px-3 py-1.5 rounded-lg text-xs font-medium",
-                  "transition-all duration-200 ease-snappy",
+                  "px-3.5 py-1.5 rounded-xl text-xs font-medium",
+                  "transition-all duration-200 ease-spatial",
                   sortOrder === key
-                    ? "text-primary bg-white/[0.07] border border-white/[0.12]"
-                    : "text-muted border border-white/[0.06] hover:text-secondary hover:bg-white/[0.04] hover:border-white/[0.10]",
+                    ? "text-primary bg-white/[0.08] border border-white/[0.12] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_0_12px_rgba(129,140,248,0.08)]"
+                    : "text-muted border border-transparent hover:text-secondary hover:bg-white/[0.04] hover:border-white/[0.06]",
                 )}
               >
                 {labels[key]}
@@ -189,10 +195,17 @@ export function DashboardLayout() {
           })}
         </div>
 
-        {/* Init error banner (FIX 43) */}
+        {/* Init error banner — glass card with icon */}
         {initError && (
-          <div className="mx-6 mb-2 px-4 py-3 rounded-xl bg-red-500/10 border border-red-500/20 flex items-center justify-between gap-4">
-            <p className="text-sm text-red-400">{initError}</p>
+          <div className="mx-6 lg:mx-8 mb-2 px-4 py-3 rounded-2xl glass border-danger/20 flex items-center justify-between gap-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="flex-shrink-0 w-8 h-8 rounded-xl bg-danger/10 flex items-center justify-center">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" className="text-danger" aria-hidden>
+                  <path d="M8 5v3.5M8 10.5h.01M14 8A6 6 0 112 8a6 6 0 0112 0z" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+              <p className="text-sm text-danger/80 truncate">{initError}</p>
+            </div>
             <button
               onClick={async () => {
                 setRetrying(true);
@@ -200,7 +213,7 @@ export function DashboardLayout() {
                 setRetrying(false);
               }}
               disabled={retrying}
-              className="shrink-0 text-xs font-medium px-3 py-1.5 rounded-lg bg-red-500/20 text-red-300 hover:bg-red-500/30 transition-colors disabled:opacity-50"
+              className="shrink-0 text-xs font-medium px-3.5 py-1.5 rounded-xl bg-white/[0.06] text-secondary hover:bg-white/[0.10] hover:text-primary transition-all duration-200 ease-spatial disabled:opacity-50"
             >
               {retrying ? "Retrying…" : "Retry"}
             </button>
@@ -211,7 +224,7 @@ export function DashboardLayout() {
         <ViewControlBar />
 
         {/* Content */}
-        <div className="flex-1 p-6 lg:p-8">
+        <div className="flex-1 px-6 lg:px-8 pb-6 lg:pb-8">
           <HighlightsMasonry />
         </div>
       </main>

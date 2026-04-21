@@ -60,17 +60,17 @@ export function Nav() {
     <motion.header
         initial={{ y: -16, opacity: 0 }}
         animate={{ y: 0,   opacity: 1 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.6, ease: [0.20, 0.90, 0.30, 1.00] }}
         className={cn(
           // Layout
           "fixed top-0 inset-x-0 z-40",
           "flex items-center justify-between",
           "h-14 px-6 lg:px-10",
           // Glass
-          "bg-bg/80 backdrop-blur-lg",
+          "bg-bg/70 backdrop-blur-xl",
           // Border appears only after scroll
-          "border-b transition-colors duration-300 ease-snappy",
-          scrolled ? "border-white/[0.08]" : "border-transparent",
+          "border-b transition-colors duration-300 ease-spatial",
+          scrolled ? "border-white/[0.06]" : "border-transparent",
           // Hardware accel
           "transform-gpu will-change-transform",
         )}
@@ -84,9 +84,9 @@ export function Nav() {
           <span
             className={cn(
               "w-7 h-7 rounded-lg flex items-center justify-center",
-              "bg-accent shadow-glow-sm",
-              "transition-shadow duration-250 ease-snappy",
-              "group-hover:shadow-glow",
+              "bg-accent shadow-[0_0_12px_rgba(129,140,248,0.3),inset_0_1px_0_rgba(255,255,255,0.15)]",
+              "transition-shadow duration-250 ease-spatial",
+              "group-hover:shadow-[0_0_20px_rgba(129,140,248,0.4),inset_0_1px_0_rgba(255,255,255,0.15)]",
             )}
           >
             <CortexLogoMark />
@@ -100,10 +100,10 @@ export function Nav() {
         <nav className="hidden md:flex items-center gap-1" aria-label="Main navigation">
           {NAV_LINKS.map(({ href, label }) => {
             const linkCls = cn(
-              "px-3 py-1.5 rounded-lg",
+              "px-3 py-1.5 rounded-xl",
               "text-sm text-secondary",
-              "transition-colors duration-200 ease-snappy",
-              "hover:text-primary hover:bg-white/[0.05]",
+              "transition-colors duration-200 ease-spatial",
+              "hover:text-primary hover:bg-white/[0.04]",
             );
             return href.startsWith("#") ? (
               <button
@@ -124,18 +124,18 @@ export function Nav() {
           <button
             onClick={() => setIsOpen(true)}
             className={cn(
-              "flex items-center gap-2 ml-2 px-3 py-1.5 rounded-lg",
-              "text-sm text-muted border border-white/[0.07]",
-              "bg-white/[0.03]",
-              "transition-all duration-200 ease-snappy",
-              "hover:border-white/[0.14] hover:text-secondary",
+              "flex items-center gap-2 ml-2 px-3 py-1.5 rounded-xl",
+              "text-sm text-muted border border-white/[0.06]",
+              "bg-white/[0.02]",
+              "transition-all duration-200 ease-spatial",
+              "hover:border-white/[0.10] hover:text-secondary hover:bg-white/[0.04]",
             )}
             aria-label="Open search (⌘K)"
           >
             <span>Search</span>
             <span className="flex items-center gap-0.5">
-              <kbd className="text-2xs bg-white/[0.07] border border-white/10 rounded px-1 py-0.5 font-mono">⌘</kbd>
-              <kbd className="text-2xs bg-white/[0.07] border border-white/10 rounded px-1 py-0.5 font-mono">K</kbd>
+              <kbd className="text-2xs bg-white/[0.05] border border-white/[0.08] rounded-md px-1 py-0.5 font-mono shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">⌘</kbd>
+              <kbd className="text-2xs bg-white/[0.05] border border-white/[0.08] rounded-md px-1 py-0.5 font-mono shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">K</kbd>
             </span>
           </button>
         </nav>
@@ -147,7 +147,7 @@ export function Nav() {
             className={cn(
               "hidden sm:inline-flex items-center",
               "text-sm text-secondary",
-              "transition-colors duration-200 ease-snappy hover:text-primary",
+              "transition-colors duration-200 ease-spatial hover:text-primary",
             )}
           >
             Log in

@@ -41,7 +41,7 @@ export function NewHighlightDialog({ open, onOpenChange }: NewHighlightDialogPro
       
       const children = all.filter(f => f.parentId === parentId);
       for (const child of children) {
-        // Build an explicit visual marker for hierarchy: "  └─ "
+        // build an explicit visual marker for hierarchy: "  └─ "
         const prefix = depth > 0 ? "\u00A0\u00A0".repeat(depth - 1) + "└─ " : "";
         result.push({ ...child, depth, prefix });
         walk(all, child.id, depth + 1);
@@ -57,12 +57,6 @@ export function NewHighlightDialog({ open, onOpenChange }: NewHighlightDialogPro
     return result;
   }, [folders]);
 
-  React.useEffect(() => {
-    if (open) {
-      console.log("[NewHighlightDialog] Total Folders:", folders.length);
-      console.log("[NewHighlightDialog] Unique Editable:", uniqueFolders.map(f => `${f.name} (${f.effectiveRole})`));
-    }
-  }, [open, folders, uniqueFolders]);
 
   const uniqueTags = React.useMemo(() => {
     const seen = new Set<string>();
@@ -186,8 +180,8 @@ export function NewHighlightDialog({ open, onOpenChange }: NewHighlightDialogPro
                   className={cn(
                     "relative z-50 pointer-events-auto",
                     "w-full max-w-[520px] mx-4",
-                    "bg-[#171717] border border-white/[0.09] rounded-2xl",
-                    "shadow-[0_24px_64px_rgba(0,0,0,0.6)]",
+                    "bg-elevated/90 backdrop-blur-2xl border border-white/[0.06] rounded-2xl",
+                    "shadow-spatial-lg",
                     "p-6 outline-none",
                   )}
                 >
@@ -203,6 +197,7 @@ export function NewHighlightDialog({ open, onOpenChange }: NewHighlightDialogPro
                     </div>
                     <Dialog.Close asChild>
                       <button
+                        type="button"
                         className={cn(
                           "w-7 h-7 rounded-lg flex items-center justify-center shrink-0",
                           "text-white/40 hover:text-white/80",
@@ -265,8 +260,9 @@ export function NewHighlightDialog({ open, onOpenChange }: NewHighlightDialogPro
                   <div className="grid grid-cols-2 gap-4 mb-6">
                     {/* Folder Selection */}
                     <div className="space-y-1.5">
-                      <label className="text-xs font-medium text-white/50">Folder</label>
+                      <label className="text-xs font-medium text-white/50" htmlFor="nh-folder">Folder</label>
                       <select
+                        id="nh-folder"
                         value={selectedFolder || ""}
                         onChange={(e) => setSelectedFolder(e.target.value || undefined)}
                         disabled={saving}
@@ -294,6 +290,7 @@ export function NewHighlightDialog({ open, onOpenChange }: NewHighlightDialogPro
                       <Popover.Root open={popoverOpen} onOpenChange={setPopoverOpen}>
                         <Popover.Trigger asChild>
                           <button
+                            type="button"
                             disabled={saving}
                             className={cn(
                               "w-full h-10 rounded-xl flex items-center justify-between",
@@ -322,7 +319,7 @@ export function NewHighlightDialog({ open, onOpenChange }: NewHighlightDialogPro
                             sideOffset={8}
                             className={cn(
                               "z-[60] w-[220px] sm:w-[240px]", 
-                              "bg-[#1c1c1c] border border-white/[0.09] rounded-xl shadow-[0_12px_48px_rgba(0,0,0,0.6)]",
+                              "bg-elevated/90 backdrop-blur-2xl border border-white/[0.06] rounded-xl shadow-spatial-lg",
                               "p-2 outline-none flex flex-col gap-1",
                               "animate-in fade-in zoom-in-95 duration-200"
                             )}
@@ -344,7 +341,7 @@ export function NewHighlightDialog({ open, onOpenChange }: NewHighlightDialogPro
                                   return (
                                     <span key={id} className="inline-flex items-center gap-1 bg-white/[0.08] px-2 py-0.5 rounded border border-white/[0.1] text-xs text-white">
                                       {tag.name}
-                                      <button onClick={(e) => { e.stopPropagation(); toggleTag(id); }} className="hover:text-white/50 text-[10px]">&times;</button>
+                                      <button type="button" onClick={(e) => { e.stopPropagation(); toggleTag(id); }} className="hover:text-white/50 text-[10px]" aria-label={`Remove ${tag.name}`}>&times;</button>
                                     </span>
                                   );
                                 })}
@@ -359,6 +356,7 @@ export function NewHighlightDialog({ open, onOpenChange }: NewHighlightDialogPro
                                   {filteredTags.map(tag => (
                                     <button
                                       key={tag.id}
+                                      type="button"
                                       onClick={() => toggleTag(tag.id)}
                                       className="w-full text-left px-3 py-2 rounded-md hover:bg-white/[0.06] text-xs text-white/80 transition-colors"
                                     >
@@ -378,6 +376,7 @@ export function NewHighlightDialog({ open, onOpenChange }: NewHighlightDialogPro
                   <div className="flex items-center justify-end gap-3 mt-4">
                     <Dialog.Close asChild>
                       <button
+                        type="button"
                         className={cn(
                           "h-9 px-4 rounded-xl text-sm",
                           "text-white/50 hover:text-white/80",
@@ -389,6 +388,7 @@ export function NewHighlightDialog({ open, onOpenChange }: NewHighlightDialogPro
                     </Dialog.Close>
 
                     <button
+                      type="button"
                       onClick={handleSave}
                       disabled={!text.trim() || saving}
                       className={cn(

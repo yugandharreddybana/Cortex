@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import Link from "next/link";
@@ -7,7 +7,7 @@ import { cn } from "@cortex/ui";
 import { Button } from "@cortex/ui";
 import { Badge } from "@cortex/ui";
 
-// ─── Stagger config ───────────────────────────────────────────────────────────
+// â”€â”€â”€ Stagger config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 const fadeUp = {
   hidden:  { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0  },
@@ -20,10 +20,10 @@ const staggerContainer = {
 
 const itemTransition = {
   duration: 0.7,
-  ease:     [0.16, 1, 0.3, 1] as [number, number, number, number],
+  ease:     [0.20, 0.90, 0.30, 1.00] as [number, number, number, number],
 };
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export function Hero() {
   return (
     <section
@@ -35,7 +35,7 @@ export function Hero() {
       )}
       aria-label="Hero section"
     >
-      {/* ── Radial glow behind text ── */}
+      {/* â”€â”€ Radial glow behind text â”€â”€ */}
       <div
         aria-hidden
         className={cn(
@@ -47,18 +47,18 @@ export function Hero() {
         )}
       />
 
-      {/* ── Background mesh ── */}
+      {/* â”€â”€ Background mesh â”€â”€ */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-mesh-gradient -z-10"
       />
 
-      {/* ── Spotlight orb ── */}
+      {/* â”€â”€ Spotlight orb â”€â”€ */}
       <motion.div
         aria-hidden
         initial={{ opacity: 0, scale: 0.5 }}
         animate={{ opacity: 1, scale: 1  }}
-        transition={{ duration: 1.4, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 1.4, ease: [0.20, 0.90, 0.30, 1.00] }}
         className={cn(
           "pointer-events-none absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2",
           "w-[600px] h-[600px] rounded-full",
@@ -67,7 +67,7 @@ export function Hero() {
         )}
       />
 
-      {/* ── Content ── */}
+      {/* â”€â”€ Content â”€â”€ */}
       <motion.div
         className="flex flex-col items-center text-center max-w-4xl mx-auto z-10"
         variants={staggerContainer}
@@ -100,7 +100,7 @@ export function Hero() {
           <span
             className={cn(
               "bg-clip-text text-transparent",
-              "bg-gradient-to-r from-[#8B5CF6] via-[#A78BFA] to-[#06B6D4]",
+              "bg-gradient-to-r from-accent via-accent-light to-[#06B6D4]",
             )}
           >
             perfectly indexed.
@@ -117,7 +117,7 @@ export function Hero() {
             "mb-10",
           )}
         >
-          Cortex captures every highlight, article, and note you encounter —
+          Cortex captures every highlight, article, and note you encounter â€”
           then resurfaces it with AI-powered context exactly when you need it.
           Your second brain, running at the speed of thought.
         </motion.p>
@@ -128,12 +128,12 @@ export function Hero() {
           transition={itemTransition}
           className="flex flex-wrap justify-center gap-2 mb-10 text-xs font-medium text-white/50"
         >
-          <span className="px-3 py-1.5 rounded-full border border-white/10 bg-white/5">Auto-Draft Essays</span>
-          <span className="px-3 py-1.5 rounded-full border border-white/10 bg-white/5">Devil&apos;s Advocate</span>
-          <span className="px-3 py-1.5 rounded-full border border-white/10 bg-white/5">Connect the Dots</span>
-          <span className="px-3 py-1.5 rounded-full border border-white/10 bg-white/5">Suggest Action Items</span>
-          <span className="px-3 py-1.5 rounded-full border border-white/10 bg-white/5">Custom Prompts</span>
-          <span className="px-3 py-1.5 rounded-full border border-white/10 bg-white/5">AI Source Context</span>
+          <span className="px-3 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.03]">Auto-Draft Essays</span>
+          <span className="px-3 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.03]">Devil&apos;s Advocate</span>
+          <span className="px-3 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.03]">Connect the Dots</span>
+          <span className="px-3 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.03]">Suggest Action Items</span>
+          <span className="px-3 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.03]">Custom Prompts</span>
+          <span className="px-3 py-1.5 rounded-full border border-white/[0.06] bg-white/[0.03]">AI Source Context</span>
         </motion.div>
 
         {/* CTAs */}
@@ -142,13 +142,13 @@ export function Hero() {
           transition={itemTransition}
           className="flex flex-col sm:flex-row items-center gap-3"
         >
-          {/* Primary — Sign up */}
+          {/* Primary â€” Sign up */}
           <a href="/signup">
             <Button size="lg" shine>
               Get Started Free
             </Button>
           </a>
-          {/* Secondary — Chrome Web Store */}
+          {/* Secondary â€” Chrome Web Store */}
           <a
             href="https://chrome.google.com/webstore/detail/mock-cortex-id"
             target="_blank"
@@ -167,22 +167,22 @@ export function Hero() {
           transition={itemTransition}
           className="mt-8 text-sm text-muted"
         >
-          No credit card ·{" "}
+          No credit card Â·{" "}
           <span className="text-secondary">14-day free trial</span>
-          {" "}· Chrome & Firefox
+          {" "}Â· Chrome & Firefox
         </motion.p>
       </motion.div>
 
-      {/* ── Hero graphic / mock ── */}
+      {/* â”€â”€ Hero graphic / mock â”€â”€ */}
       <motion.div
         initial={{ opacity: 0, y: 40, scale: 0.97 }}
         animate={{ opacity: 1, y: 0,  scale: 1    }}
-        transition={{ delay: 0.45, duration: 1.0, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ delay: 0.45, duration: 1.0, ease: [0.20, 0.90, 0.30, 1.00] }}
         className={cn(
           "relative mt-20 w-full max-w-5xl",
           "rounded-3xl overflow-hidden",
-          "border border-white/[0.08]",
-          "shadow-[0_0_0_1px_rgba(255,255,255,0.04),inset_0_1px_0_rgba(255,255,255,0.08),0_30px_80px_rgba(0,0,0,0.7)]",
+          "border border-white/[0.06]",
+          "shadow-[0_0_0_1px_rgba(255,255,255,0.03),inset_0_1px_0_rgba(255,255,255,0.06),0_30px_80px_rgba(0,0,0,0.6)]",
           "transform-gpu will-change-transform",
           "bg-surface",
         )}
@@ -212,7 +212,7 @@ export function Hero() {
   );
 }
 
-// ─── Icon helpers ─────────────────────────────────────────────────────────────
+// â”€â”€â”€ Icon helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function ChromeIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -238,7 +238,7 @@ function ArrowRight() {
 
 function PlayIcon() {
   return (
-    <span className="w-7 h-7 rounded-full flex items-center justify-center border border-white/10 bg-white/[0.07] group-hover:bg-white/[0.12] transition-colors duration-200 ease-snappy">
+    <span className="w-7 h-7 rounded-full flex items-center justify-center border border-white/[0.08] bg-white/[0.05] group-hover:bg-white/[0.10] transition-colors duration-200 ease-spatial">
       <svg width="10" height="10" viewBox="0 0 10 10" fill="currentColor" aria-hidden="true">
         <path d="M2 1.5l6 3.5-6 3.5V1.5z" />
       </svg>
@@ -248,23 +248,23 @@ function PlayIcon() {
 
 function DashboardPlaceholder() {
   const sidebarItems = [
-    { icon: "◻", label: "All Highlights", count: "211", active: true },
-    { icon: "★", label: "Favorites", count: "12", active: false },
-    { icon: "▣", label: "Archive", count: "", active: false },
+    { icon: "â—»", label: "All Highlights", count: "211", active: true },
+    { icon: "â˜…", label: "Favorites", count: "12", active: false },
+    { icon: "â–£", label: "Archive", count: "", active: false },
   ];
 
   const folders: any[] = [];
 
   const cards = [
-    { topic: "Technology", topicColor: "bg-blue-500/20 text-blue-300", text: "The best way to predict the future is to invent it. Personal computing was a direct result of this philosophy…", source: "The Dream Machine", time: "2h ago" },
-    { topic: "Productivity", topicColor: "bg-emerald-500/20 text-emerald-300", text: "Attention is the new oil. But unlike oil, it can be regenerated — through rest, deep work, and ruthless subtraction…", source: "Deep Work — Cal Newport", time: "5h ago" },
-    { topic: "Design", topicColor: "bg-violet-500/20 text-violet-300", text: "Design is not just what it looks like and feels like. Design is how it works…", source: "Steve Jobs — Fortune 2003", time: "1d ago" },
-    { topic: "AI", topicColor: "bg-pink-500/20 text-pink-300", text: "Language models learn statistical regularities so well that they begin to capture semantic structure…", source: "Anthropic Research", time: "2d ago" },
+    { topic: "Technology", topicColor: "bg-blue-500/20 text-blue-300", text: "The best way to predict the future is to invent it. Personal computing was a direct result of this philosophyâ€¦", source: "The Dream Machine", time: "2h ago" },
+    { topic: "Productivity", topicColor: "bg-emerald-500/20 text-emerald-300", text: "Attention is the new oil. But unlike oil, it can be regenerated â€” through rest, deep work, and ruthless subtractionâ€¦", source: "Deep Work â€” Cal Newport", time: "5h ago" },
+    { topic: "Design", topicColor: "bg-violet-500/20 text-violet-300", text: "Design is not just what it looks like and feels like. Design is how it worksâ€¦", source: "Steve Jobs â€” Fortune 2003", time: "1d ago" },
+    { topic: "AI", topicColor: "bg-pink-500/20 text-pink-300", text: "Language models learn statistical regularities so well that they begin to capture semantic structureâ€¦", source: "Anthropic Research", time: "2d ago" },
   ];
 
   return (
     <div className="w-full h-full flex select-none pointer-events-none" style={{ fontSize: "10px" }}>
-      {/* ── Mini sidebar ── */}
+      {/* â”€â”€ Mini sidebar â”€â”€ */}
       <div className="w-[160px] shrink-0 border-r border-white/[0.06] flex flex-col py-3 px-2 gap-0.5 hidden sm:flex">
         {/* Logo */}
         <div className="flex items-center gap-1.5 px-2 pb-3 mb-1 border-b border-white/[0.06]">
@@ -277,8 +277,8 @@ function DashboardPlaceholder() {
         {/* Search */}
         <div className="mx-1 mb-2 px-2 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.07] text-white/25 flex items-center gap-1.5">
           <svg width="8" height="8" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"><path d="M7 13A6 6 0 107 1a6 6 0 000 12zM13 13l2 2" /></svg>
-          <span>Search…</span>
-          <span className="ml-auto text-white/15 font-mono" style={{ fontSize: "8px" }}>⌘K</span>
+          <span>Searchâ€¦</span>
+          <span className="ml-auto text-white/15 font-mono" style={{ fontSize: "8px" }}>âŒ˜K</span>
         </div>
 
         {/* Nav items */}
@@ -317,7 +317,7 @@ function DashboardPlaceholder() {
         ))}
       </div>
 
-      {/* ── Main content ── */}
+      {/* â”€â”€ Main content â”€â”€ */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header bar */}
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06]">
@@ -333,7 +333,7 @@ function DashboardPlaceholder() {
             <motion.div
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
-              transition={{ delay: 1.6, duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              transition={{ delay: 1.6, duration: 0.4, ease: [0.20, 0.90, 0.30, 1.00] }}
               className="px-2.5 py-1 rounded-lg bg-accent text-white font-medium flex items-center gap-1"
               style={{ fontSize: "9px" }}
             >
@@ -350,7 +350,7 @@ function DashboardPlaceholder() {
                 key={card.topic}
                 initial={{ opacity: 0, y: 12 }}
                 animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: 0.9 + i * 0.12, duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ delay: 0.9 + i * 0.12, duration: 0.5, ease: [0.20, 0.90, 0.30, 1.00] }}
                 className={cn(
                   "rounded-lg border border-white/[0.06] bg-white/[0.02] p-3",
                   "hover:border-white/[0.12] transition-colors duration-300",
@@ -379,7 +379,7 @@ function DashboardPlaceholder() {
         </div>
       </div>
 
-      {/* ── Animated cursor / interaction hints ── */}
+      {/* â”€â”€ Animated cursor / interaction hints â”€â”€ */}
       <motion.div
         className="absolute"
         style={{ top: "55%", left: "45%" }}

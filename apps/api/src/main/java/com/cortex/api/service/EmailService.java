@@ -174,10 +174,8 @@ public class EmailService {
 
             String subject = "Verify your Cortex account";
             String body = "Please click the following link to verify your account: " + verificationLink;
-            sendEmail(email, subject, body);
             log.info("[Email] Sending verification email to: {}", email);
-            sendEmail(email, "Verify your Cortex account",
-                    "Please click the following link to verify your account: " + verificationLink);
+            sendEmail(email, subject, body);
 
         } catch (Exception e) {
             log.error("[Email] Failed to send verification email", e);

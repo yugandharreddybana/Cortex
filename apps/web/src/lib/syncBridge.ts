@@ -22,7 +22,6 @@
 
 "use client";
 
-const LOG = "[Cortex Sync - Web]";
 
 export type SyncEntity = "highlight" | "folder" | "tag";
 export type SyncAction = "CREATE" | "UPDATE" | "DELETE" | "MOVE";
@@ -73,12 +72,10 @@ export function pushToExtension(
     offline:   opts?.offline,
   };
 
-  console.log(`${LOG} → Mutation`, action, entity, opts?.tempId ?? String(payload.id ?? ""));
-
   try {
     window.postMessage(msg, window.location.origin);
-  } catch (err) {
-    console.warn(`${LOG} postMessage failed`, err);
+  } catch {
+    // postMessage can fail if the window context is torn down — safe to ignore
   }
 }
 
@@ -94,7 +91,6 @@ export function registerOnlineFlush(): () => void {
   if (typeof window === "undefined") return () => {};
 
   const flush = () => {
-    console.log(`${LOG} Network restored — flushing offline extension queue`);
     try {
       window.postMessage(
         { type: "CORTEX_OFFLINE_FLUSH", timestamp: Date.now() },

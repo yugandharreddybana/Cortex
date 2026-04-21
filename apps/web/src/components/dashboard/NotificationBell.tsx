@@ -179,17 +179,17 @@ export function NotificationBell() {
         <button
           type="button"
           className={cn(
-            "relative w-8 h-8 rounded-lg",
+            "relative w-9 h-9 rounded-xl",
             "flex items-center justify-center",
-            "text-white/40 hover:text-white/70",
-            "hover:bg-white/[0.06]",
-            "transition-all duration-150",
+            "text-white/35 hover:text-white/65",
+            "hover:bg-white/[0.05]",
+            "transition-all duration-200 ease-spatial",
           )}
           aria-label="Notifications"
         >
           <BellIcon />
           {unreadNotifCount > 0 && (
-            <span className="bg-red-500 w-2 h-2 rounded-full absolute top-0 right-0 animate-pulse" />
+            <span className="bg-danger w-2 h-2 rounded-full absolute top-0.5 right-0.5 shadow-[0_0_6px_rgba(248,113,113,0.5)]" />
           )}
         </button>
       </Popover.Trigger>
@@ -199,9 +199,9 @@ export function NotificationBell() {
           sideOffset={8}
           align="center"
           className={cn(
-            "z-50 w-80 rounded-xl",
-            "bg-surface border border-white/10",
-            "shadow-[0_16px_64px_rgba(0,0,0,0.5)]",
+            "z-50 w-80 rounded-2xl",
+            "bg-elevated/90 backdrop-blur-2xl border border-white/[0.08]",
+            "shadow-spatial-lg",
             "animate-in fade-in slide-in-from-top-2 duration-200",
             "overflow-hidden",
           )}

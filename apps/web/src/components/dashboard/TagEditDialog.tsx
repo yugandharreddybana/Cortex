@@ -83,8 +83,8 @@ export function TagEditDialog({ tag, open, onOpenChange }: TagEditDialogProps) {
             className={cn(
               "relative z-50 pointer-events-auto",
               "w-full max-w-md",
-              "rounded-2xl border border-white/[0.09] bg-[#181818]",
-              "shadow-[0_24px_64px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.07)]",
+              "rounded-2xl border border-white/[0.06] bg-elevated/90 backdrop-blur-2xl",
+              "shadow-spatial-lg",
               "p-6 focus:outline-none",
               "data-[state=open]:animate-in data-[state=closed]:animate-out",
               "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
@@ -133,10 +133,10 @@ export function TagEditDialog({ tag, open, onOpenChange }: TagEditDialogProps) {
                         className={cn(
                           "w-9 h-9 rounded-full border-2 border-white/15 flex items-center justify-center shadow-md transition-all duration-150 focus:outline-none focus:ring-2 focus:ring-accent",
                           color === c.key
-                            ? "ring-2 ring-offset-2 ring-accent scale-110 border-accent shadow-[0_0_0_4px_rgba(108,99,255,0.18)] outline-none"
+                            ? "ring-2 ring-offset-2 ring-accent scale-110 border-accent shadow-[0_0_0_4px_rgba(129,140,248,0.18)] outline-none"
                             : "opacity-90 hover:opacity-100 hover:scale-110 hover:shadow-lg",
                         )}
-                        style={{ background: c.key, boxShadow: color === c.key ? '0 0 0 4px rgba(108,99,255,0.18), 0 2px 12px rgba(0,0,0,0.13)' : undefined }}
+                        style={{ background: c.key, boxShadow: color === c.key ? '0 0 0 4px rgba(129,140,248,0.18), 0 2px 12px rgba(0,0,0,0.13)' : undefined }}
                         aria-label={c.name}
                       >
                         {color === c.key && (
@@ -160,7 +160,7 @@ export function TagEditDialog({ tag, open, onOpenChange }: TagEditDialogProps) {
                       <span
                         className={cn(
                           "w-9 h-9 rounded-full border-2 border-white/15 flex items-center justify-center transition-all duration-150",
-                          !DEFAULT_COLORS.some((c) => c.key === color) && "ring-2 ring-offset-2 ring-accent scale-110 border-accent shadow-[0_0_0_4px_rgba(108,99,255,0.18)]"
+                          !DEFAULT_COLORS.some((c) => c.key === color) && "ring-2 ring-offset-2 ring-accent scale-110 border-accent shadow-[0_0_0_4px_rgba(129,140,248,0.18)]"
                         )}
                         style={{ background: DEFAULT_COLORS.some((c) => c.key === color) ? "linear-gradient(135deg,#a855f7,#3b82f6,#10b981)" : color }}
                         title="Custom color"
@@ -202,7 +202,7 @@ export function TagEditDialog({ tag, open, onOpenChange }: TagEditDialogProps) {
                     "h-9 px-5 rounded-xl min-w-[80px]",
                     "text-sm font-medium text-white",
                     "bg-accent hover:bg-accent/90",
-                    "shadow-[0_0_16px_rgba(108,99,255,0.25)]",
+                    "shadow-[0_0_16px_rgba(129,140,248,0.25)]",
                     "transition-all duration-150",
                     "disabled:opacity-40 disabled:cursor-not-allowed",
                   )}

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,7 +15,7 @@ export function PremiumLoader() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.4, ease: [0.20, 0.90, 0.30, 1.00] }}
           className={cn(
             "fixed inset-0 z-[9999] flex items-center justify-center",
             "bg-black/40 backdrop-blur-md",

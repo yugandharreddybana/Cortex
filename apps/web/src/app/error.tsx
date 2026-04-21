@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect } from "react";
 import Link from "next/link";
@@ -16,11 +16,11 @@ export default function Error({
   }, [error]);
 
   return (
-    <div className="min-h-screen bg-[#0A0A0A] flex flex-col items-center justify-center px-6">
+    <div className="min-h-screen bg-bg flex flex-col items-center justify-center px-6">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0  }}
-        transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+        transition={{ duration: 0.55, ease: [0.20, 0.90, 0.30, 1.00] }}
         className="flex flex-col items-center text-center max-w-sm"
       >
         {/* Icon */}
@@ -51,7 +51,7 @@ export default function Error({
           We lost our train of thought.
         </h1>
         <p className="text-sm text-white/40 leading-relaxed mb-1">
-          Something unexpected happened. Your data is safe — this is just a
+          Something unexpected happened. Your data is safe â€” this is just a
           temporary hiccup.
         </p>
         {error.digest && (
@@ -70,7 +70,7 @@ export default function Error({
           </button>
           <Link
             href="/dashboard"
-            className="h-10 px-5 rounded-xl border border-white/[0.09] text-white/55 text-sm font-medium hover:text-white/80 hover:bg-white/[0.04] active:scale-[0.97] transition-all duration-150 transform-gpu"
+            className="h-10 px-5 rounded-xl border border-white/[0.06] text-white/55 text-sm font-medium hover:text-white/80 hover:bg-white/[0.04] active:scale-[0.97] transition-all duration-150 transform-gpu"
           >
             Back to Dashboard
           </Link>

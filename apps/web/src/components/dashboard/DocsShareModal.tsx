@@ -290,7 +290,7 @@ export function DocsShareModal({
                 exit={{ opacity: 0, scale: 0.96 }}
                 transition={{ duration: 0.2 }}
               >
-                <div className="w-full max-w-[500px] rounded-2xl bg-[#1a1a1a] border border-white/[0.08] shadow-2xl overflow-hidden">
+                <div className="w-full max-w-[500px] rounded-2xl bg-elevated/90 backdrop-blur-2xl border border-white/[0.06] shadow-spatial-lg overflow-hidden">
                   {/* ── Header ── */}
                   <div className="px-6 pt-5 pb-3 flex items-center justify-between">
                     <Dialog.Title className="text-[15px] font-semibold text-white">
@@ -389,7 +389,7 @@ export function DocsShareModal({
                   </div>
 
                   {/* ── Section 2: General access ── */}
-                  <div className="mx-6 mb-4 p-4 rounded-xl bg-[#121212] border border-white/[0.06]">
+                  <div className="mx-6 mb-4 p-4 rounded-xl bg-bg border border-white/[0.06]">
                     <p className="text-xs font-medium text-white/40 uppercase tracking-wider mb-3">
                       General access
                     </p>
@@ -546,7 +546,7 @@ function RoleDropdown({
         <DropdownMenu.Content
           sideOffset={4}
           align="end"
-          className="z-[200] min-w-[140px] rounded-xl bg-[#1e1e1e] border border-white/[0.1] shadow-2xl p-1 animate-in fade-in slide-in-from-top-1"
+          className="z-[200] min-w-[140px] rounded-xl bg-elevated/90 backdrop-blur-2xl border border-white/[0.06] shadow-spatial-lg p-1 animate-in fade-in slide-in-from-top-1"
         >
           {ROLE_OPTIONS.map((role) => (
             <DropdownMenu.Item
@@ -609,7 +609,7 @@ function LinkAccessDropdown({
         <DropdownMenu.Content
           sideOffset={4}
           align="start"
-          className="z-[200] min-w-[200px] rounded-xl bg-[#1e1e1e] border border-white/[0.1] shadow-2xl p-1 animate-in fade-in slide-in-from-top-1"
+          className="z-[200] min-w-[200px] rounded-xl bg-elevated/90 backdrop-blur-2xl border border-white/[0.06] shadow-spatial-lg p-1 animate-in fade-in slide-in-from-top-1"
         >
           <DropdownMenu.Item
             onSelect={() => onChange("RESTRICTED")}

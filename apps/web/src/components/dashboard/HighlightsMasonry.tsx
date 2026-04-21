@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
@@ -21,7 +21,7 @@ import { RequestAccessModal } from "./RequestAccessModal";
 import { Lock, ShieldAlert } from "lucide-react";
 import { formatSourceUrl } from "@/lib/url";
 
-// ─── Helpers ──────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 
 function formatVideoTime(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -40,7 +40,7 @@ function extractYouTubeId(url: string): string | null {
   return null;
 }
 
-// ─── Component ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => boolean } = {}) {
   const router                = useRouter();
   const allHighlights         = useDashboardStore((s) => s.highlights);
@@ -86,7 +86,7 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
     // Hide archived in main view (when no filterFn)
     if (!filterFn) list = list.filter((h) => !h.isArchived);
 
-    // Tags (intersection — highlight must have ALL selected tags)
+    // Tags (intersection â€” highlight must have ALL selected tags)
     if (activeTagFilters.length > 0) {
       list = list.filter((h) =>
         activeTagFilters.every((t) => h.tags?.some((ht) => String(ht.id) === String(t))) ?? false,
@@ -170,7 +170,7 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
 
           return (
             <div className="flex flex-col items-center justify-center py-24 gap-4">
-              <span className="text-4xl">📂</span>
+              <span className="text-4xl">ðŸ“‚</span>
               <p className="text-sm font-medium text-white/50">This folder is empty</p>
               <p className="text-xs text-white/30 text-center max-w-xs">
                 {canEditInFolder 
@@ -274,8 +274,8 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
               "group relative px-8 py-3 rounded-2xl",
               "bg-surface border border-white/[0.06]",
               "text-sm font-medium text-white/50 hover:text-white",
-              "transition-all duration-300 ease-snappy",
-              "hover:border-white/20 hover:shadow-glass",
+              "transition-all duration-300 ease-spatial",
+              "hover:border-white/[0.12] hover:shadow-spatial-sm",
               "overflow-hidden transform-gpu active:scale-[0.98]"
             )}
           >
@@ -312,7 +312,7 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
     </>
   );
 }
-// ─── Empty state icons ────────────────────────────────────────────────────────
+// â”€â”€â”€ Empty state icons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function SearchXIcon() {
   return (
     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/20">
@@ -334,7 +334,7 @@ function FilterXIcon() {
   );
 }
 
-// ─── Grid Card ────────────────────────────────────────────────────────────────
+// â”€â”€â”€ Grid Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function HighlightCard({
   highlight: h,
   index,
@@ -395,25 +395,24 @@ function HighlightCard({
       transition={{
         duration: 0.5,
         delay:    index * 0.07,
-        ease:     [0.16, 1, 0.3, 1],
+        ease:     [0.20, 0.90, 0.30, 1.00],
       }}
       className={cn(
         // Masonry break
         "break-inside-avoid mb-4",
         // Card surface
         "relative group/card overflow-hidden",
-        "bg-surface rounded-xl",
+        "bg-surface rounded-2xl",
         "p-5",
-        // Border — dynamic on selection
-        "border transition-colors duration-150",
-        isSelected ? "border-white/70" : "border-white/[0.06] hover:border-white/[0.14]",
+        // Border â€” dynamic on selection
+        "border transition-all duration-200 ease-spatial",
+        isSelected ? "border-white/70" : "border-white/[0.06] hover:border-white/[0.10]",
         isFocused && "ring-2 ring-white/50",
         // Pinned glow top border
-        h.isPinned && "border-t-2 border-t-accent/50",
+        h.isPinned && "border-t-2 border-t-accent/40",
         // Interaction
         "cursor-pointer",
-        "transition-all duration-250 ease-snappy",
-        "hover:shadow-glass",
+        "hover:shadow-spatial-sm",
         "active:scale-[0.99] transform-gpu will-change-transform",
       )}
       onClick={onOpen}
@@ -454,11 +453,11 @@ function HighlightCard({
         className={cn(
           "pointer-events-none absolute inset-0 rounded-[inherit]",
           "opacity-0 group-hover/card:opacity-100",
-          "transition-opacity duration-300 ease-snappy",
+          "transition-opacity duration-300 ease-spatial",
         )}
         style={{
           background:
-            "radial-gradient(280px circle at 50% -10%, rgba(108,99,255,0.08) 0%, transparent 70%)",
+            "radial-gradient(280px circle at 50% -10%, rgba(129,140,248,0.07) 0%, transparent 70%)",
         }}
       />
 
@@ -583,10 +582,10 @@ function HighlightCard({
                 sideOffset={4}
                 align="end"
                 className={cn(
-                  "z-50 min-w-[160px] rounded-xl overflow-hidden",
-                  "bg-[#1c1c1c] border border-white/[0.09]",
-                  "shadow-[0_8px_32px_rgba(0,0,0,0.5)]",
-                  "p-1",
+                  "z-50 min-w-[160px] rounded-2xl overflow-hidden",
+                  "bg-elevated/90 backdrop-blur-2xl border border-white/[0.08]",
+                  "shadow-spatial-lg",
+                  "p-1.5",
                   "data-[state=open]:animate-in data-[state=closed]:animate-out",
                   "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
                   "data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95",
@@ -667,17 +666,17 @@ function HighlightCard({
                     )}
                   >
                     <FolderMoveIcon />
-                    Move to…
-                    <span className="ml-auto text-white/30 text-[10px]">▸</span>
+                    Move toâ€¦
+                    <span className="ml-auto text-white/30 text-[10px]">â–¸</span>
                   </DropdownMenu.SubTrigger>
                   <DropdownMenu.Portal>
                     <DropdownMenu.SubContent
                       sideOffset={4}
                       className={cn(
                         "z-50 min-w-[160px] max-h-[280px] overflow-y-auto rounded-xl",
-                        "bg-[#1c1c1c] border border-white/[0.09]",
-                        "shadow-[0_8px_32px_rgba(0,0,0,0.5)]",
-                        "p-1",
+                        "bg-elevated/90 backdrop-blur-2xl border border-white/[0.08]",
+                        "shadow-spatial-md",
+                        "p-1.5",
                         "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
                       )}
                     >
@@ -842,7 +841,7 @@ function HighlightCard({
               <path d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.38.55A3.02 3.02 0 0 0 .5 6.19 31.67 31.67 0 0 0 0 12a31.67 31.67 0 0 0 .5 5.81 3.02 3.02 0 0 0 2.12 2.14c1.88.55 9.38.55 9.38.55s7.5 0 9.38-.55a3.02 3.02 0 0 0 2.12-2.14A31.67 31.67 0 0 0 24 12a31.67 31.67 0 0 0-.5-5.81zM9.75 15.02V8.98L15.5 12l-5.75 3.02z" />
             </svg>
             <span className="truncate max-w-[160px]">
-              YouTube{h.videoTimestamp != null ? ` · ${formatVideoTime(h.videoTimestamp)}` : ""}
+              YouTube{h.videoTimestamp != null ? ` Â· ${formatVideoTime(h.videoTimestamp)}` : ""}
             </span>
           </a>
         ) : (
@@ -916,7 +915,7 @@ function HighlightCard({
   );
 }
 
-// ─── Micro-icons ──────────────────────────────────────────────────────────────
+// â”€â”€â”€ Micro-icons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function PinIcon({ filled }: { filled: boolean }) {
   return (
     <svg width="12" height="12" viewBox="0 0 16 16" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -992,7 +991,7 @@ function CopyIcon() {
   );
 }
 
-// ─── Folder Tree Sub-Menu (recursive for nested folders) ──────────────────────
+// â”€â”€â”€ Folder Tree Sub-Menu (recursive for nested folders) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function FolderTreeMenu({
   folders,
   onSelect,
@@ -1045,15 +1044,15 @@ function FolderTreeMenu({
               >
                 <span className="text-sm leading-none shrink-0">{folder.emoji}</span>
                 <span className="flex-1 truncate">{folder.name}</span>
-                <span className="text-white/30 text-[10px]">▸</span>
+                <span className="text-white/30 text-[10px]">â–¸</span>
               </DropdownMenu.SubTrigger>
               <DropdownMenu.Portal>
                 <DropdownMenu.SubContent
                   sideOffset={4}
                   className={cn(
                     "z-50 min-w-[140px] max-h-[240px] overflow-y-auto rounded-xl",
-                    "bg-[#1c1c1c] border border-white/[0.09]",
-                    "shadow-[0_8px_32px_rgba(0,0,0,0.5)]",
+                    "bg-elevated/90 backdrop-blur-2xl border border-white/[0.06]",
+                    "shadow-spatial-lg",
                     "p-1",
                     "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
                   )}
@@ -1129,7 +1128,7 @@ function ReadIcon() {
   );
 }
 
-// ─── List Row ─────────────────────────────────────────────────────────────────
+// â”€â”€â”€ List Row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function HighlightListRow({
   highlight: h,
   index,
@@ -1182,7 +1181,7 @@ function HighlightListRow({
     <motion.div
       initial={{ opacity: 0, x: -8 }}
       animate={{ opacity: 1, x: 0 }}
-      transition={{ duration: 0.3, delay: index * 0.03, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.3, delay: index * 0.03, ease: [0.20, 0.90, 0.30, 1.00] }}
       className={cn(
         "group/row flex items-center gap-3 py-2.5 px-2 rounded-lg",
         "cursor-pointer transition-all duration-150",
@@ -1306,8 +1305,8 @@ function HighlightListRow({
               align="end"
               className={cn(
                 "z-50 min-w-[160px] rounded-xl overflow-hidden",
-                "bg-[#1c1c1c] border border-white/[0.09]",
-                "shadow-[0_8px_32px_rgba(0,0,0,0.5)]",
+                "bg-elevated/90 backdrop-blur-2xl border border-white/[0.06]",
+                "shadow-spatial-lg",
                 "p-1",
                 "data-[state=open]:animate-in data-[state=closed]:animate-out",
                 "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
@@ -1346,16 +1345,16 @@ function HighlightListRow({
                   )}
                 >
                   <FolderMoveIcon />
-                  Move to…
-                  <span className="ml-auto text-white/30 text-[10px]">▸</span>
+                  Move toâ€¦
+                  <span className="ml-auto text-white/30 text-[10px]">â–¸</span>
                 </DropdownMenu.SubTrigger>
                 <DropdownMenu.Portal>
                   <DropdownMenu.SubContent
                     sideOffset={4}
                     className={cn(
                       "z-50 min-w-[160px] max-h-[280px] overflow-y-auto rounded-xl",
-                      "bg-[#1c1c1c] border border-white/[0.09]",
-                      "shadow-[0_8px_32px_rgba(0,0,0,0.5)]",
+                      "bg-elevated/90 backdrop-blur-2xl border border-white/[0.06]",
+                      "shadow-spatial-lg",
                       "p-1",
                       "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
                     )}
@@ -1432,7 +1431,7 @@ function HighlightListRow({
   );
 }
 
-// ─── Rename Highlight Dialog ──────────────────────────────────────────────────
+// â”€â”€â”€ Rename Highlight Dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
 function RenameHighlightDialog({
   highlight,
   onClose,
@@ -1462,8 +1461,8 @@ function RenameHighlightDialog({
           className={cn(
             "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2",
             "w-full max-w-sm rounded-2xl p-6",
-            "bg-[#1a1a1a] border border-white/[0.09]",
-            "shadow-[0_24px_64px_rgba(0,0,0,0.6)]",
+            "bg-elevated/90 backdrop-blur-2xl border border-white/[0.06]",
+            "shadow-spatial-lg",
             "data-[state=open]:animate-in data-[state=closed]:animate-out",
             "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
             "data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95",
@@ -1480,7 +1479,7 @@ function RenameHighlightDialog({
             value={value}
             onChange={(e) => setValue(e.target.value)}
             onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") onClose(); }}
-            placeholder="Source name…"
+            placeholder="Source nameâ€¦"
             className={cn(
               "w-full rounded-xl px-3 py-2 text-sm",
               "bg-white/[0.06] border border-white/[0.10]",

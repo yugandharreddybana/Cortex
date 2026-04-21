@@ -13,7 +13,7 @@ import { sendExtensionToken } from "@/lib/extension-auth";
 import { premiumToast } from "@/lib/premium-feedback";
 import { Loader2 } from "lucide-react";
 
-const ease = [0.16, 1, 0.3, 1] as const;
+const ease = [0.20, 0.90, 0.30, 1.00] as const;
 
 const TIER_LABELS: Record<string, string> = {
   starter: "Starter — Free forever",
@@ -123,7 +123,7 @@ function SignupContent() {
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <Link href="/" className="flex items-center gap-2.5">
-            <span className="w-8 h-8 rounded-xl bg-accent flex items-center justify-center shadow-[0_0_20px_rgba(108,99,255,0.4)]">
+            <span className="w-8 h-8 rounded-xl bg-accent flex items-center justify-center shadow-[0_0_20px_rgba(129,140,248,0.35),inset_0_1px_0_rgba(255,255,255,0.15)]">
               <CortexMark />
             </span>
             <span className="text-base font-semibold tracking-tight">Cortex</span>
@@ -132,8 +132,8 @@ function SignupContent() {
 
         {/* Card */}
         <div className={cn(
-          "rounded-2xl border border-white/[0.08] bg-surface",
-          "shadow-[0_24px_48px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.07)]",
+          "rounded-2xl border border-white/[0.06] bg-surface/80 backdrop-blur-xl",
+          "shadow-spatial-lg",
           "p-8",
         )}>
           <h1 className="text-xl font-semibold tracking-tight mb-1">Create your brain.</h1>
@@ -154,7 +154,7 @@ function SignupContent() {
               "w-full h-10 rounded-xl mb-4",
               "bg-white/[0.06] hover:bg-white/[0.10] border border-white/[0.10]",
               "text-sm font-medium text-white/80",
-              "transition-all duration-200 ease-snappy",
+              "transition-all duration-200 ease-spatial",
               "flex items-center justify-center gap-2.5",
               "disabled:opacity-60 disabled:cursor-not-allowed",
             )}
@@ -247,8 +247,8 @@ function SignupContent() {
               className={cn(
                 "w-full h-10 rounded-xl mt-1",
                 "bg-accent hover:bg-accent/90 text-sm font-medium text-white",
-                "shadow-[0_0_20px_rgba(108,99,255,0.3)]",
-                "transition-all duration-200 ease-snappy",
+                "shadow-[0_0_20px_rgba(129,140,248,0.3)]",
+                "transition-all duration-200 ease-spatial",
                 "disabled:opacity-60 disabled:cursor-not-allowed",
               )}
             >
