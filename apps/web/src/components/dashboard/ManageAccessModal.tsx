@@ -302,6 +302,7 @@ export function ManageAccessModal({
                         </div>
                         
                         <select
+                          title="Select role for new member"
                           value={inviteRole}
                           onChange={(e) => setInviteRole(e.target.value as any)}
                           className="bg-white/[0.03] border border-white/5 px-3 py-2 rounded-xl text-sm text-white/70 focus:outline-none focus:border-accent/30 transition-all cursor-pointer"
@@ -367,6 +368,7 @@ export function ManageAccessModal({
                                   {perm.accessLevel !== "OWNER" && (
                                     <>
                                       <select
+                                        title="Change member access level"
                                         disabled={isRemoved || isSaving}
                                         value={currentRole}
                                         onChange={(e) => handleRoleChange(perm.userId, e.target.value)}
