@@ -23,7 +23,13 @@ pnpm-debug.log*
 # Environment and local settings
 .env
 .env.*
+!.env.example
 .DS_Store
+
+# Secrets / local artifacts (never commit)
+cookies.txt
+api_verification_results.txt
+.claude/mcp_servers.json
 
 # IDE
 .idea/
