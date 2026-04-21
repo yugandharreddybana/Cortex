@@ -46,22 +46,32 @@ public class AuthService {
 
     @Transactional
     public AuthResponse signup(SignupRequest request) {
-        if (userRepository.existsByEmail(request.email())) {
+        // Normalize email so "Foo@Bar.com " and "foo@bar.com" never both exist.
+        String email = request.email() == null ? "" : request.email().trim().toLowerCase();
+        if (email.isEmpty()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email is required");
+        }
+
+        if (userRepository.existsByEmail(email)) {
+            log.warn("[SIGNUP] 409 — existsByEmail matched for {}", email);
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
         }
 
         User user = new User();
-        user.setEmail(request.email());
+        user.setEmail(email);
         user.setPasswordHash(passwordEncoder.encode(request.password()));
         user.setFullName(request.fullName());
         user.setTier(request.tier() != null ? request.tier() : "starter");
-        user.setEmailHash(sha256(request.email()));
-        user.setEncryptedEmail(encryptionService.encrypt(request.email()));
+        user.setEmailHash(sha256(email));
+        user.setEncryptedEmail(encryptionService.encrypt(email));
         user.setReferralCode(generateUniqueReferralCode());
 
         try {
             user = userRepository.save(user);
         } catch (DataIntegrityViolationException e) {
+            // Emits the underlying constraint name so we can see whether it's
+            // users_email_key, users_email_hash_key, users_encrypted_email_key, etc.
+            log.warn("[SIGNUP] 409 — DataIntegrityViolation saving {}: {}", email, e.getMostSpecificCause().getMessage());
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
         }
 
@@ -99,8 +109,9 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is required");
         }
 
-        log.debug("[LOGIN] Looking up user by email: {}", request.email());
-        User user = userRepository.findByEmail(request.email())
+        String email = request.email().trim().toLowerCase();
+        log.debug("[LOGIN] Looking up user by email: {}", email);
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> {
                     log.warn("[LOGIN] User not found for email: {}", request.email());
                     return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
