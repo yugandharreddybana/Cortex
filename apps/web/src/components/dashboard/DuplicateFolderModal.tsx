@@ -19,7 +19,7 @@ interface DuplicateFolderModalProps {
   onSuccess?: (newFolderId: string) => void;
 }
 
-const ease = [0.16, 1, 0.3, 1] as const;
+const ease = [0.20, 0.90, 0.30, 1.00] as const;
 
 // ─── Component ────────────────────────────────────────────────────────────────
 
@@ -95,8 +95,8 @@ export function DuplicateFolderModal({
               <motion.div
                 className={cn(
                   "relative z-50 pointer-events-auto",
-                  "w-full max-w-md rounded-2xl border border-white/10",
-                  "bg-neutral-900 p-6 shadow-2xl"
+                  "w-full max-w-md rounded-2xl border border-white/[0.06]",
+                  "bg-elevated/90 backdrop-blur-2xl p-6 shadow-spatial-lg"
                 )}
                 initial={{ opacity: 0, scale: 0.97, y: -8 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -138,7 +138,7 @@ export function DuplicateFolderModal({
                   <AlertDialog.Cancel asChild>
                     <button
                       className={cn(
-                        "rounded-lg border border-white/10 px-4 py-2 text-sm text-neutral-300",
+                        "rounded-xl border border-white/[0.06] px-4 py-2 text-sm text-white/60",
                         "hover:bg-white/5 transition-colors",
                         "disabled:opacity-50"
                       )}
@@ -156,8 +156,8 @@ export function DuplicateFolderModal({
                       }}
                       disabled={isPending}
                       className={cn(
-                        "rounded-lg bg-white px-4 py-2 text-sm font-medium text-neutral-900",
-                        "hover:bg-neutral-100 transition-colors",
+                        "rounded-xl bg-white px-4 py-2 text-sm font-medium text-black",
+                        "hover:bg-white/80 transition-all duration-150 ease-spatial",
                         "disabled:opacity-60 disabled:cursor-not-allowed"
                       )}
                     >

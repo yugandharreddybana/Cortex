@@ -14,7 +14,7 @@ import { premiumToast } from "@/lib/premium-feedback";
 import { useDashboardStore } from "@/store/dashboard";
 import { Loader2 } from "lucide-react";
 
-const ease = [0.16, 1, 0.3, 1] as const;
+const ease = [0.20, 0.90, 0.30, 1.00] as const;
 
 const loginSchema = z.object({
   email:    z.email("Enter a valid email address"),
@@ -89,7 +89,6 @@ function LoginContent() {
   }
 
   async function onSubmit(values: LoginValues) {
-    console.log('[LOGIN] Submitting login form', values);
     const res = await fetch("/api/auth/login", {
       method:  "POST",
       headers: { "Content-Type": "application/json" },
@@ -97,13 +96,10 @@ function LoginContent() {
       body:    JSON.stringify(values),
     });
 
-    console.log('[LOGIN] Response status:', res.status);
     let data;
     try {
       data = await res.json();
-      console.log('[LOGIN] Response data:', data);
-    } catch (e) {
-      console.error('[LOGIN] Error parsing response JSON', e);
+    } catch {
       premiumToast.networkError();
       return;
     }
@@ -175,11 +171,11 @@ function LoginContent() {
           className="w-full max-w-md text-center"
         >
           <div className={cn(
-            "rounded-2xl border border-white/[0.08] bg-surface",
-            "shadow-[0_24px_48px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.07)]",
+            "rounded-2xl border border-white/[0.06] bg-surface/80 backdrop-blur-xl",
+            "shadow-spatial-lg",
             "p-10",
           )}>
-            <div className="w-14 h-14 rounded-2xl bg-accent mx-auto mb-5 flex items-center justify-center shadow-[0_0_32px_rgba(108,99,255,0.4)]">
+            <div className="w-14 h-14 rounded-2xl bg-accent mx-auto mb-5 flex items-center justify-center shadow-[0_0_32px_rgba(129,140,248,0.4)]">
               <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                 <polyline points="20 6 9 17 4 12" />
               </svg>
@@ -194,7 +190,7 @@ function LoginContent() {
                 "w-full h-10 rounded-xl",
                 "bg-white/[0.05] border border-white/[0.08]",
                 "text-sm text-white/70 hover:text-white hover:bg-white/[0.09]",
-                "transition-all duration-200 ease-snappy",
+                "transition-all duration-200 ease-spatial",
               )}
             >
               Go to Dashboard
@@ -222,7 +218,7 @@ function LoginContent() {
         {/* Logo */}
         <div className="flex justify-center mb-8">
           <Link href="/" className="flex items-center gap-2.5 group">
-            <span className="w-8 h-8 rounded-xl bg-accent flex items-center justify-center shadow-[0_0_20px_rgba(108,99,255,0.4)]">
+            <span className="w-8 h-8 rounded-xl bg-accent flex items-center justify-center shadow-[0_0_20px_rgba(129,140,248,0.35),inset_0_1px_0_rgba(255,255,255,0.15)]">
               <CortexMark />
             </span>
             <span className="text-base font-semibold tracking-tight">Cortex</span>
@@ -231,8 +227,8 @@ function LoginContent() {
 
         {/* Card */}
         <div className={cn(
-          "rounded-2xl border border-white/[0.08] bg-surface",
-          "shadow-[0_24px_48px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.07)]",
+          "rounded-2xl border border-white/[0.06] bg-surface/80 backdrop-blur-xl",
+          "shadow-spatial-lg",
           "p-8",
         )}>
           <h1 className="text-xl font-semibold tracking-tight mb-1">Welcome back</h1>
@@ -308,8 +304,8 @@ function LoginContent() {
                 "w-full h-10 rounded-xl",
                 "bg-accent hover:bg-accent/90",
                 "text-sm font-medium text-white",
-                "shadow-[0_0_20px_rgba(108,99,255,0.3)]",
-                "transition-all duration-200 ease-snappy",
+                "shadow-[0_0_20px_rgba(129,140,248,0.3)]",
+                "transition-all duration-200 ease-spatial",
                 "disabled:opacity-60 disabled:cursor-not-allowed",
                 "mt-2",
               )}
@@ -332,16 +328,17 @@ function LoginContent() {
             <div className="flex-1 border-t border-white/[0.06]" />
           </div>
 
-          {/* OAuth stubs */}
+          {/* Google OAuth — coming soon */}
           <button
-            onClick={() => router.push("/dashboard")}
+            type="button"
+            disabled
             className={cn(
               "w-full h-10 rounded-xl",
-              "bg-white/[0.05] border border-white/[0.08]",
-              "text-sm text-white/70 hover:text-white hover:bg-white/[0.09]",
-              "transition-all duration-200 ease-snappy",
+              "bg-white/[0.03] border border-white/[0.06]",
+              "text-sm text-white/30 cursor-not-allowed",
               "flex items-center justify-center gap-2.5",
             )}
+            title="Google sign-in coming soon"
           >
             <GoogleIcon />
             Continue with Google
@@ -364,8 +361,8 @@ function LoginContent() {
             animate={{ opacity: 1, scale: 1 }}
             transition={{ duration: 0.2 }}
             className={cn(
-              "w-full max-w-sm rounded-2xl border border-white/[0.08] bg-surface",
-              "shadow-[0_24px_48px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.07)]",
+              "w-full max-w-sm rounded-2xl border border-white/[0.06] bg-surface/80 backdrop-blur-xl",
+              "shadow-spatial-lg",
               "p-6",
             )}
           >

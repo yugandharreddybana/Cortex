@@ -50,7 +50,7 @@ export function DevilsAdvocate({ text, url, customPrompt, isAI, onRequireContext
             <AlertTriangle size={12} />
             Devil&apos;s Advocate
           </button>
-          <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] opacity-0 group-hover/tooltip:opacity-100 transition-opacity bg-black text-white text-[10px] px-2 py-1 rounded shadow-lg z-50 text-center">
+          <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] opacity-0 group-hover/tooltip:opacity-100 transition-opacity bg-elevated/90 backdrop-blur-2xl border border-white/[0.06] text-white text-[10px] px-2 py-1.5 rounded-xl shadow-spatial-md z-50 text-center">
             Not available for AI Chat highlights.
             <svg className="absolute text-black h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255"><polygon className="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
           </div>
@@ -68,7 +68,7 @@ export function DevilsAdvocate({ text, url, customPrompt, isAI, onRequireContext
           {loading ? "Analyzing..." : "Devil's Advocate"}
         </button>
         {/* Tooltip */}
-        <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] opacity-0 group-hover/tooltip:opacity-100 transition-opacity bg-black text-white text-[10px] px-2 py-1 rounded shadow-lg z-50 text-center">
+        <div className="pointer-events-none absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-max max-w-[200px] opacity-0 group-hover/tooltip:opacity-100 transition-opacity bg-elevated/90 backdrop-blur-2xl border border-white/[0.06] text-white text-[10px] px-2 py-1.5 rounded-xl shadow-spatial-md z-50 text-center">
           Analyzes text for hidden biases, logical fallacies, or unverified claims.
           <svg className="absolute text-black h-2 w-full left-0 top-full" x="0px" y="0px" viewBox="0 0 255 255"><polygon className="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
         </div>

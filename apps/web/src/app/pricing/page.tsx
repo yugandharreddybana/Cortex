@@ -63,7 +63,7 @@ const PLANS = [
 ] as const;
 
 // ─── Animation variants ───────────────────────────────────────────────────────
-const ease = [0.16, 1, 0.3, 1] as const;
+const ease = [0.20, 0.90, 0.30, 1.00] as const;
 
 const fadeUp = {
   hidden:  { opacity: 0, y: 24 },
@@ -122,7 +122,7 @@ export default function PricingPage() {
                 className={cn(
                   "pointer-events-none block h-4 w-4 rounded-full",
                   "bg-white shadow-sm",
-                  "transition-transform duration-200 ease-snappy",
+                  "transition-transform duration-200 ease-spatial",
                   "translate-x-1 data-[state=checked]:translate-x-6",
                 )}
               />
@@ -193,7 +193,7 @@ function PricingCard({ plan, annual, index }: PricingCardProps) {
         plan.featured
           ? [
               "bg-surface border-accent/50",
-              "shadow-[0_0_40px_rgba(108,99,255,0.15),inset_0_1px_0_rgba(255,255,255,0.08)]",
+              "shadow-[0_0_40px_rgba(129,140,248,0.15),inset_0_1px_0_rgba(255,255,255,0.08)]",
               "scale-[1.02]",
             ]
           : [
@@ -320,10 +320,10 @@ function PricingCTA({ plan, annual }: { plan: typeof PLANS[number], annual: bool
       className={cn(
         "mb-7 w-full inline-flex items-center justify-center",
         "h-9 px-4 rounded-xl text-sm font-medium",
-        "transition-all duration-200 ease-snappy",
+        "transition-all duration-200 ease-spatial",
         loading && "opacity-70 cursor-wait",
         plan.featured
-          ? "bg-accent hover:bg-accent/90 text-white shadow-[0_0_20px_rgba(108,99,255,0.35)]"
+          ? "bg-accent hover:bg-accent/90 text-white shadow-[0_0_20px_rgba(129,140,248,0.3)]"
           : "bg-white/[0.07] hover:bg-white/[0.12] text-white/80 border border-white/[0.08]",
       )}
     >

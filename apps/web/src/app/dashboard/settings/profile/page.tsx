@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import { motion } from "framer-motion";
@@ -9,7 +9,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 
-const ease = [0.16, 1, 0.3, 1] as const;
+const ease = [0.20, 0.90, 0.30, 1.00] as const;
 
 const profileSchema = z.object({
   fullName: z.string().min(1, "Full name is required").max(100),
@@ -180,7 +180,7 @@ export default function ProfilePage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease, delay: 0.05 }}
         className={cn(
-          "border border-white/[0.09] rounded-xl p-6 bg-surface",
+          "border border-white/[0.06] rounded-xl p-6 bg-surface",
           "mb-5",
         )}
       >
@@ -232,7 +232,7 @@ export default function ProfilePage() {
                 Remove photo
               </button>
             )}
-            <p className="text-[11px] text-white/30">JPG, PNG or GIF · Max 2 MB</p>
+            <p className="text-[11px] text-white/30">JPG, PNG or GIF Â· Max 2 MB</p>
           </div>
         </div>
       </motion.div>
@@ -244,7 +244,7 @@ export default function ProfilePage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease, delay: 0.1 }}
         className={cn(
-          "border border-white/[0.09] rounded-xl p-6 bg-surface",
+          "border border-white/[0.06] rounded-xl p-6 bg-surface",
         )}
       >
         <h2 className="text-sm font-medium text-white/70 mb-5">Personal Information</h2>
@@ -303,12 +303,12 @@ export default function ProfilePage() {
               className={cn(
                 "h-9 px-5 rounded-xl text-sm font-medium",
                 "bg-white text-black",
-                "hover:bg-gray-200 active:scale-95",
-                "transition-all duration-150",
+                "hover:bg-white/80 active:scale-95",
+                "transition-all duration-150 ease-spatial",
                 "disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100",
               )}
             >
-              {profileSaving ? "Saving…" : "Save Changes"}
+              {profileSaving ? "Savingâ€¦" : "Save Changes"}
             </button>
           </div>
         )}
@@ -321,7 +321,7 @@ export default function ProfilePage() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.45, ease, delay: 0.15 }}
         className={cn(
-          "border border-white/[0.09] rounded-xl p-6 bg-surface mt-5",
+          "border border-white/[0.06] rounded-xl p-6 bg-surface mt-5",
         )}
       >
         <h2 className="text-sm font-medium text-white/70 mb-5">Change Password</h2>
@@ -334,7 +334,7 @@ export default function ProfilePage() {
               type="password"
               autoComplete="current-password"
               {...regPwd("currentPassword")}
-              placeholder="••••••••"
+              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
               className={inputCls}
             />
             {pwdErrors.currentPassword && (
@@ -380,12 +380,12 @@ export default function ProfilePage() {
             className={cn(
               "h-9 px-5 rounded-xl text-sm font-medium",
               "bg-white text-black",
-              "hover:bg-gray-200 active:scale-95",
-              "transition-all duration-150",
+              "hover:bg-white/80 active:scale-95",
+              "transition-all duration-150 ease-spatial",
               "disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100",
             )}
           >
-            {pwdSaving ? "Changing…" : "Change Password"}
+            {pwdSaving ? "Changingâ€¦" : "Change Password"}
           </button>
         </div>
       </motion.form>
@@ -397,7 +397,7 @@ export default function ProfilePage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, ease, delay: 0.2 }}
           className={cn(
-            "border border-white/[0.09] rounded-xl p-6 bg-surface mt-5",
+            "border border-white/[0.06] rounded-xl p-6 bg-surface mt-5",
           )}
         >
           <h2 className="text-sm font-medium text-white/70 mb-4">Account</h2>
@@ -411,7 +411,7 @@ export default function ProfilePage() {
               <p className="text-sm text-white/80 font-medium">
                 {user.createdAt
                   ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
-                  : "—"}
+                  : "â€”"}
               </p>
             </div>
           </div>

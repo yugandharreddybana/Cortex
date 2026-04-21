@@ -54,12 +54,12 @@ export function ConnectDots({ text, url, customPrompt, isAI, onRequireContext }:
           </button>
           {/* Tooltip */}
           {isAI ? (
-            <div className="pointer-events-none absolute bottom-full right-0 mb-2 w-max max-w-[200px] opacity-0 group-hover/tooltip:opacity-100 transition-opacity bg-black text-white text-[10px] px-2 py-1 rounded shadow-lg z-50 text-right">
+            <div className="pointer-events-none absolute bottom-full right-0 mb-2 w-max max-w-[200px] opacity-0 group-hover/tooltip:opacity-100 transition-opacity bg-elevated/90 backdrop-blur-2xl border border-white/[0.06] text-white text-[10px] px-2 py-1.5 rounded-xl shadow-spatial-md z-50 text-right">
               Not available for AI Chat highlights.
               <svg className="absolute text-black h-2 w-full right-4 top-full" x="0px" y="0px" viewBox="0 0 255 255"><polygon className="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
             </div>
           ) : (
-            <div className="pointer-events-none absolute bottom-full right-0 mb-2 w-max max-w-[200px] opacity-0 group-hover/tooltip:opacity-100 transition-opacity bg-black text-white text-[10px] px-2 py-1 rounded shadow-lg z-50 text-right">
+            <div className="pointer-events-none absolute bottom-full right-0 mb-2 w-max max-w-[200px] opacity-0 group-hover/tooltip:opacity-100 transition-opacity bg-elevated/90 backdrop-blur-2xl border border-white/[0.06] text-white text-[10px] px-2 py-1.5 rounded-xl shadow-spatial-md z-50 text-right">
               Find meaningful connections and patterns with your recent highlights.
               <svg className="absolute text-black h-2 w-full right-4 top-full" x="0px" y="0px" viewBox="0 0 255 255"><polygon className="fill-current" points="0,0 127.5,127.5 255,0"/></svg>
             </div>

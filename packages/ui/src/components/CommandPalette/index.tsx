@@ -46,16 +46,16 @@ const overlayVariants = {
 };
 
 const panelVariants = {
-  hidden:  { opacity: 0, scale: 0.96, y: -8 },
-  visible: { opacity: 1, scale: 1,    y: 0  },
-  exit:    { opacity: 0, scale: 0.97, y:  4 },
+  hidden:  { opacity: 0, scale: 0.95, y: -12, filter: "blur(8px)" },
+  visible: { opacity: 1, scale: 1,    y: 0,   filter: "blur(0px)" },
+  exit:    { opacity: 0, scale: 0.97, y: 6,   filter: "blur(4px)" },
 };
 
 const panelTransition = {
   type:      "spring" as const,
-  stiffness: 500,
-  damping:   35,
-  mass:      0.6,
+  stiffness: 450,
+  damping:   32,
+  mass:      0.5,
 };
 
 // ─── Internal sub-components ─────────────────────────────────────────────────
@@ -75,10 +75,10 @@ const KbdKey = ({ children }: { children: React.ReactNode }) => (
   <kbd
     className={cn(
       "inline-flex items-center justify-center",
-      "h-5 min-w-[1.25rem] px-1 rounded-md",
-      "bg-white/[0.07] border border-white/10",
-      "text-2xs text-secondary font-mono leading-none",
-      "shadow-inner",
+      "h-5 min-w-[1.25rem] px-1.5 rounded-md",
+      "bg-white/[0.05] border border-white/[0.08]",
+      "text-2xs text-muted font-mono leading-none",
+      "shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_1px_2px_rgba(0,0,0,0.2)]",
     )}
   >
     {children}
@@ -264,7 +264,7 @@ export function CommandPalette({
             {/* ── Backdrop ── */}
             <DialogPrimitive.Overlay asChild forceMount>
               <motion.div
-                className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm"
+                className="fixed inset-0 z-50 bg-black/50 backdrop-blur-xl"
                 variants={overlayVariants}
                 initial="hidden"
                 animate="visible"
@@ -277,13 +277,18 @@ export function CommandPalette({
             <DialogPrimitive.Content asChild forceMount>
               <motion.div
                 className={cn(
-                  "fixed left-1/2 top-[20vh] z-50 -translate-x-1/2",
+                  "fixed left-1/2 top-[18vh] z-50 -translate-x-1/2",
                   "w-full max-w-[640px] mx-4",
+                  // Mobile: fullscreen bottom sheet
+                  "max-md:top-auto max-md:bottom-0 max-md:left-0 max-md:translate-x-0",
+                  "max-md:max-w-none max-md:mx-0 max-md:rounded-b-none max-md:rounded-t-3xl",
+                  "max-md:max-h-[85vh]",
                   "rounded-2xl overflow-hidden",
-                  "bg-surface/80 backdrop-blur-xl",
-                  "border border-white/10",
-                  "shadow-[0_0_0_1px_rgba(255,255,255,0.04),inset_0_1px_0_rgba(255,255,255,0.10),0_24px_64px_rgba(0,0,0,0.7)]",
-                  "transform-gpu will-change-transform",
+                  // Glass prominent surface
+                  "bg-surface/75 backdrop-blur-[40px]",
+                  "border border-white/[0.08]",
+                  "shadow-[0_0_0_1px_rgba(255,255,255,0.04),inset_0_1px_0_rgba(255,255,255,0.08),0_16px_48px_rgba(0,0,0,0.6),0_32px_80px_-12px_rgba(0,0,0,0.5)]",
+                  "transform-gpu will-change-[transform,filter]",
                 )}
                 variants={panelVariants}
                 initial="hidden"
@@ -297,16 +302,16 @@ export function CommandPalette({
                 </DialogPrimitive.Description>
 
                 {/* ── Mode toggle tabs ── */}
-                <div className={cn("flex items-center gap-1 px-4 pt-3 pb-0")}>
+                <div className={cn("flex items-center gap-1 px-4 pt-3.5 pb-0")}>
                   {(["search", "ai"] as const).map((m) => (
                     <button
                       key={m}
                       onClick={() => setMode(m)}
                       className={cn(
-                        "px-3 py-1.5 rounded-lg text-xs font-medium transition-all duration-150",
+                        "relative px-3.5 py-1.5 rounded-lg text-xs font-medium transition-all duration-200 ease-spatial",
                         mode === m
-                          ? "bg-white/[0.10] text-white"
-                          : "text-white/40 hover:text-white/70 hover:bg-white/[0.05]",
+                          ? "bg-white/[0.08] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_1px_3px_rgba(0,0,0,0.2)]"
+                          : "text-white/35 hover:text-white/60 hover:bg-white/[0.04]",
                       )}
                     >
                       {m === "search" ? "Search" : "✨ Ask AI"}
@@ -486,7 +491,7 @@ export function CommandPalette({
                           className={cn(
                             "absolute left-4 right-4 top-full mt-1 z-10",
                             "rounded-xl overflow-hidden",
-                            "bg-[#1e1e1e] border border-white/[0.09]",
+                            "bg-elevated/90 backdrop-blur-2xl border border-white/[0.06]",
                             "shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)]",
                             "max-h-[200px] overflow-y-auto",
                           )}

@@ -138,8 +138,8 @@ export function BulkActionBar() {
           transition={{ type: "spring", stiffness: 500, damping: 32, mass: 0.6 }}
           className={cn(
             "fixed bottom-8 left-1/2 -translate-x-1/2 z-50",
-            "bg-[#1a1a1a]/90 backdrop-blur-xl",
-            "border border-white/10 rounded-full shadow-2xl",
+            "bg-elevated/85 backdrop-blur-2xl",
+            "border border-white/[0.08] rounded-full shadow-spatial-lg",
             "px-4 py-2 flex items-center gap-4",
           )}
         >
@@ -179,10 +179,10 @@ export function BulkActionBar() {
                 align="center"
                 side="top"
                 className={cn(
-                  "z-50 min-w-[160px] max-h-[240px] overflow-y-auto rounded-xl",
-                  "bg-[#1c1c1c] border border-white/[0.09]",
-                  "shadow-[0_8px_32px_rgba(0,0,0,0.5)]",
-                  "p-1",
+                  "z-50 min-w-[160px] max-h-[240px] overflow-y-auto rounded-2xl",
+                  "bg-elevated/90 backdrop-blur-2xl border border-white/[0.08]",
+                  "shadow-spatial-lg",
+                  "p-1.5",
                   "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
                 )}
               >
@@ -248,9 +248,9 @@ export function BulkActionBar() {
                 side="top"
                 align="center"
                 className={cn(
-                  "z-50 w-44 rounded-xl p-1.5",
-                  "bg-[#1c1c1c] border border-white/[0.09]",
-                  "shadow-[0_8px_32px_rgba(0,0,0,0.55)]",
+                  "z-50 w-44 rounded-2xl p-1.5",
+                  "bg-elevated/90 backdrop-blur-2xl border border-white/[0.08]",
+                  "shadow-spatial-lg",
                   "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
                 )}
               >

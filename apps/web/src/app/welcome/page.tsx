@@ -31,7 +31,7 @@ const STEPS = [
 // ─── Page ─────────────────────────────────────────────────────────────────────
 export default function WelcomePage() {
   return (
-    <div className="min-h-screen bg-[#0A0A0A]">
+    <div className="min-h-screen bg-bg">
       {/* ── Header ────────────────────────────────────────────────────────── */}
       <header className="border-b border-white/[0.06] px-6 lg:px-12 py-5 flex items-center justify-between">
         <div className="flex items-center gap-2.5">
@@ -53,7 +53,7 @@ export default function WelcomePage() {
         <motion.div
           initial={{ opacity: 0, y: 24 }}
           animate={{ opacity: 1, y: 0  }}
-          transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.65, ease: [0.20, 0.90, 0.30, 1.00] }}
         >
           {/* Celebration badge */}
           <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full border border-accent/25 bg-accent/8 mb-6">
@@ -88,7 +88,7 @@ export default function WelcomePage() {
                 key={step.number}
                 initial={{ opacity: 0, x: -16 }}
                 animate={{ opacity: 1, x: 0   }}
-                transition={{ duration: 0.5, delay: 0.15 + i * 0.12, ease: [0.16, 1, 0.3, 1] }}
+                transition={{ duration: 0.5, delay: 0.15 + i * 0.12, ease: [0.20, 0.90, 0.30, 1.00] }}
                 className="flex gap-8 sm:gap-10"
               >
                 {/* Step number disc */}
@@ -96,7 +96,7 @@ export default function WelcomePage() {
                   <div
                     className={cn(
                       "w-10 h-10 rounded-full",
-                      "bg-[#0A0A0A] border border-white/[0.12]",
+                      "bg-bg border border-white/[0.08]",
                       "flex items-center justify-center",
                       "text-[11px] font-mono font-semibold text-white/40",
                     )}
@@ -114,14 +114,14 @@ export default function WelcomePage() {
 
                   <div
                     className={cn(
-                      "rounded-2xl border border-white/[0.07]",
-                      "bg-[#111111]",
-                      "shadow-[inset_0_1px_0_rgba(255,255,255,0.05)]",
+                      "rounded-2xl border border-white/[0.06]",
+                      "bg-surface",
+                      "shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]",
                       "overflow-hidden",
                     )}
                   >
                     {/* Visual area */}
-                    <div className="h-36 bg-[#0E0E0E] border-b border-white/[0.06] flex items-center justify-center px-6">
+                    <div className="h-36 bg-bg border-b border-white/[0.06] flex items-center justify-center px-6">
                       {step.visual}
                     </div>
 
@@ -159,7 +159,7 @@ export default function WelcomePage() {
         <motion.div
           initial={{ opacity: 0, y: 16 }}
           animate={{ opacity: 1, y: 0  }}
-          transition={{ duration: 0.5, delay: 0.65, ease: [0.16, 1, 0.3, 1] }}
+          transition={{ duration: 0.5, delay: 0.65, ease: [0.20, 0.90, 0.30, 1.00] }}
           className="mt-16 flex flex-col sm:flex-row items-center gap-4"
         >
           <Link
@@ -190,7 +190,7 @@ function PinVisual() {
   return (
     <div className="flex items-center gap-2 select-none">
       {/* Mock toolbar */}
-      <div className="flex items-center gap-1.5 bg-[#1a1a1a] border border-white/[0.08] rounded-full px-3 py-2">
+      <div className="flex items-center gap-1.5 bg-surface border border-white/[0.06] rounded-full px-3 py-2">
         <div className="w-4 h-4 rounded-sm bg-white/10 flex items-center justify-center">
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
             <rect x="1" y="3" width="3" height="2.5" rx="0.7" fill="rgba(255,255,255,0.3)" />
@@ -199,7 +199,7 @@ function PinVisual() {
           </svg>
         </div>
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-          <path d="M5 2h4l1 4-2 1.5V10l-2 1.5L6 10V7.5L4 6l1-4z" fill="rgba(108,99,255,0.8)" />
+          <path d="M5 2h4l1 4-2 1.5V10l-2 1.5L6 10V7.5L4 6l1-4z" fill="rgba(129,140,248,0.8)" />
         </svg>
         <div className="w-4 h-4 rounded-sm bg-white/[0.05]" />
       </div>
@@ -228,9 +228,9 @@ function HighlightVisual() {
         is to invent it.
       </p>
       {/* Mock pill */}
-      <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-[#16161c]/95 border border-white/10 rounded-lg px-2.5 py-1.5 shadow-lg whitespace-nowrap">
+      <div className="absolute -top-8 left-1/2 -translate-x-1/2 flex items-center gap-1.5 bg-overlay/95 border border-white/[0.08] rounded-lg px-2.5 py-1.5 shadow-spatial-sm whitespace-nowrap">
         <div className="w-5 h-5 rounded-md bg-accent/20 flex items-center justify-center">
-          <svg width="9" height="9" viewBox="0 0 9 9" fill="none" aria-hidden="true"><path d="M1.5 7.5h6M4.5 1.5v5M2.5 3.5l2-2 2 2" stroke="#6C63FF" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          <svg width="9" height="9" viewBox="0 0 9 9" fill="none" aria-hidden="true"><path d="M1.5 7.5h6M4.5 1.5v5M2.5 3.5l2-2 2 2" stroke="#818CF8" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" /></svg>
         </div>
         <span className="text-[10px] font-medium text-white/75">Save</span>
         <div className="w-px h-3 bg-white/10" />
@@ -251,7 +251,7 @@ function CmdKVisual() {
             key={key}
             className={cn(
               "w-9 h-9 rounded-lg flex items-center justify-center",
-              "bg-[#1c1c1c] border border-white/[0.12]",
+              "bg-surface border border-white/[0.06]",
               "text-sm font-semibold text-white/70",
               "shadow-[0_2px_0_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.07)]",
             )}
@@ -261,7 +261,7 @@ function CmdKVisual() {
         ))}
       </div>
       {/* Mock command palette preview */}
-      <div className="flex-1 max-w-[180px] bg-[#161616] border border-white/[0.08] rounded-xl overflow-hidden">
+      <div className="flex-1 max-w-[180px] bg-overlay border border-white/[0.06] rounded-xl overflow-hidden">
         <div className="px-3 py-2 border-b border-white/[0.06] flex items-center gap-2">
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><circle cx="4" cy="4" r="2.5" stroke="rgba(255,255,255,0.3)" strokeWidth="1.2" /><path d="M6 6l2 2" stroke="rgba(255,255,255,0.3)" strokeWidth="1.2" strokeLinecap="round" /></svg>
           <div className="h-1.5 w-16 rounded-full bg-white/10" />

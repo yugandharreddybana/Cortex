@@ -621,7 +621,9 @@ export function App() {
                     <div style={{ display: 'flex', alignItems: 'center', marginBottom: 8 }}>
                       <input
                         type="checkbox"
-                        checked={filtered.length > 0 && filtered.every(h => h.checked)}
+                        aria-label="Select all highlights"
+                        title="Select all highlights"
+                        checked={filtered.length > 0 && filtered.every(h => h.checked === true)}
                         onChange={e => {
                           const checked = e.target.checked;
                           setHighlights(prev => prev.map(h =>
@@ -630,7 +632,7 @@ export function App() {
                               : { ...h, checked: false }
                           ));
                         }}
-                        style={{ marginRight: 8 }}
+                        className="select-all-checkbox"
                       />
                       <span style={{ fontSize: 12, color: '#fff' }}>Select All</span>
                       <button

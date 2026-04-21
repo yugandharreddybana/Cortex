@@ -49,7 +49,6 @@ public class JwtService {
             Claims claims = parseToken(token);
             return claims.getExpiration().after(new Date());
         } catch (JwtException | IllegalArgumentException e) {
-            System.err.println("[DEBUG-JWT] Token validation failed: " + e.getMessage());
             return false;
         }
     }

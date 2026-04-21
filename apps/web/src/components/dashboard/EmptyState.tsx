@@ -22,7 +22,7 @@ export function EmptyState({ icon, title, body, action, isViewer }: EmptyStatePr
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0  }}
-      transition={{ duration: 0.55, ease: [0.16, 1, 0.3, 1] }}
+      transition={{ duration: 0.55, ease: [0.20, 0.90, 0.30, 1.00] }}
       className="flex flex-col items-center justify-center py-32 px-6 text-center"
     >
       {/* Glowing brain icon */}
@@ -31,7 +31,7 @@ export function EmptyState({ icon, title, body, action, isViewer }: EmptyStatePr
         <div
           className="absolute inset-0 rounded-2xl"
           style={{
-            background: "radial-gradient(circle, rgba(108,99,255,0.18) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(129,140,248,0.15) 0%, transparent 70%)",
             transform:  "scale(1.8)",
             filter:     "blur(16px)",
           }}
@@ -39,10 +39,11 @@ export function EmptyState({ icon, title, body, action, isViewer }: EmptyStatePr
         <div
           className={cn(
             "relative w-20 h-20 rounded-2xl",
-            "bg-gradient-to-b from-white/[0.06] to-white/[0.02]",
-            "border border-white/[0.09]",
+            "bg-gradient-to-b from-white/[0.05] to-white/[0.02]",
+            "border border-white/[0.08]",
             "flex items-center justify-center",
-            "shadow-[inset_0_1px_0_rgba(255,255,255,0.07),0_8px_32px_rgba(0,0,0,0.35)]",
+            "shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_8px_32px_rgba(0,0,0,0.3)]",
+            "backdrop-blur-sm",
           )}
         >
           {icon || <BrainIcon />}
@@ -66,7 +67,7 @@ export function EmptyState({ icon, title, body, action, isViewer }: EmptyStatePr
           className={cn(
             "inline-flex items-center gap-2 h-10 px-5 rounded-xl",
             "text-sm font-medium text-white/60",
-            "border border-white/[0.09] hover:border-white/[0.16]",
+            "border border-white/[0.06] hover:border-white/[0.12]",
             "hover:text-white/80 hover:bg-white/[0.04]",
             "active:scale-[0.97] transition-all duration-150 transform-gpu",
           )}
@@ -101,7 +102,7 @@ export function EmptyState({ icon, title, body, action, isViewer }: EmptyStatePr
           className={cn(
             "inline-flex items-center gap-2 h-10 px-5 rounded-xl",
             "text-sm font-medium text-white/60",
-            "border border-white/[0.09] hover:border-white/[0.16]",
+            "border border-white/[0.06] hover:border-white/[0.12]",
             "hover:text-white/80 hover:bg-white/[0.04]",
             "active:scale-[0.97] transition-all duration-150 transform-gpu",
           )}
@@ -121,20 +122,20 @@ function BrainIcon() {
     <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true">
       <path
         d="M14 4C9.58 4 6 7.58 6 12c0 2.4 1.06 4.55 2.75 6.02V21h10.5v-2.98A7.96 7.96 0 0022 12c0-4.42-3.58-8-8-8z"
-        stroke="rgba(108,99,255,0.85)"
+        stroke="rgba(129,140,248,0.85)"
         strokeWidth="1.6"
         strokeLinecap="round"
         strokeLinejoin="round"
       />
       <path
         d="M10.5 21v2.5a1 1 0 002 0V21M14 4V2"
-        stroke="rgba(108,99,255,0.60)"
+        stroke="rgba(129,140,248,0.60)"
         strokeWidth="1.5"
         strokeLinecap="round"
       />
       <path
         d="M10 14c0-2.21 1.79-4 4-4"
-        stroke="rgba(108,99,255,0.40)"
+        stroke="rgba(129,140,248,0.40)"
         strokeWidth="1.4"
         strokeLinecap="round"
       />

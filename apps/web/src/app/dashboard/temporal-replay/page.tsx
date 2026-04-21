@@ -44,7 +44,7 @@ export default function TemporalReplayPage() {
             <div className="absolute top-0 bottom-0 left-[15px] w-px bg-white/[0.08]" />
 
             <div className="flex items-center gap-4 mb-6 relative">
-              <div className="w-8 h-8 rounded-full bg-[#1c1c1c] border-2 border-accent/40 flex items-center justify-center z-10">
+              <div className="w-8 h-8 rounded-full bg-surface border-2 border-accent/40 flex items-center justify-center z-10">
                 <div className="w-2 h-2 rounded-full bg-accent" />
               </div>
               <h2 className="text-lg font-medium text-white/80">{date}</h2>

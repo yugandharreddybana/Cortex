@@ -62,7 +62,7 @@ export default function TagDetailPage() {
 
   if (!tag && !isLoading) {
     return (
-      <div className="h-screen bg-[#0a0a0a] flex items-center justify-center">
+      <div className="h-screen bg-bg flex items-center justify-center">
         <EmptyState 
           icon={<TagIcon className="w-8 h-8 text-white/20" />}
           title="Tag not found"
@@ -80,7 +80,7 @@ export default function TagDetailPage() {
     : "Recently";
 
   return (
-    <div className="h-screen flex flex-col bg-[#0a0a0a] overflow-hidden">
+    <div className="h-screen flex flex-col bg-bg overflow-hidden">
       {/* Scroll progress bar */}
       <motion.div
         className="fixed top-0 left-0 right-0 h-0.5 bg-accent z-50 origin-left"
@@ -88,7 +88,7 @@ export default function TagDetailPage() {
       />
 
       {/* Sticky Header - Mirroring Reading Mode */}
-      <header className="sticky top-0 z-40 shrink-0 h-14 flex items-center justify-between px-6 border-b border-white/[0.06] bg-[#0a0a0a]/80 backdrop-blur-md">
+      <header className="sticky top-0 z-40 shrink-0 h-14 flex items-center justify-between px-6 border-b border-white/[0.06] bg-bg/80 backdrop-blur-md">
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.back()}
@@ -152,7 +152,7 @@ export default function TagDetailPage() {
           </main>
 
           {/* Right Column: Metadata Sidebar */}
-          <aside className="w-full lg:w-80 p-8 lg:p-10 bg-[#0c0c0c]/50">
+          <aside className="w-full lg:w-80 p-8 lg:p-10 bg-bg/50">
             <div className="sticky top-10 space-y-10">
               
               {/* Tag Identity */}

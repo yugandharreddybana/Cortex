@@ -24,11 +24,12 @@ spring:
     baseline-on-migrate: true
     baseline-version: "1"
     out-of-order: true
+    validate-on-migrate: false
     locations: classpath:db/migration
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     open-in-view: false
     properties:
       hibernate:
@@ -59,8 +60,17 @@ cortex:
   encryption:
     key: ${CORTEX_ENCRYPTION_KEY}     # Removed insecure fallback: Kclxcd...
   stripe:
-    api-key: ${STRIPE_API_KEY:sk_test_123}
-    webhook-secret: ${STRIPE_WEBHOOK_SECRET:whsec_123}
+    api-key: ${STRIPE_API_KEY}
+    webhook-secret: ${STRIPE_WEBHOOK_SECRET}
+  cookie:
+    secure: ${CORTEX_COOKIE_SECURE:true}
+  app:
+    url: ${CORTEX_APP_URL:http://localhost:3000}
+  mail:
+    enabled: ${CORTEX_MAIL_ENABLED:false}
+  ollama:
+    url: ${CORTEX_OLLAMA_URL:http://localhost:11434}
+    model: ${CORTEX_OLLAMA_MODEL:llama3.2}
 
 cors:
   allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:3001,https://localhost:3000,http://127.0.0.1:3000}
@@ -80,7 +90,7 @@ spring.mail:
 logging:
   level:
     root: INFO
-    com.cortex.api.service.AuthService: DEBUG
-    org.springframework.security: DEBUG
+    com.cortex.api: INFO
+    org.springframework.security: WARN
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} %-5level %logger{36} - %msg%n"

@@ -109,7 +109,7 @@ export function SessionGuard({ children }: { children: React.ReactNode }) {
             exit={{ opacity: 0 }}
           >
             <motion.div
-              className="w-full max-w-sm mx-4 rounded-2xl border border-white/[0.08] bg-[#0A0A0A] p-6 shadow-[0_24px_80px_rgba(0,0,0,0.6)]"
+              className="w-full max-w-sm mx-4 rounded-2xl border border-white/[0.06] bg-elevated/90 backdrop-blur-2xl p-6 shadow-spatial-lg"
               initial={{ opacity: 0, scale: 0.95, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 10 }}

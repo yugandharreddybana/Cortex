@@ -27,8 +27,8 @@ public class StripeService {
     public StripeService(
             UserRepository userRepository,
             EmailService emailService,
-            @Value("${cortex.stripe.api-key:sk_test_123}") String stripeApiKey,
-            @Value("${cortex.stripe.webhook-secret:whsec_123}") String stripeWebhookSecret) {
+            @Value("${cortex.stripe.api-key}") String stripeApiKey,
+            @Value("${cortex.stripe.webhook-secret}") String stripeWebhookSecret) {
         this.userRepository = userRepository;
         this.emailService = emailService;
         this.stripeWebhookSecret = stripeWebhookSecret;

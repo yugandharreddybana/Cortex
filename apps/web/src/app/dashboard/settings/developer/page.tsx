@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import * as React from "react";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -26,7 +26,7 @@ export default function DeveloperSettingsPage() {
     const latest = keys[keys.length - 1];
     if (latest) {
       setNewlyCreatedKey(latest.key);
-      toast.success("API key created", { description: "Copy it now — it won't be shown again." });
+      toast.success("API key created", { description: "Copy it now â€” it won't be shown again." });
     }
   };
 
@@ -54,8 +54,8 @@ export default function DeveloperSettingsPage() {
             className={cn(
               "h-8 px-3.5 rounded-lg",
               "bg-white text-black text-xs font-medium",
-              "hover:bg-gray-200 active:scale-95",
-              "transition-all duration-150",
+              "hover:bg-white/80 active:scale-95",
+              "transition-all duration-150 ease-spatial",
               "flex items-center gap-1.5",
             )}
           >
@@ -74,7 +74,7 @@ export default function DeveloperSettingsPage() {
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-xs text-emerald-400 font-medium mb-1">New API Key — copy it now</p>
+                  <p className="text-xs text-emerald-400 font-medium mb-1">New API Key â€” copy it now</p>
                   <code className="text-xs text-white/80 font-mono break-all">{newlyCreatedKey}</code>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -122,7 +122,7 @@ export default function DeveloperSettingsPage() {
                     <td className="px-4 py-3 text-sm text-white/80 font-medium">{key.name}</td>
                     <td className="px-4 py-3">
                       <code className="text-xs text-white/50 font-mono">
-                        {key.key.slice(0, 12)}•••{key.key.slice(-4)}
+                        {key.key.slice(0, 12)}â€¢â€¢â€¢{key.key.slice(-4)}
                       </code>
                     </td>
                     <td className="px-4 py-3 text-xs text-white/40">
@@ -154,7 +154,7 @@ export default function DeveloperSettingsPage() {
         <h2 className="text-sm font-semibold text-white/80 mb-4">Quick Start</h2>
         <div className={cn(
           "rounded-xl overflow-hidden",
-          "bg-[#0d0d0d] border border-white/[0.08]",
+          "bg-bg border border-white/[0.08]",
         )}>
           <div className="flex items-center justify-between px-4 py-2 border-b border-white/[0.06] bg-white/[0.02]">
             <span className="text-[11px] text-white/40 font-mono">curl</span>
@@ -185,10 +185,10 @@ export default function DeveloperSettingsPage() {
 
         <div className={cn(
           "mt-4 rounded-xl overflow-hidden",
-          "bg-[#0d0d0d] border border-white/[0.08]",
+          "bg-bg border border-white/[0.08]",
         )}>
           <div className="flex items-center px-4 py-2 border-b border-white/[0.06] bg-white/[0.02]">
-            <span className="text-[11px] text-white/40 font-mono">Response — 201 Created</span>
+            <span className="text-[11px] text-white/40 font-mono">Response â€” 201 Created</span>
           </div>
           <pre className="p-4 overflow-x-auto text-xs leading-relaxed font-mono text-white/50">
 {`{
@@ -210,8 +210,8 @@ export default function DeveloperSettingsPage() {
               "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2",
               "w-full max-w-md",
               "rounded-2xl p-6",
-              "bg-[#1a1a1a] border border-white/[0.10]",
-              "shadow-[0_24px_64px_rgba(0,0,0,0.7)]",
+              "bg-elevated/90 backdrop-blur-2xl border border-white/[0.06]",
+              "shadow-spatial-lg",
             )}
           >
             <Dialog.Title className="text-sm font-semibold text-white mb-4">Generate API Key</Dialog.Title>
@@ -245,8 +245,8 @@ export default function DeveloperSettingsPage() {
                 className={cn(
                   "px-4 py-2 rounded-lg text-xs font-medium",
                   "bg-white text-black",
-                  "hover:bg-gray-200 active:scale-95",
-                  "transition-all duration-150",
+                  "hover:bg-white/80 active:scale-95",
+                  "transition-all duration-150 ease-spatial",
                   "disabled:opacity-40 disabled:pointer-events-none",
                 )}
               >

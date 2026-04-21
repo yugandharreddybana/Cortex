@@ -3,8 +3,8 @@
 import * as React from "react";
 import { cn } from "../../lib/utils";
 
-// ─── Skeleton ─────────────────────────────────────────────────────────────────
-// Uses a shimmer animation — never spinners.
+// ─── Skeleton — Glass Shimmer ─────────────────────────────────────────────────
+// Translucent glass shimmer effect for loading states.
 
 interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {
   /** Fully round (avatar / icon use-case) */
@@ -18,13 +18,13 @@ export function Skeleton({ className, circle = false, ...props }: SkeletonProps)
       aria-label="Loading..."
       className={cn(
         "relative overflow-hidden",
-        "bg-white/[0.05]",
+        "bg-white/[0.03]",
         circle ? "rounded-full" : "rounded-xl",
-        // Shimmer sweep
+        // Glass shimmer sweep — translucent wave
         "before:absolute before:inset-0",
-        "before:bg-[linear-gradient(90deg,transparent_0%,rgba(255,255,255,0.06)_40%,rgba(255,255,255,0.10)_50%,rgba(255,255,255,0.06)_60%,transparent_100%)]",
-        "before:bg-[length:200%_100%]",
-        "before:animate-shimmer",
+        "before:bg-[linear-gradient(110deg,transparent_0%,rgba(255,255,255,0.02)_20%,rgba(255,255,255,0.05)_45%,rgba(255,255,255,0.07)_50%,rgba(255,255,255,0.05)_55%,rgba(255,255,255,0.02)_80%,transparent_100%)]",
+        "before:bg-[length:300%_100%]",
+        "before:animate-shimmer-glass",
         "before:transform-gpu",
         className,
       )}
@@ -56,7 +56,8 @@ export const SkeletonText = ({
 export const SkeletonCard = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
   <div
     className={cn(
-      "rounded-2xl bg-surface border border-white/[0.07] p-4 space-y-4",
+      "rounded-2xl bg-surface/60 border border-white/[0.06] p-4 space-y-4",
+      "[backdrop-filter:blur(24px)]",
       className,
     )}
     style={style}

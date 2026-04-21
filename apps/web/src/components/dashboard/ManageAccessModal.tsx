@@ -61,7 +61,7 @@ export function ManageAccessModal({
   const fetchPermissions = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      const resp = await fetch(`/api/permissions/${resourceId}?type=${resourceType}`);
+      const resp = await fetch(`/api/permissions?type=${resourceType}&id=${resourceId}`);
       if (resp.ok) {
         const data = await resp.json();
         const normalized = Array.isArray(data)
@@ -201,243 +201,243 @@ export function ManageAccessModal({
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
                 className="fixed inset-0 z-50 flex items-center justify-center p-4"
               >
-                <div className="w-full max-w-lg rounded-2xl border border-white/10 bg-[#161616]/80 p-0 shadow-2xl backdrop-blur-xl focus:outline-none">
-                {/* Header */}
-                <div className="flex items-center justify-between border-b border-white/5 p-6">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 text-accent">
-                      <Shield className="h-5 w-5" />
+                <div className="w-full max-w-lg rounded-2xl border border-white/[0.06] bg-elevated/90 p-0 shadow-spatial-lg backdrop-blur-2xl focus:outline-none">
+                  {/* Header */}
+                  <div className="flex items-center justify-between border-b border-white/5 p-6">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 text-accent">
+                        <Shield className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <Dialog.Title className="text-lg font-semibold text-white">
+                          Manage Access
+                        </Dialog.Title>
+                        <Dialog.Description className="text-sm text-white/40">
+                          {resourceName}
+                        </Dialog.Description>
+                      </div>
                     </div>
-                    <div>
-                      <Dialog.Title className="text-lg font-semibold text-white">
-                        Manage Access
-                      </Dialog.Title>
-                      <Dialog.Description className="text-sm text-white/40">
-                        {resourceName}
-                      </Dialog.Description>
-                    </div>
+                    <Dialog.Close className="rounded-lg p-2 text-white/20 hover:bg-white/5 hover:text-white transition-colors">
+                      <X className="h-5 w-5" />
+                    </Dialog.Close>
                   </div>
-                  <Dialog.Close className="rounded-lg p-2 text-white/20 hover:bg-white/5 hover:text-white transition-colors">
-                    <X className="h-5 w-5" />
-                  </Dialog.Close>
-                </div>
 
-                {/* Content */}
-                <div className="max-h-[60vh] overflow-y-auto p-6 custom-scrollbar space-y-8">
-                  {/* Add Member Section */}
-                  <div className="space-y-3">
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-white/30 px-1">
-                      Add People
-                    </label>
-                    <div className="flex gap-2">
-                      <div className="relative flex-1 group">
-                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-accent transition-colors">
-                          <Search className="h-4 w-4" />
-                        </div>
-                        <input
-                          type="text"
-                          placeholder="Search by email or name..."
-                          value={inviteEmail}
-                          onChange={(e) => {
-                            setInviteEmail(e.target.value);
-                            setShowSuggestions(true);
-                          }}
-                          onFocus={() => setShowSuggestions(true)}
-                          className="w-full bg-white/[0.03] border border-white/5 rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-accent/30 focus:bg-white/[0.05] transition-all"
-                        />
-                        
-                        {/* Suggestions Dropdown */}
-                        <AnimatePresence>
-                          {showSuggestions && (
-                            <motion.div
-                              initial={{ opacity: 0, y: 4 }}
-                              animate={{ opacity: 1, y: 0 }}
-                              exit={{ opacity: 0, y: 4 }}
-                              className="absolute left-0 right-0 top-full mt-2 z-[60] bg-[#1c1c1c] border border-white/10 rounded-xl shadow-2xl overflow-hidden max-h-48 overflow-y-auto"
-                            >
-                              {suggestions
-                                .filter(s => {
+                  {/* Content */}
+                  <div className="max-h-[60vh] overflow-y-auto p-6 custom-scrollbar space-y-8">
+                    {/* Add Member Section */}
+                    <div className="space-y-3">
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-white/30 px-1">
+                        Add People
+                      </label>
+                      <div className="flex gap-2">
+                        <div className="relative flex-1 group">
+                          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-white/20 group-focus-within:text-accent transition-colors">
+                            <Search className="h-4 w-4" />
+                          </div>
+                          <input
+                            type="text"
+                            placeholder="Search by email or name..."
+                            value={inviteEmail}
+                            onChange={(e) => {
+                              setInviteEmail(e.target.value);
+                              setShowSuggestions(true);
+                            }}
+                            onFocus={() => setShowSuggestions(true)}
+                            className="w-full bg-white/[0.03] border border-white/5 rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-accent/30 focus:bg-white/[0.05] transition-all"
+                          />
+                          
+                          {/* Suggestions Dropdown */}
+                          <AnimatePresence>
+                            {showSuggestions && (
+                              <motion.div
+                                initial={{ opacity: 0, y: 4 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: 4 }}
+                                className="absolute left-0 right-0 top-full mt-2 z-[60] bg-elevated/90 backdrop-blur-2xl border border-white/[0.06] rounded-xl shadow-spatial-lg overflow-hidden max-h-48 overflow-y-auto"
+                              >
+                                {suggestions
+                                  .filter(s => {
+                                    const q = inviteEmail.toLowerCase();
+                                    if (!q) return true;
+                                    return (
+                                      s.email.toLowerCase().includes(q) ||
+                                      s.fullName.toLowerCase().includes(q)
+                                    );
+                                  })
+                                  .slice(0, 8)
+                                  .map(s => (
+                                    <button
+                                      key={s.id}
+                                      onClick={() => {
+                                        setInviteEmail(s.email);
+                                        setShowSuggestions(false);
+                                      }}
+                                      className="w-full flex flex-col items-start px-4 py-2.5 hover:bg-white/5 text-left border-b border-white/5 last:border-0 transition-colors"
+                                    >
+                                      <span className="text-sm font-medium text-white/90">{s.fullName}</span>
+                                      <span className="text-xs text-white/30">{s.email}</span>
+                                    </button>
+                                  ))
+                                }
+                                {!suggestions.some((s) => {
                                   const q = inviteEmail.toLowerCase();
                                   if (!q) return true;
-                                  return (
-                                    s.email.toLowerCase().includes(q) ||
-                                    s.fullName.toLowerCase().includes(q)
-                                  );
-                                })
-                                .slice(0, 8)
-                                .map(s => (
+                                  return s.email.toLowerCase().includes(q) || s.fullName.toLowerCase().includes(q);
+                                }) && (
+                                  <div className="px-4 py-2.5 text-xs text-white/35">
+                                    No existing collaborators found. You can invite by email.
+                                  </div>
+                                )}
+                                {inviteEmail.includes("@") && (
                                   <button
-                                    key={s.id}
-                                    onClick={() => {
-                                      setInviteEmail(s.email);
-                                      setShowSuggestions(false);
-                                    }}
-                                    className="w-full flex flex-col items-start px-4 py-2.5 hover:bg-white/5 text-left border-b border-white/5 last:border-0 transition-colors"
+                                    onClick={() => setShowSuggestions(false)}
+                                    className="w-full px-4 py-2.5 hover:bg-white/5 text-left text-xs text-white/40 italic"
                                   >
-                                    <span className="text-sm font-medium text-white/90">{s.fullName}</span>
-                                    <span className="text-xs text-white/30">{s.email}</span>
+                                    Invite new user: {inviteEmail}
                                   </button>
-                                ))
-                              }
-                              {!suggestions.some((s) => {
-                                const q = inviteEmail.toLowerCase();
-                                if (!q) return true;
-                                return s.email.toLowerCase().includes(q) || s.fullName.toLowerCase().includes(q);
-                              }) && (
-                                <div className="px-4 py-2.5 text-xs text-white/35">
-                                  No existing collaborators found. You can invite by email.
-                                </div>
-                              )}
-                              {inviteEmail.includes("@") && (
-                                <button
-                                  onClick={() => setShowSuggestions(false)}
-                                  className="w-full px-4 py-2.5 hover:bg-white/5 text-left text-xs text-white/40 italic"
-                                >
-                                  Invite new user: {inviteEmail}
-                                </button>
-                              )}
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div>
-                      
-                      <select
-                        value={inviteRole}
-                        onChange={(e) => setInviteRole(e.target.value as any)}
-                        className="bg-white/[0.03] border border-white/5 border-transparent px-3 py-2 rounded-xl text-sm text-white/70 focus:outline-none focus:border-accent/30 transition-all cursor-pointer"
-                      >
-                        <option value="VIEWER" className="bg-[#1e1e1e]">Viewer</option>
-                        <option value="EDITOR" className="bg-[#1e1e1e]">Editor</option>
-                      </select>
+                                )}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+                        
+                        <select
+                          value={inviteRole}
+                          onChange={(e) => setInviteRole(e.target.value as any)}
+                          className="bg-white/[0.03] border border-white/5 px-3 py-2 rounded-xl text-sm text-white/70 focus:outline-none focus:border-accent/30 transition-all cursor-pointer"
+                        >
+                          <option value="VIEWER" className="bg-[#1e1e1e]">Viewer</option>
+                          <option value="EDITOR" className="bg-[#1e1e1e]">Editor</option>
+                        </select>
 
+                        <button
+                          disabled={!inviteEmail || isSaving}
+                          onClick={handleAddMember}
+                          className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-white shadow-glow hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale disabled:hover:scale-100"
+                        >
+                          {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="space-y-4">
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-white/30 px-1">
+                        Collaborators
+                      </label>
+
+                      {isLoading ? (
+                        <div className="flex h-40 flex-col items-center justify-center gap-3 text-white/20">
+                          <Loader2 className="h-8 w-8 animate-spin" />
+                          <p className="text-sm">Fetching collaborators...</p>
+                        </div>
+                      ) : permissions.length === 0 ? (
+                        <div className="flex h-40 flex-col items-center justify-center gap-3 text-center text-white/20">
+                          <Users className="h-12 w-12 opacity-50" />
+                          <p className="text-sm italic">No shared collaborators yet.</p>
+                        </div>
+                      ) : (
+                        <div className="space-y-4">
+                          {permissions.map((perm) => {
+                            const isRemoved = pendingRemovals.has(perm.userId);
+                            const currentRole = pendingUpdates[perm.userId] || perm.accessLevel;
+                            
+                            return (
+                              <div
+                                key={perm.userId}
+                                className={cn(
+                                  "group flex items-center justify-between rounded-xl border border-transparent p-3 transition-all duration-200",
+                                  isRemoved ? "bg-red-500/5 opacity-50 grayscale" : "hover:bg-white/5 hover:border-white/5"
+                                )}
+                              >
+                                <div className="flex items-center gap-3 min-w-0">
+                                  <div className="h-9 w-9 shrink-0 rounded-full bg-white/5 flex items-center justify-center text-xs font-medium text-white/40">
+                                    {(perm.userName || perm.userEmail || perm.email || "?").charAt(0).toUpperCase()}
+                                  </div>
+                                  <div className="min-w-0">
+                                    <p className="truncate text-sm font-medium text-white">
+                                      {perm.userName || perm.userEmail || perm.email || "Unknown user"}
+                                    </p>
+                                    <p className="truncate text-xs text-white/30">
+                                      {perm.userEmail || perm.email || ""}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center gap-2">
+                                  {perm.accessLevel !== "OWNER" && (
+                                    <>
+                                      <select
+                                        disabled={isRemoved || isSaving}
+                                        value={currentRole}
+                                        onChange={(e) => handleRoleChange(perm.userId, e.target.value)}
+                                        className="bg-transparent text-xs text-white/60 focus:outline-none hover:text-white transition-colors cursor-pointer"
+                                      >
+                                        <option value="VIEWER" className="bg-[#1e1e1e]">Viewer</option>
+                                        <option value="EDITOR" className="bg-[#1e1e1e]">Editor</option>
+                                      </select>
+
+                                      <button
+                                        onClick={() => handleRemove(perm.userId)}
+                                        className={cn(
+                                          "p-2 rounded-lg transition-all",
+                                          isRemoved 
+                                            ? "text-accent hover:bg-accent/10" 
+                                            : "text-white/20 hover:text-red-400 hover:bg-red-500/10"
+                                        )}
+                                        title={isRemoved ? "Restore access" : "Remove access"}
+                                      >
+                                        {isRemoved ? <AlertCircle className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
+                                      </button>
+                                    </>
+                                  )}
+                                  {perm.accessLevel === "OWNER" && (
+                                    <span className="px-2 py-1 rounded bg-white/5 text-[10px] uppercase tracking-wider text-white/40 font-semibold">
+                                      Owner
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="flex items-center justify-between border-t border-white/5 p-6 bg-white/[0.02] rounded-b-2xl">
+                    <div className="text-xs text-white/30">
+                      {hasChanges ? (
+                        <span className="flex items-center gap-1.5 text-accent/80">
+                          <Check className="h-3 w-3" />
+                          Unsaved changes
+                        </span>
+                      ) : (
+                        "No changes pending"
+                      )}
+                    </div>
+                    <div className="flex gap-3">
                       <button
-                        disabled={!inviteEmail || isSaving}
-                        onClick={handleAddMember}
-                        className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-white shadow-glow hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale disabled:hover:scale-100"
+                        onClick={() => onOpenChange(false)}
+                        className="px-4 py-2 text-sm font-medium text-white/60 hover:text-white transition-colors"
                       >
-                        {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+                        Cancel
+                      </button>
+                      <button
+                        disabled={!hasChanges || isSaving}
+                        onClick={handleSave}
+                        className={cn(
+                          "relative flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold transition-all duration-200",
+                          hasChanges && !isSaving
+                            ? "bg-accent text-white shadow-glow hover:scale-105 active:scale-95"
+                            : "bg-white/5 text-white/20 cursor-not-allowed"
+                        )}
+                      >
+                        {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+                        Save Changes
                       </button>
                     </div>
                   </div>
-
-                  <div className="space-y-4">
-                    <label className="text-[11px] font-bold uppercase tracking-wider text-white/30 px-1">
-                      Collaborators
-                    </label>
-
-                    {isLoading ? (
-                      <div className="flex h-40 flex-col items-center justify-center gap-3 text-white/20">
-                        <Loader2 className="h-8 w-8 animate-spin" />
-                        <p className="text-sm">Fetching collaborators...</p>
-                      </div>
-                    ) : permissions.length === 0 ? (
-                      <div className="flex h-40 flex-col items-center justify-center gap-3 text-center text-white/20">
-                        <Users className="h-12 w-12 opacity-50" />
-                        <p className="text-sm italic">No shared collaborators yet.</p>
-                      </div>
-                    ) : (
-                      <div className="space-y-4">
-                        {permissions.map((perm) => {
-                          const isRemoved = pendingRemovals.has(perm.userId);
-                          const currentRole = pendingUpdates[perm.userId] || perm.accessLevel;
-                          
-                          return (
-                            <div
-                              key={perm.userId}
-                              className={cn(
-                                "group flex items-center justify-between rounded-xl border border-transparent p-3 transition-all duration-200",
-                                isRemoved ? "bg-red-500/5 opacity-50 grayscale" : "hover:bg-white/5 hover:border-white/5"
-                              )}
-                            >
-                              <div className="flex items-center gap-3 min-w-0">
-                                <div className="h-9 w-9 shrink-0 rounded-full bg-white/5 flex items-center justify-center text-xs font-medium text-white/40">
-                                  {(perm.userName || perm.userEmail || perm.email || "?").charAt(0).toUpperCase()}
-                                </div>
-                                <div className="min-w-0">
-                                  <p className="truncate text-sm font-medium text-white">
-                                    {perm.userName || perm.userEmail || perm.email || "Unknown user"}
-                                  </p>
-                                  <p className="truncate text-xs text-white/30">
-                                    {perm.userEmail || perm.email || ""}
-                                  </p>
-                                </div>
-                              </div>
-
-                              <div className="flex items-center gap-2">
-                                {perm.accessLevel !== "OWNER" && (
-                                  <>
-                                    <select
-                                      disabled={isRemoved || isSaving}
-                                      value={currentRole}
-                                      onChange={(e) => handleRoleChange(perm.userId, e.target.value)}
-                                      className="bg-transparent text-xs text-white/60 focus:outline-none hover:text-white transition-colors cursor-pointer"
-                                    >
-                                      <option value="VIEWER" className="bg-[#1e1e1e]">Viewer</option>
-                                      <option value="EDITOR" className="bg-[#1e1e1e]">Editor</option>
-                                    </select>
-
-                                    <button
-                                      onClick={() => handleRemove(perm.userId)}
-                                      className={cn(
-                                        "p-2 rounded-lg transition-all",
-                                        isRemoved 
-                                          ? "text-accent hover:bg-accent/10" 
-                                          : "text-white/20 hover:text-red-400 hover:bg-red-500/10"
-                                      )}
-                                      title={isRemoved ? "Restore access" : "Remove access"}
-                                    >
-                                      {isRemoved ? <AlertCircle className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
-                                    </button>
-                                  </>
-                                )}
-                                {perm.accessLevel === "OWNER" && (
-                                  <span className="px-2 py-1 rounded bg-white/5 text-[10px] uppercase tracking-wider text-white/40 font-semibold">
-                                    Owner
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* Footer */}
-                <div className="flex items-center justify-between border-t border-white/5 p-6 bg-white/[0.02] rounded-b-2xl">
-                  <div className="text-xs text-white/30">
-                    {hasChanges ? (
-                      <span className="flex items-center gap-1.5 text-accent/80">
-                        <Check className="h-3 w-3" />
-                        Unsaved changes
-                      </span>
-                    ) : (
-                      "No changes pending"
-                    )}
-                  </div>
-                  <div className="flex gap-3">
-                    <button
-                      onClick={() => onOpenChange(false)}
-                      className="px-4 py-2 text-sm font-medium text-white/60 hover:text-white transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      disabled={!hasChanges || isSaving}
-                      onClick={handleSave}
-                      className={cn(
-                        "relative flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold transition-all duration-200",
-                        hasChanges && !isSaving
-                          ? "bg-accent text-white shadow-glow hover:scale-105 active:scale-95"
-                          : "bg-white/5 text-white/20 cursor-not-allowed"
-                      )}
-                    >
-                      {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
-                      Save Changes
-                    </button>
-                  </div>
-                </div>
                 </div>
               </motion.div>
             </Dialog.Content>

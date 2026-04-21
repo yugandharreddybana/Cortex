@@ -73,7 +73,7 @@ export default function ReferralsPage() {
                     setTimeout(() => setCopied(false), 2000);
                   }
                 }}
-                className="h-[66px] flex flex-col items-center justify-center gap-1.5 bg-accent text-white px-6 rounded-xl font-medium hover:bg-accent/90 transition-colors shrink-0 shadow-[0_0_20px_rgba(108,99,255,0.25)]"
+                className="h-[66px] flex flex-col items-center justify-center gap-1.5 bg-accent text-white px-6 rounded-xl font-medium hover:bg-accent/90 transition-colors shrink-0 shadow-[0_0_20px_rgba(129,140,248,0.2)]"
               >
                 {copied ? <CheckIcon className="w-5 h-5" /> : <CopyIcon className="w-5 h-5" />}
                 <span className="text-xs uppercase tracking-widest opacity-90">{copied ? "Copied" : "Copy"}</span>

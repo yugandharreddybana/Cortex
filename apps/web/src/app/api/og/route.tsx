@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
             width:      "600px",
             height:     "600px",
             borderRadius: "50%",
-            background: "radial-gradient(circle, rgba(108,99,255,0.15) 0%, transparent 70%)",
+            background: "radial-gradient(circle, rgba(129,140,248,0.15) 0%, transparent 70%)",
           }}
         />
 
@@ -48,7 +48,7 @@ export async function GET(req: NextRequest) {
               width:           "36px",
               height:          "36px",
               borderRadius:    "8px",
-              backgroundColor: "#6C63FF",
+              backgroundColor: "#818CF8",
               display:         "flex",
               alignItems:      "center",
               justifyContent:  "center",

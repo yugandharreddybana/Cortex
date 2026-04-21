@@ -109,7 +109,7 @@ function TagPill({ name, color, onRemove }: { name: string; color: string; onRem
     <span
       className={cn(
         "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium",
-        c ? `${c.bg} ${c.text} border ${c.border}` : "border border-white/10",
+        c ? `${c.bg} ${c.text} border ${c.border}` : "border border-white/[0.06]",
       )}
       style={isHex ? { background: `${color}20`, color, borderColor: `${color}40` } : undefined}
     >
@@ -395,7 +395,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
             }}
             className={cn(
               "flex-1 flex items-center justify-start gap-2.5 px-3 py-1.5 rounded-xl",
-              "text-sm transition-all duration-150 ease-snappy min-w-0 text-left",
+              "text-sm transition-all duration-150 ease-spatial min-w-0 text-left",
               editFolderId === f.id
                 ? "bg-white/[0.09] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
                 : "text-white/60 hover:bg-white/[0.05] hover:text-white"
@@ -558,7 +558,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                 align="end"
                 className={cn(
                   "z-50 w-64 rounded-xl p-4",
-                  "bg-[#1c1c1c] border border-white/[0.09]",
+                  "bg-elevated/90 backdrop-blur-2xl border border-white/[0.06]",
                   "shadow-[0_12px_40px_rgba(0,0,0,0.55)]",
                   "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
                 )}
@@ -573,7 +573,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                       className={cn(
                         "flex-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-150",
                         fontIdx === i
-                          ? "bg-white/[0.10] text-white border border-white/10"
+                          ? "bg-white/[0.10] text-white border border-white/[0.06]"
                           : "text-white/40 hover:text-white/70 hover:bg-white/[0.05] border border-transparent",
                       )}
                     >
@@ -592,7 +592,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                       className={cn(
                         "flex-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-150",
                         sizeIdx === i
-                          ? "bg-white/[0.10] text-white border border-white/10"
+                          ? "bg-white/[0.10] text-white border border-white/[0.06]"
                           : "text-white/40 hover:text-white/70 hover:bg-white/[0.05] border border-transparent",
                       )}
                     >
@@ -611,7 +611,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                       className={cn(
                         "flex-1 px-2 py-1.5 rounded-lg text-[11px] font-medium transition-all duration-150",
                         themeIdx === i
-                          ? "bg-white/[0.10] text-white border border-white/10"
+                          ? "bg-white/[0.10] text-white border border-white/[0.06]"
                           : "text-white/40 hover:text-white/70 hover:bg-white/[0.05] border border-transparent",
                       )}
                     >
@@ -773,7 +773,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
             const src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}${highlight.videoTimestamp ? `?start=${Math.floor(highlight.videoTimestamp)}` : ""}`;
             return (
               <div className="mb-10">
-                <div className="relative w-full rounded-xl overflow-hidden border border-white/[0.08] shadow-2xl" style={{ aspectRatio: "16/9" }}>
+                <div className="relative w-full rounded-xl overflow-hidden border border-white/[0.08] shadow-spatial-lg" style={{ aspectRatio: "16/9" }}>
                   <iframe
                     src={src}
                     className="absolute inset-0 w-full h-full"
@@ -876,7 +876,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                               }
                             }}
                             className={cn(
-                              "w-full text-sm bg-black/40 border border-white/10 rounded-md p-3",
+                              "w-full text-sm bg-black/40 border border-white/[0.06] rounded-md p-3",
                               "text-white/90 placeholder:text-white/20 focus:outline-none focus:border-accent/40",
                               "resize-none overflow-hidden transition-all duration-200"
                             )}
@@ -921,7 +921,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                                     }}
                                     className={cn(
                                       "flex items-center gap-1.5 px-2 py-1 rounded-full text-xs transition-all",
-                                      "border border-white/10 hover:border-white/20",
+                                      "border border-white/[0.06] hover:border-white/20",
                                       hasReacted ? "bg-accent/20 border-accent/40 text-accent" : "bg-white/5 text-white/60 hover:bg-white/10"
                                     )}
                                     title={`Reacted by: ${users.join(", ")}`}
@@ -934,7 +934,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                                   <Popover.Content
                                     side="top"
                                     sideOffset={6}
-                                    className="z-50 bg-[#1c1c1c] border border-white/10 rounded-lg p-2 shadow-xl animate-in fade-in zoom-in-95 duration-100"
+                                    className="z-50 bg-elevated/90 backdrop-blur-2xl border border-white/[0.06] rounded-xl p-2 shadow-spatial-md animate-in fade-in zoom-in-95 duration-100"
                                   >
                                     <div className="text-[10px] text-white/40 font-medium uppercase tracking-widest mb-1 px-1">Reacted by</div>
                                     <div className="flex flex-col gap-1">
@@ -942,7 +942,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                                         <div key={i} className="text-xs text-white/80 px-1">{u}</div>
                                       ))}
                                     </div>
-                                    <Popover.Arrow className="fill-[#1c1c1c]" />
+                                    <Popover.Arrow className="fill-elevated" />
                                   </Popover.Content>
                                 </Popover.Portal>
                               </Popover.Root>
@@ -968,7 +968,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                               sideOffset={8}
                               className={cn(
                                 "z-50 flex gap-1 p-1.5 rounded-full",
-                                "bg-[#1c1c1c] border border-white/10",
+                                "bg-elevated/90 backdrop-blur-2xl border border-white/[0.06]",
                                 "shadow-[0_8px_30px_rgba(0,0,0,0.5)]",
                                 "animate-in fade-in slide-in-from-bottom-2 duration-150"
                               )}
@@ -1018,7 +1018,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                         }
                       }}
                       className={cn(
-                        "w-full text-sm bg-black/40 border border-white/10 rounded-xl rounded-tl-sm p-4",
+                        "w-full text-sm bg-black/40 border border-white/[0.06] rounded-xl rounded-tl-sm p-4",
                         "text-white/90 placeholder:text-white/20 focus:outline-none focus:border-accent/40 focus:ring-1 focus:ring-accent/40",
                         "resize-none overflow-hidden transition-all duration-200"
                       )}
@@ -1050,7 +1050,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
       <Dialog.Root open={editOpen} onOpenChange={setEditOpen}>
         <Dialog.Portal>
           <Dialog.Overlay className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0" />
-          <Dialog.Content className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-white/10 bg-[#121212] p-6 shadow-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 sm:rounded-2xl">
+          <Dialog.Content className="fixed left-[50%] top-[50%] z-50 grid w-full max-w-lg translate-x-[-50%] translate-y-[-50%] gap-4 border border-white/[0.06] bg-elevated/90 backdrop-blur-2xl p-6 shadow-spatial-lg duration-200 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 sm:rounded-2xl">
             <div className="flex flex-col space-y-1.5 text-center sm:text-left">
               <Dialog.Title className="text-lg font-semibold leading-none tracking-tight">
                 {isTagOnly ? "Assign Tags" : "Edit Highlight Details"}
@@ -1088,7 +1088,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                     </Popover.Trigger>
 
                     <Popover.Portal>
-                      <Popover.Content align="start" sideOffset={6} className="z-[70] w-[450px] flex flex-col rounded-xl bg-[#1e1e1e] border border-white/[0.09] shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] p-2">
+                      <Popover.Content align="start" sideOffset={6} className="z-[70] w-[450px] flex flex-col rounded-xl bg-elevated/90 backdrop-blur-2xl border border-white/[0.06] shadow-[0_16px_40px_rgba(0,0,0,0.5),inset_0_1px_0_rgba(255,255,255,0.06)] p-2">
                         {/* Create Folder (Pinned to top) */}
                         <div className="pb-2 mb-2 border-b border-white/[0.08]">
                           <button
@@ -1116,7 +1116,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                             }}
                             className={cn(
                               "w-full flex items-center justify-start gap-2.5 px-3 py-1.5 rounded-xl mb-1",
-                              "text-sm transition-all duration-150 ease-snappy min-w-0 text-left",
+                              "text-sm transition-all duration-150 ease-spatial min-w-0 text-left",
                               editFolderId === null
                                 ? "bg-white/[0.09] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.07)]"
                                 : "text-white/60 hover:bg-white/[0.05] hover:text-white"
@@ -1161,7 +1161,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                     </button>
                   </Popover.Trigger>
                   <Popover.Portal>
-                    <Popover.Content align="start" sideOffset={6} className="z-[70] w-[240px] rounded-xl overflow-hidden bg-[#1c1c1c] border border-white/[0.09] shadow-2xl p-0">
+                    <Popover.Content align="start" sideOffset={6} className="z-[70] w-[240px] rounded-xl overflow-hidden bg-elevated/90 backdrop-blur-2xl border border-white/[0.06] shadow-spatial-lg p-0">
                       <div className="px-3 py-2 border-b border-white/[0.06]">
                         <input
                           autoFocus
@@ -1231,7 +1231,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
               </button>
               <button
                 onClick={handleSaveEdit}
-                className="px-4 py-2 rounded-xl text-sm font-medium bg-accent hover:bg-accent/90 text-white shadow-lg shadow-accent/20 transition-all"
+                className="px-4 py-2 rounded-xl text-sm font-medium bg-accent hover:bg-accent/90 text-white shadow-spatial-md shadow-accent/20 transition-all duration-200 ease-spatial"
               >
                 Save Changes
               </button>

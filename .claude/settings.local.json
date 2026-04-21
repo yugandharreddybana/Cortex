@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /f/Projects/Cortex log --oneline -5)",
+      "Bash(git -C /f/Projects/Cortex status --short)",
+      "Bash(git -C /f/Projects/Cortex diff HEAD -- apps/api/.env)",
+      "Bash(git -C /f/Projects/Cortex show HEAD:apps/api/.env)",
+      "Bash(git -C /f/Projects/Cortex log --all --full-history -- apps/api/.env)"
+    ]
+  }
+}
