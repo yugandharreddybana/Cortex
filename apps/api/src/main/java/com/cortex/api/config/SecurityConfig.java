@@ -28,12 +28,14 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthFilter jwtAuthFilter;
+    private final AuthRateLimitFilter authRateLimitFilter;
 
-    @Value("${cors.allowed-origins:http://localhost:3000,http://localhost:3001,https://localhost:3000}")
+    @Value("${cors.allowed-origins:http://localhost:3000}")
     private String allowedOriginsProperty;
 
-    public SecurityConfig(JwtAuthFilter jwtAuthFilter) {
+    public SecurityConfig(JwtAuthFilter jwtAuthFilter, AuthRateLimitFilter authRateLimitFilter) {
         this.jwtAuthFilter = jwtAuthFilter;
+        this.authRateLimitFilter = authRateLimitFilter;
     }
 
     @Bean
@@ -57,7 +59,13 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR, DispatcherType.FORWARD).permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                .requestMatchers("/api/v1/auth/**", "/ws/**", "/error").permitAll()
+                .requestMatchers(
+                        "/api/v1/auth/signup",
+                        "/api/v1/auth/login",
+                        "/api/v1/auth/probe",
+                        "/ws/**",
+                        "/error"
+                ).permitAll()
                 .requestMatchers("/api/v1/stripe/webhook").permitAll()
                 .anyRequest().authenticated()
             )
@@ -66,6 +74,7 @@ public class SecurityConfig {
                     response.sendError(HttpStatus.UNAUTHORIZED.value(), "Unauthorized");
                 })
             )
+            .addFilterBefore(authRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();

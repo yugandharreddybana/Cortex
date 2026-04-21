@@ -1,8 +1,0 @@
-]633;E;} > api_verification_results.txt;06acd514-6018-48eb-828b-669150994713]633;CEndpoint Verification Summary
-==============================
-200 OK - /api/v1/auth/me: 200
-200 OK - /api/v1/highlights: 200
-200 OK - /api/v1/folders: 200
-200 OK - /api/v1/tags: 200
-200 OK - /api/v1/share/shared-with-me: 200
-200 OK - /api/v1/notifications/unread-count: 200

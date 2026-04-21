@@ -15,6 +15,8 @@ import java.util.Map;
 @Service
 public class JwtService {
 
+    private static final int MIN_SECRET_BYTES = 32; // 256 bits for HS256
+
     private final SecretKey signingKey;
     private final long expirationMs;
     private final long extensionExpirationMs;
@@ -23,7 +25,19 @@ public class JwtService {
             @Value("${cortex.jwt.secret}") String secret,
             @Value("${cortex.jwt.expiration-ms}") long expirationMs,
             @Value("${cortex.jwt.extension-expiration-ms}") long extensionExpirationMs) {
-        this.signingKey = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException(
+                    "cortex.jwt.secret is not set. Define CORTEX_JWT_SECRET (min " + MIN_SECRET_BYTES + " bytes).");
+        }
+        byte[] keyBytes = secret.getBytes(StandardCharsets.UTF_8);
+        if (keyBytes.length < MIN_SECRET_BYTES) {
+            throw new IllegalStateException(
+                    "cortex.jwt.secret must be at least " + MIN_SECRET_BYTES + " bytes (got " + keyBytes.length + ").");
+        }
+        if (expirationMs <= 0 || extensionExpirationMs <= 0) {
+            throw new IllegalStateException("JWT expiration values must be positive.");
+        }
+        this.signingKey = Keys.hmacShaKeyFor(keyBytes);
         this.expirationMs = expirationMs;
         this.extensionExpirationMs = extensionExpirationMs;
     }
