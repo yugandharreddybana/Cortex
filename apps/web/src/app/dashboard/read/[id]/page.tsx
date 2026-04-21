@@ -181,7 +181,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
   React.useEffect(() => {
     if (highlight?.id) {
       setIsFetchingComments(true);
-      fetch(`/api/v1/highlights/${highlight.id}/comments`, { credentials: "include" })
+      fetch(`/api/highlights/${highlight.id}/comments`, { credentials: "include" })
         .then(res => res.json())
         .then(data => {
           setComments(Array.isArray(data) ? data : []);
@@ -242,7 +242,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
   const handlePostComment = async () => {
     if (!newComment.trim()) return;
     try {
-      const res = await fetch(`/api/v1/highlights/${highlight.id}/comments`, {
+      const res = await fetch(`/api/highlights/${highlight.id}/comments`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: newComment }),
@@ -264,7 +264,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
   const handleUpdateComment = async (commentId: number) => {
     if (!editCommentText.trim()) return;
     try {
-      const res = await fetch(`/api/v1/highlights/${highlight.id}/comments/${commentId}`, {
+      const res = await fetch(`/api/highlights/${highlight.id}/comments/${commentId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: editCommentText }),
@@ -284,7 +284,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
 
   const handleToggleReaction = async (commentId: number, emoji: string) => {
     try {
-      const res = await fetch(`/api/v1/highlights/${highlight.id}/comments/${commentId}/reactions`, {
+      const res = await fetch(`/api/highlights/${highlight.id}/comments/${commentId}/reactions`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ emoji }),
