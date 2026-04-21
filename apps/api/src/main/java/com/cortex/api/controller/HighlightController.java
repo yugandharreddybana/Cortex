@@ -202,16 +202,13 @@ public class HighlightController {
             applyTags(h, dto.tagIds, user);
         }
 
-        final Highlight toSave = h;
-        highlightRepo.save(toSave);
-        em.flush();
-        em.refresh(toSave);
+        final Highlight toSave = highlightRepo.save(h);
         HighlightDTO updated = toDTO(toSave);
         webSocketService.sendToUser(auth.getName(), "/topic/highlights/updated", updated);
 
         // Real-time broadcast to anyone viewing THIS highlight
         notificationService.broadcastResourceActivity("highlight", id, "HIGHLIGHT_UPDATED", updated);
-        
+
         // Real-time broadcast to the parent FOLDER for grid/sidebar sync
         if (h.getFolderId() != null) {
             notificationService.broadcastResourceActivity("folder", java.util.Objects.requireNonNull(h.getFolderId()), "HIGHLIGHT_UPDATED", updated);
@@ -245,10 +242,7 @@ public class HighlightController {
             applyTags(h, dto.tagIds, user);
         }
 
-        final Highlight toSave = h;
-        highlightRepo.save(toSave);
-        em.flush();
-        em.refresh(toSave);
+        final Highlight toSave = highlightRepo.save(h);
         HighlightDTO patched = toDTO(toSave);
         webSocketService.sendToUser(auth.getName(), "/topic/highlights/updated", patched);
 
