@@ -116,7 +116,6 @@ export default function DashboardLayout({
 
         {/* ── Main area ── */}
         <div className="flex-1 min-w-0 flex flex-col overflow-hidden bg-bg">
-
           {/* Mobile top bar (visible only on mobile) */}
           <header className="flex md:hidden h-14 items-center justify-between px-4 border-b border-white/[0.04] bg-bg/80 backdrop-blur-xl shrink-0">
             <Link href="/dashboard" className="flex items-center gap-2">
