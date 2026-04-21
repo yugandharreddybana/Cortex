@@ -1079,7 +1079,23 @@ function HighlightItem({
         position: "relative",
       }}
       onClick={() => {
-        if (h.url && h.url !== "#") window.open(h.url, "_blank");
+        if (h.url && h.url !== "#") {
+          // Append a W3C text-fragment directive so the browser scrolls to
+          // the highlighted text on the source page. Chrome/Edge/Safari
+          // respect `#:~:text=<encoded>` out of the box.
+          let target = h.url;
+          const snippet = (h.text ?? "").trim();
+          if (snippet && !target.includes("#:~:text=")) {
+            // Use first ~80 chars of the highlight text to keep URL short
+            // and avoid failed matches on very long selections.
+            const excerpt = snippet.length > 80 ? snippet.slice(0, 80) : snippet;
+            const frag = `#:~:text=${encodeURIComponent(excerpt)}`;
+            // Preserve any existing hash by placing text directive last.
+            const hashIdx = target.indexOf("#");
+            target = hashIdx >= 0 ? `${target.slice(0, hashIdx)}${frag}` : `${target}${frag}`;
+          }
+          window.open(target, "_blank");
+        }
       }}
     >
       {/* Delete button */}
