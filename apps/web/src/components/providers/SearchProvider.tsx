@@ -18,7 +18,6 @@ export function SearchProvider({ children }: { children: React.ReactNode }) {
   const router    = useRouter();
   const isOpen    = useSearchStore((s) => s.isOpen);
   const setIsOpen = useSearchStore((s) => s.setIsOpen);
-  const toggle    = useSearchStore((s) => s.toggle);
 
   const setViewMode          = useDashboardStore((s) => s.setViewMode);
   const setNewFolderOpen     = useDashboardStore((s) => s.setNewFolderDialogOpen);
@@ -162,17 +161,11 @@ export function SearchProvider({ children }: { children: React.ReactNode }) {
     },
   ], [router, folders, highlights, setIsOpen, setNewFolderOpen, setNewHighlightOpen, setViewMode]);
 
-  React.useEffect(() => {
-    const handler = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
-        e.preventDefault();
-        toggle();
-      }
-    };
-
-    document.addEventListener("keydown", handler);
-    return () => document.removeEventListener("keydown", handler);
-  }, [toggle]);
+  // NOTE: Cmd+K is owned by DashboardLayout (opens CommandPalette).
+  // A second listener here on the same key caused both handlers to fire
+  // on every press, toggling cmdOpen and search in opposite directions and
+  // making the shortcut appear broken. If a keyboard shortcut for search
+  // is needed, pick a different chord (e.g., Cmd+/ or Cmd+Shift+K).
 
   return (
     <>

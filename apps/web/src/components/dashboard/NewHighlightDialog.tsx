@@ -23,9 +23,12 @@ export function NewHighlightDialog({ open, onOpenChange }: NewHighlightDialogPro
 
   // Recursive helper for folder hierarchy
   const uniqueFolders = React.useMemo(() => {
+    // Include folders where effectiveRole is missing — the API already only
+    // returns folders the user can access, and blanking the dropdown is worse
+    // than a server-side 403 on save. Only filter out explicit VIEWER roles.
     const editable = folders.filter(f => {
       const role = f.effectiveRole?.toUpperCase();
-      return role === "OWNER" || role === "EDITOR";
+      return !role || role === "OWNER" || role === "EDITOR";
     });
     const editableIds = new Set(editable.map(f => f.id));
     
@@ -72,7 +75,7 @@ export function NewHighlightDialog({ open, onOpenChange }: NewHighlightDialogPro
     if (!activeFolder) return undefined;
     const current = folders.find(f => f.id === activeFolder);
     const role = current?.effectiveRole?.toUpperCase();
-    if (current && (role === "OWNER" || role === "EDITOR")) {
+    if (current && (!role || role === "OWNER" || role === "EDITOR")) {
       return activeFolder;
     }
     return undefined;
