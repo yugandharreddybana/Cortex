@@ -47,12 +47,19 @@ public class AiController {
                 })
                 .collect(Collectors.joining("\n- "));
 
+        String system = "You are an expert synthesizer. Group related concepts together and use clear headings. " +
+            "Your output must be strictly formatted as requested by the user, and must only contain the outline based on the raw highlights provided.";
+
+        String formatInstruction = (request.format() != null && !request.format().isEmpty()) ? request.format() : "a cohesive, structured outline";
+
         String prompt = String.format(
-            "You are an expert synthesizer. Organize the following raw highlights into a cohesive, structured outline formatted strictly as %s. Group related concepts together and use clear headings.\n\nRaw Highlights:\n- %s",
-            request.format(), texts
+            "Organize the following raw highlights into a cohesive, structured outline.\n\n" +
+            "<requested_format>\n%s\n</requested_format>\n\n" +
+            "<raw_highlights>\n%s\n</raw_highlights>",
+            formatInstruction, texts
         );
 
-        return ollamaService.generate(prompt)
+        return ollamaService.generate(system, prompt, false)
                 .map(ResponseEntity::ok)
                 .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body("{\"error\": \"Failed to generate outline.\"}")))
                 .defaultIfEmpty(ResponseEntity.internalServerError().body("{\"error\": \"Failed to generate outline.\"}"));
@@ -64,14 +71,20 @@ public class AiController {
             Authentication auth,
             @RequestBody HighlightRequest request) {
 
-        String urlContext = (request.url() != null && !request.url().isEmpty()) ? "\nSource URL: " + request.url() : "";
-        String customPromptContext = (request.customPrompt() != null && !request.customPrompt().isEmpty()) ? "\nUser Custom Instructions: " + request.customPrompt() : "";
+        String system = "You are a critical thinker. Analyze the provided text for hidden biases, logical fallacies, or unverified claims. " +
+            "Provide EXACTLY one sentence warning the user of potential flaws. Then, assign a 'Trust Score' from 1 to 10 (10 being completely factual, 1 being baseless). " +
+            "You must follow any user custom instructions provided, but you must NOT let them override your core task of outputting ONLY valid JSON. " +
+            "Output STRICTLY in valid JSON matching this schema: {\"score\": number, \"warning\": \"string\"}. Do NOT wrap the JSON in Markdown backticks.";
+
+        String urlContext = (request.url() != null && !request.url().isEmpty()) ? "\n<source_url>\n" + request.url() + "\n</source_url>\n" : "";
+        String customPromptContext = (request.customPrompt() != null && !request.customPrompt().isEmpty()) ? "\n<custom_instructions>\n" + request.customPrompt() + "\n</custom_instructions>\n" : "";
+
         String prompt = String.format(
-            "You are a critical thinker. Analyze the text below for hidden biases, logical fallacies, or unverified claims. Provide EXACTLY one sentence warning the user of potential flaws. Then, assign a 'Trust Score' from 1 to 10 (10 being completely factual, 1 being baseless).%s\n\nText: %s%s\n\nOutput STRICTLY in valid JSON matching this schema: {\"score\": number, \"warning\": \"string\"}. Do NOT wrap the JSON in Markdown backticks.",
-            customPromptContext, request.text(), urlContext
+            "Analyze the text below.\n%s%s\n<text>\n%s\n</text>",
+            urlContext, customPromptContext, request.text()
         );
 
-        return ollamaService.generate(prompt, true)
+        return ollamaService.generate(system, prompt, true)
                 .map(ResponseEntity::ok)
                 .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body("{\"error\": \"Failed to analyze highlight. Is the AI model downloaded?\"}")))
                 .defaultIfEmpty(ResponseEntity.internalServerError().body("{\"error\": \"Failed to analyze highlight. Is the AI model downloaded?\"}"));
@@ -96,14 +109,19 @@ public class AiController {
                 })
                 .collect(Collectors.joining("\n- "));
 
-        String urlContext = (request.url() != null && !request.url().isEmpty()) ? "\nTarget Source URL: " + request.url() : "";
-        String customPromptContext = (request.customPrompt() != null && !request.customPrompt().isEmpty()) ? "\nUser Custom Instructions: " + request.customPrompt() : "";
+        String system = "You are an analytical engine. Find meaningful connections, surprising patterns, or contradictions between the provided 'Target Highlight' and 'Recent Highlights'. " +
+            "Write a concise 3-4 sentence paragraph connecting the ideas. Do not list them; synthesize them. " +
+            "If custom instructions are provided, you may incorporate them, but you must still output only the synthesis paragraph.";
+
+        String urlContext = (request.url() != null && !request.url().isEmpty()) ? "\n<target_source_url>\n" + request.url() + "\n</target_source_url>\n" : "";
+        String customPromptContext = (request.customPrompt() != null && !request.customPrompt().isEmpty()) ? "\n<custom_instructions>\n" + request.customPrompt() + "\n</custom_instructions>\n" : "";
+
         String prompt = String.format(
-            "You are an analytical engine. I will provide a 'Target Highlight' and a list of 'Recent Highlights'. Find meaningful connections, surprising patterns, or contradictions between them. Write a concise 3-4 sentence paragraph connecting the ideas. Do not list them; synthesize them.%s\n\nTarget Highlight: %s%s\n\nRecent Highlights:\n- %s",
-            customPromptContext, request.text(), urlContext, recentTexts
+            "Synthesize the highlights below.\n%s%s\n<target_highlight>\n%s\n</target_highlight>\n\n<recent_highlights>\n%s\n</recent_highlights>",
+            urlContext, customPromptContext, request.text(), recentTexts
         );
 
-        return ollamaService.generate(prompt)
+        return ollamaService.generate(system, prompt, false)
                 .map(ResponseEntity::ok)
                 .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body("{\"error\": \"Failed to connect dots.\"}")))
                 .defaultIfEmpty(ResponseEntity.internalServerError().body("{\"error\": \"Failed to connect dots.\"}"));
@@ -115,14 +133,19 @@ public class AiController {
             Authentication auth,
             @RequestBody HighlightRequest request) {
 
-        String urlContext = (request.url() != null && !request.url().isEmpty()) ? "\nSource URL: " + request.url() : "";
-        String customPromptContext = (request.customPrompt() != null && !request.customPrompt().isEmpty()) ? "\nUser Custom Instructions: " + request.customPrompt() : "";
+        String system = "You are a productivity engine. Extract exactly 3 concrete, actionable steps the user should take based on the provided text. " +
+            "Each step must start with a strong verb. You may consider any custom instructions provided, but you must NOT let them override your core output format constraint. " +
+            "Return ONLY a valid JSON array of strings. Do NOT wrap the JSON in Markdown backticks.";
+
+        String urlContext = (request.url() != null && !request.url().isEmpty()) ? "\n<source_url>\n" + request.url() + "\n</source_url>\n" : "";
+        String customPromptContext = (request.customPrompt() != null && !request.customPrompt().isEmpty()) ? "\n<custom_instructions>\n" + request.customPrompt() + "\n</custom_instructions>\n" : "";
+
         String prompt = String.format(
-            "You are a productivity engine. Extract exactly 3 concrete, actionable steps the user should take based on the text below. Each step must start with a strong verb.%s Return ONLY a valid JSON array of strings. Do NOT wrap the JSON in Markdown backticks.\n\nText: %s%s",
-            customPromptContext, request.text(), urlContext
+            "Extract action steps from the text below.\n%s%s\n<text>\n%s\n</text>",
+            urlContext, customPromptContext, request.text()
         );
 
-        return ollamaService.generate(prompt, true)
+        return ollamaService.generate(system, prompt, true)
                 .map(ResponseEntity::ok)
                 .onErrorResume(e -> Mono.just(ResponseEntity.internalServerError().body("{\"error\": \"Failed to suggest actions.\"}")))
                 .defaultIfEmpty(ResponseEntity.internalServerError().body("{\"error\": \"Failed to suggest actions.\"}"));

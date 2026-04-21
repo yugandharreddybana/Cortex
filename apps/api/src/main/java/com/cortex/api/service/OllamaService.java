@@ -24,10 +24,14 @@ public class OllamaService {
     }
 
     public Mono<String> generate(String prompt) {
-        return generate(prompt, false);
+        return generate(null, prompt, false);
     }
 
     public Mono<String> generate(String prompt, boolean isJson) {
+        return generate(null, prompt, isJson);
+    }
+
+    public Mono<String> generate(String system, String prompt, boolean isJson) {
         log.info("Sending prompt to Ollama model {}: {}", model, prompt);
 
         var options = new java.util.HashMap<String, Object>();
@@ -42,6 +46,9 @@ public class OllamaService {
         var requestBody = new java.util.HashMap<String, Object>();
         requestBody.put("model", model);
         requestBody.put("prompt", prompt);
+        if (system != null && !system.isBlank()) {
+            requestBody.put("system", system);
+        }
         requestBody.put("stream", false);
         requestBody.put("options", options);
 
