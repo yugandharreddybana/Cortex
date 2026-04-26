@@ -92,7 +92,7 @@ public class HighlightController {
     @GetMapping
     public List<HighlightDTO> list(Authentication auth, @RequestParam(defaultValue = "false") boolean includeDeleted) {
         Long userId = Long.parseLong(java.util.Objects.requireNonNull(auth.getName()));
-        
+
         if (includeDeleted) {
             // Trash view: Own deleted + Hidden shared highlights
             List<Highlight> deleted = highlightRepo.findDeletedByUserId(userId);
@@ -121,7 +121,7 @@ public class HighlightController {
             highlights = highlightRepo.findByUserIdOrderByCreatedAtDesc(userId);
         } else {
             highlights = highlightRepo.findByUserIdOrFolderIdsOrderByCreatedAtDesc(userId, accessibleFolderIds);
-            
+
             if (!sharedHighlightIds.isEmpty()) {
                 List<Highlight> directlyShared = highlightRepo.findAllById(sharedHighlightIds);
                 Set<Long> existingIds = highlights.stream().map(Highlight::getId).collect(Collectors.toSet());
@@ -134,7 +134,7 @@ public class HighlightController {
                 highlights.sort((a, b) -> b.getCreatedAt().compareTo(a.getCreatedAt()));
             }
         }
-        
+
         return highlights.stream().map(this::toDTO).toList();
     }
 
@@ -254,7 +254,7 @@ public class HighlightController {
 
         // Real-time broadcast to anyone viewing THIS highlight
         notificationService.broadcastResourceActivity("highlight", id, "HIGHLIGHT_UPDATED", patched);
-        
+
         // Real-time broadcast to the parent FOLDER for grid/sidebar sync
         if (h.getFolderId() != null) {
             notificationService.broadcastResourceActivity("folder", java.util.Objects.requireNonNull(h.getFolderId()), "HIGHLIGHT_UPDATED", patched);
@@ -294,7 +294,7 @@ public class HighlightController {
         HighlightDTO restored = toDTO(h);
         webSocketService.sendToUser(auth.getName(), "/topic/highlights/updated", restored);
         notificationService.broadcastResourceActivity("highlight", id, "HIGHLIGHT_RESTORED", restored);
-        
+
         if (h.getFolderId() != null) {
             triggerFolderSynthesis(java.util.Objects.requireNonNull(h.getFolderId()));
             notificationService.broadcastResourceActivity("folder", java.util.Objects.requireNonNull(h.getFolderId()), "HIGHLIGHT_RESTORED", restored);
@@ -332,10 +332,10 @@ public class HighlightController {
 
         // Notify connected clients to remove this highlight
         webSocketService.sendToUser(auth.getName(), "/topic/highlights/deleted", id);
-        
+
         // Real-time broadcast for highlight deletion (triggers redirect for readers)
         notificationService.broadcastResourceActivity("highlight", id, "HIGHLIGHT_DELETED", Map.of("id", id));
-        
+
         // Real-time broadcast for folder grid removal
         if (h.getFolderId() != null) {
             notificationService.broadcastResourceActivity("folder", java.util.Objects.requireNonNull(h.getFolderId()), "HIGHLIGHT_DELETED", Map.of("id", id));
@@ -444,7 +444,7 @@ public class HighlightController {
         return finalHighlights.stream().map(this::toDTO).toList();
     }
 
-    // ── Helpers ──
+    // -- Helpers --
 
     private void triggerFolderSynthesis(Long folderId) {
         folderRepo.findById(folderId).ifPresent(folder -> {
@@ -489,7 +489,7 @@ public class HighlightController {
             dto.folder = null;
         }
         dto.note = h.getNote();
-        
+
         // Populate full TagDTO objects so they are visible to all users (collaborative tagging)
         dto.tags = h.getHighlightTags().stream()
                 .map(ht -> new TagDTO(
@@ -530,7 +530,7 @@ public class HighlightController {
         if (dto.topic != null) h.setTopic(dto.topic);
         if (dto.topicColor != null) h.setTopicColor(dto.topicColor);
         if (dto.savedAt != null) h.setSavedAt(dto.savedAt);
-        
+
         // folderId: null = not provided (don't touch), <=0 = clear/temp-id (treat as null),
         // >0 = only set if the folder actually exists (silently ignore stale/temp refs).
         if (dto.folderId != null) {
@@ -544,10 +544,10 @@ public class HighlightController {
                 h.setFolderId(folderRepo.existsById(dto.folderId) ? dto.folderId : null);
             }
         }
-        
+
         if (dto.note != null) h.setNote(dto.note);
         if (dto.highlightColor != null) h.setHighlightColor(dto.highlightColor);
-        // Boolean wrapper fields: null means "not provided" → keep existing value
+        // Boolean wrapper fields: null means "not provided" -> keep existing value
         if (dto.isCode != null) h.setCode(dto.isCode);
         if (dto.isFavorite != null) h.setFavorite(dto.isFavorite);
         if (dto.isArchived != null) h.setArchived(dto.isArchived);
@@ -579,7 +579,7 @@ public class HighlightController {
                 h.setDefaultLinkRole(AccessLevel.VIEWER);
             }
         }
-        // Handle soft deletion — only update if explicitly provided
+        // Handle soft deletion - only update if explicitly provided
         if (dto.isDeleted != null) {
             if (h.getUser().getId().equals(user.getId())) {
                 h.setDeleted(dto.isDeleted);
@@ -601,10 +601,10 @@ public class HighlightController {
      * Safely replaces the HighlightTag entries for the current user on a highlight.
      *
      * The key constraint is that the {@code highlightTags} collection is mapped with
-     * {@code cascade = CascadeType.ALL, orphanRemoval = true}.  If you call
+     * {@code cascade = CascadeType.ALL, orphanRemoval = true}. If you call
      * {@code highlightTagRepo.delete(ht)} without first removing the entity from the
      * owning collection, Hibernate's dirty-checking will re-save the deleted object
-     * during the session flush → {@code ObjectDeletedException}.
+     * during the session flush -> {@code ObjectDeletedException}.
      *
      * Safe three-step pattern used here:
      *   1. Collect the DB primary-key IDs of rows that need to be removed.
@@ -617,7 +617,7 @@ public class HighlightController {
      *      new HighlightTag rows are inserted, preventing unique-constraint violations.
      */
     private void applyTags(Highlight h, List<String> tagIds, User user) {
-        // null = field not provided in the request → don't touch existing tags
+        // null = field not provided in the request -> don't touch existing tags
         if (tagIds == null) return;
 
         // Step 1: Identify IDs of HighlightTag rows owned by this user that must be removed.
@@ -645,7 +645,7 @@ public class HighlightController {
 
         if (tagIds.isEmpty()) return;
 
-        // Parse tag ID strings → longs (skip any non-numeric values from legacy clients)
+        // Parse tag ID strings -> longs (skip any non-numeric values from legacy clients)
         List<Long> parsedTagIds = new java.util.ArrayList<>();
         for (String tagIdStr : tagIds) {
             try {
@@ -665,6 +665,4 @@ public class HighlightController {
             h.getHighlightTags().add(new HighlightTag(h, tag));
         }
     }
-
-    // Removed nested HighlightDTO class (moved to com.cortex.api.dto.HighlightDTO)
 }
