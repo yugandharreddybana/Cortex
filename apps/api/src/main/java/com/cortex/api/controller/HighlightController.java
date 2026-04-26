@@ -7,6 +7,7 @@ import com.cortex.api.entity.AccessLevel;
 import com.cortex.api.entity.Folder;
 import com.cortex.api.entity.Highlight;
 import com.cortex.api.entity.HighlightTag;
+import com.cortex.api.entity.HighlightTagId;
 import com.cortex.api.entity.LinkAccess;
 import com.cortex.api.entity.ResourceType;
 import com.cortex.api.entity.Tag;
@@ -600,46 +601,46 @@ public class HighlightController {
     /**
      * Safely replaces the HighlightTag entries for the current user on a highlight.
      *
-     * The key constraint is that the {@code highlightTags} collection is mapped with
-     * {@code cascade = CascadeType.ALL, orphanRemoval = true}. If you call
-     * {@code highlightTagRepo.delete(ht)} without first removing the entity from the
-     * owning collection, Hibernate's dirty-checking will re-save the deleted object
-     * during the session flush -> {@code ObjectDeletedException}.
+     * HighlightTag uses @IdClass(HighlightTagId) - a composite key of (highlight, tag).
+     * There is no single getId(). The correct ID type for deleteAllByIdInBatch is
+     * HighlightTagId, constructed from ht.getHighlight().getId() and ht.getTag().getId().
      *
-     * Safe three-step pattern used here:
-     *   1. Collect the DB primary-key IDs of rows that need to be removed.
-     *   2. Remove those objects from the in-memory collection FIRST so Hibernate
-     *      stops tracking them entirely.
-     *   3. Issue a single bulk DELETE via {@code deleteAllByIdInBatch} which bypasses
-     *      the cascade / orphan-removal machinery and commits the DELETE before any
-     *      subsequent INSERT for new tags.
-     *   4. Flush the EntityManager so the deletes are written to the DB before the
-     *      new HighlightTag rows are inserted, preventing unique-constraint violations.
+     * Safe delete pattern:
+     *   1. Build HighlightTagId objects for each row to remove.
+     *   2. Remove those HighlightTag objects from the in-memory collection FIRST so
+     *      Hibernate's orphanRemoval cannot re-save them during the session flush.
+     *   3. Call deleteAllByIdInBatch(List<HighlightTagId>) - single bulk DELETE that
+     *      bypasses cascade/orphan-removal entirely.
+     *   4. em.flush() - force DELETEs to DB before the upcoming INSERTs for new tags
+     *      to prevent unique-constraint violations on (highlight_id, tag_id).
      */
     private void applyTags(Highlight h, List<String> tagIds, User user) {
         // null = field not provided in the request -> don't touch existing tags
         if (tagIds == null) return;
 
-        // Step 1: Identify IDs of HighlightTag rows owned by this user that must be removed.
-        List<Long> idsToDelete = new java.util.ArrayList<>();
+        // Step 1: Build composite key IDs for HighlightTag rows owned by this user.
+        List<HighlightTagId> idsToDelete = new java.util.ArrayList<>();
         List<HighlightTag> toRemove = new java.util.ArrayList<>();
         for (HighlightTag ht : h.getHighlightTags()) {
             if (ht.getTag().getUser().getId().equals(user.getId())) {
-                idsToDelete.add(ht.getId());
+                // Composite key: highlight_id + tag_id
+                idsToDelete.add(new HighlightTagId(
+                    ht.getHighlight().getId(),
+                    ht.getTag().getId()
+                ));
                 toRemove.add(ht);
             }
         }
 
         if (!idsToDelete.isEmpty()) {
             // Step 2: Remove from the in-memory collection BEFORE issuing the DELETE.
-            // This tells Hibernate's first-level cache to stop tracking these objects,
-            // so orphanRemoval cannot re-save them.
+            // This prevents orphanRemoval from re-saving the deleted objects on flush.
             h.getHighlightTags().removeAll(toRemove);
 
-            // Step 3: Bulk DELETE bypasses cascade/orphan-removal machinery.
+            // Step 3: Bulk DELETE using composite key IDs - bypasses cascade/orphan-removal.
             highlightTagRepo.deleteAllByIdInBatch(idsToDelete);
 
-            // Step 4: Flush so the DELETE reaches the DB before the upcoming INSERTs.
+            // Step 4: Flush so DELETEs reach the DB before the upcoming INSERTs.
             em.flush();
         }
 
