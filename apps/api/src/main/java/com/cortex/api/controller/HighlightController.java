@@ -598,41 +598,60 @@ public class HighlightController {
     }
 
     /**
-     * Associates tags with a highlight.
-     * If a tag ID doesn't exist for the user, creates it automatically.
-     * Maintains data integrity by only linking user's own tags.
+     * Safely replaces the HighlightTag entries for the current user on a highlight.
+     *
+     * The key constraint is that the {@code highlightTags} collection is mapped with
+     * {@code cascade = CascadeType.ALL, orphanRemoval = true}.  If you call
+     * {@code highlightTagRepo.delete(ht)} without first removing the entity from the
+     * owning collection, Hibernate's dirty-checking will re-save the deleted object
+     * during the session flush → {@code ObjectDeletedException}.
+     *
+     * Safe three-step pattern used here:
+     *   1. Collect the DB primary-key IDs of rows that need to be removed.
+     *   2. Remove those objects from the in-memory collection FIRST so Hibernate
+     *      stops tracking them entirely.
+     *   3. Issue a single bulk DELETE via {@code deleteAllByIdInBatch} which bypasses
+     *      the cascade / orphan-removal machinery and commits the DELETE before any
+     *      subsequent INSERT for new tags.
+     *   4. Flush the EntityManager so the deletes are written to the DB before the
+     *      new HighlightTag rows are inserted, preventing unique-constraint violations.
      */
     private void applyTags(Highlight h, List<String> tagIds, User user) {
         // null = field not provided in the request → don't touch existing tags
-        // (critical for moveHighlight which only sends folderId)
         if (tagIds == null) return;
 
-        // Collect the tags that belong to the current user
-        List<HighlightTag> currentUserTags = new java.util.ArrayList<>();
+        // Step 1: Identify IDs of HighlightTag rows owned by this user that must be removed.
+        List<Long> idsToDelete = new java.util.ArrayList<>();
+        List<HighlightTag> toRemove = new java.util.ArrayList<>();
         for (HighlightTag ht : h.getHighlightTags()) {
             if (ht.getTag().getUser().getId().equals(user.getId())) {
-                currentUserTags.add(ht);
+                idsToDelete.add(ht.getId());
+                toRemove.add(ht);
             }
         }
 
-        // Explicitly delete from DB before removing from collection
-        if (!currentUserTags.isEmpty()) {
-            for (HighlightTag ht : currentUserTags) {
-                highlightTagRepo.delete(ht);
-            }
-            h.getHighlightTags().removeAll(currentUserTags);
-            currentUserTags.clear(); // Ensure no references remain to deleted objects
+        if (!idsToDelete.isEmpty()) {
+            // Step 2: Remove from the in-memory collection BEFORE issuing the DELETE.
+            // This tells Hibernate's first-level cache to stop tracking these objects,
+            // so orphanRemoval cannot re-save them.
+            h.getHighlightTags().removeAll(toRemove);
+
+            // Step 3: Bulk DELETE bypasses cascade/orphan-removal machinery.
+            highlightTagRepo.deleteAllByIdInBatch(idsToDelete);
+
+            // Step 4: Flush so the DELETE reaches the DB before the upcoming INSERTs.
+            em.flush();
         }
 
         if (tagIds.isEmpty()) return;
 
+        // Parse tag ID strings → longs (skip any non-numeric values from legacy clients)
         List<Long> parsedTagIds = new java.util.ArrayList<>();
         for (String tagIdStr : tagIds) {
             try {
                 parsedTagIds.add(Long.parseLong(tagIdStr));
             } catch (NumberFormatException e) {
                 // Skip non-numeric tag IDs
-                continue;
             }
         }
 
@@ -641,7 +660,7 @@ public class HighlightController {
         // Fetch all existing tags belonging to the current user in a single query
         List<Tag> userTags = tagRepo.findByIdInAndUserId(parsedTagIds, user.getId());
 
-        // Link fetched tags to highlight via junction table
+        // Link fetched tags to the highlight via the junction table
         for (Tag tag : userTags) {
             h.getHighlightTags().add(new HighlightTag(h, tag));
         }
