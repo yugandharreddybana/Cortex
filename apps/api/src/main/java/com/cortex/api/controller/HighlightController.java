@@ -564,7 +564,10 @@ public class HighlightController {
             if (dto.folderId <= 0L) {
                 h.setFolderId(null);
             } else {
-                if (!securityService.hasFolderAccess(dto.folderId, "EDITOR")) {
+                // FIX: check ownership first — owners have no ResourcePermission row,
+                // so calling hasFolderAccess() alone would incorrectly 403 them.
+                boolean isOwnerOfFolder = folderRepo.findByIdAndUserId(dto.folderId, user.getId()).isPresent();
+                if (!isOwnerOfFolder && !securityService.hasFolderAccess(dto.folderId, "EDITOR")) {
                     throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Target folder access denied");
                 }
                 h.setFolderId(folderRepo.existsById(dto.folderId) ? dto.folderId : null);
