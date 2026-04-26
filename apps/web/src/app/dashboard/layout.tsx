@@ -13,7 +13,6 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { SessionGuard } from "@/components/providers/SessionGuard";
 import { useAuthStore } from "@/store/authStore";
 import { sendExtensionToken } from "@/lib/extension-auth";
-import { PremiumLoader } from "@/components/ui/PremiumLoader";
 
 /**
  * Dashboard Route Layout â€” responsive
@@ -69,7 +68,6 @@ export default function DashboardLayout({
 
   return (
     <SessionGuard>
-      <PremiumLoader />
       <div className="h-screen overflow-hidden flex bg-bg">
 
         {/* Ambient light source */}

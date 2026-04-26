@@ -71,7 +71,7 @@ export const createHighlightSlice: StateCreator<DashboardState, [], [], Highligh
           folder: null,
           folderId: numericFolderId,
           note: null,
-          tags: tagIds ?? [],
+          tagIds: tagIds ?? [],
           isCode: false,
           isFavorite: false,
           isArchived: false,

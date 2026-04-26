@@ -7,7 +7,7 @@ import { toast } from "sonner";
 import { cn } from "@cortex/ui";
 import { useDashboardStore, type NotificationItem } from "@/store/dashboard";
 import { useShallow } from "zustand/react/shallow";
-import { Spinner } from "@/components/ui/Spinner";
+import { Loader } from "@/components/ui/Loader";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -224,7 +224,7 @@ export function NotificationBell() {
           <div className="max-h-[420px] overflow-y-auto scrollbar-thin">
             {loading && notifications.length === 0 ? (
               <div className="flex items-center justify-center py-8">
-                <Spinner size="md" variant="muted" />
+                <Loader size="md" variant="muted" />
               </div>
             ) : notifications.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-10 gap-2">

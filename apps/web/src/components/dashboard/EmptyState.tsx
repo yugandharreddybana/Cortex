@@ -55,9 +55,9 @@ export function EmptyState({ icon, title, body, action, isViewer }: EmptyStatePr
         {title || (isViewer ? "Waiting for shared knowledge..." : "Your index is empty.")}
       </h2>
       <p className="text-sm text-white/40 max-w-xs leading-relaxed mb-8">
-        {body || (isViewer 
+        {body || (isViewer
           ? "This folder is currently empty. Higher-level members have not added any highlights here yet."
-          : "Start building your personal knowledge base. Install the extension to capture insights from anywhere on the web.")}
+          : "Start building your personal knowledge base. Press ⌘/Ctrl + Shift + S anywhere in Cortex, or drag the Quick Capture button to your bookmarks bar to save from any web page.")}
       </p>
 
       {/* If custom action is provided, show a simple link instead of the full default CTA block */}
@@ -82,10 +82,8 @@ export function EmptyState({ icon, title, body, action, isViewer }: EmptyStatePr
       ) : (
         <>
       <div className="flex flex-col sm:flex-row items-center gap-3">
-        <Link
-          href="https://chromewebstore.google.com"
-          target="_blank"
-          rel="noopener noreferrer"
+        <button
+          onClick={() => useDashboardStore.getState().setNewHighlightDialogOpen(true)}
           className={cn(
             "inline-flex items-center gap-2 h-10 px-5 rounded-xl",
             "text-sm font-semibold text-white",
@@ -94,11 +92,11 @@ export function EmptyState({ icon, title, body, action, isViewer }: EmptyStatePr
             "transition-all duration-150 transform-gpu",
           )}
         >
-          <ChromeIcon />
-          Install the Chrome Extension
-        </Link>
+          <SparkleIcon /> Add your first highlight
+          <span className="ml-1 text-[10px] text-white/70 border border-white/30 rounded px-1 py-0.5">⌘⇧S</span>
+        </button>
         <Link
-          href="/welcome"
+          href="/dashboard/settings/capture"
           className={cn(
             "inline-flex items-center gap-2 h-10 px-5 rounded-xl",
             "text-sm font-medium text-white/60",
@@ -107,7 +105,7 @@ export function EmptyState({ icon, title, body, action, isViewer }: EmptyStatePr
             "active:scale-[0.97] transition-all duration-150 transform-gpu",
           )}
         >
-          Read the Quick Start Guide
+          Get the Quick Capture bookmarklet
         </Link>
       </div>
       </>
@@ -139,15 +137,6 @@ function BrainIcon() {
         strokeWidth="1.4"
         strokeLinecap="round"
       />
-    </svg>
-  );
-}
-
-function ChromeIcon() {
-  return (
-    <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-      <circle cx="7" cy="7" r="2.5" stroke="white" strokeWidth="1.4" />
-      <path d="M7 4.5h5.5M4.08 5.75L1.33 1M9.92 5.75L12.67 1M4.5 9.5L2 13.5M9.5 9.5L12 13.5M4.5 9.5h5" stroke="white" strokeWidth="1.3" strokeLinecap="round" />
     </svg>
   );
 }

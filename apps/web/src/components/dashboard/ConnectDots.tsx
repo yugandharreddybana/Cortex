@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link2 } from "lucide-react";
-import { Spinner } from "@/components/ui/Spinner";
+import { Loader } from "@/components/ui/Loader";
 
 export function ConnectDots({ text, url, customPrompt, isAI, onRequireContext }: { text: string; url?: string; customPrompt?: string; isAI?: boolean; onRequireContext?: () => void }) {
   const [loading, setLoading] = useState(false);
@@ -45,7 +45,7 @@ export function ConnectDots({ text, url, customPrompt, isAI, onRequireContext }:
           >
             {loading ? (
               <span className="flex items-center gap-2 text-white/50">
-                <Spinner size="xs" variant="accent" />
+                <Loader size="xs" variant="accent" />
                 Analyzing...
               </span>
             ) : (

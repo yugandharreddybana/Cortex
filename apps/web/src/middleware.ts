@@ -13,7 +13,7 @@ import { NextRequest, NextResponse } from "next/server";
  * Boot API — every proxied request must carry a valid Bearer JWT, so a forged
  * cookie still cannot access protected data.
  */
-const PROTECTED_PREFIXES = ["/dashboard", "/welcome"];
+const PROTECTED_PREFIXES = ["/dashboard", "/welcome", "/capture"];
 const SESSION_COOKIE = "cortex_session";
 
 export function middleware(request: NextRequest) {
@@ -62,5 +62,5 @@ function redirectToLogin(request: NextRequest, pathname: string, refCode: string
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/welcome/:path*", "/", "/signup"],
+  matcher: ["/dashboard/:path*", "/welcome/:path*", "/capture/:path*", "/capture", "/", "/signup"],
 };

@@ -8,7 +8,7 @@ import { QueryProvider } from "@/components/providers/QueryProvider";
 import { SearchProvider } from "@/components/providers/SearchProvider";
 import { Toaster } from "sonner";
 import { useDashboardStore } from "@/store/dashboard";
-import { GlobalLoader } from "@/components/ui/GlobalLoader";
+import { GlobalLoaderHost } from "@/components/ui/Loader";
 
 // ─── Eager Global Fetch Interceptor ──────────────────────────────────────────
 // Registering in module scope ensures 100% coverage from the very first request
@@ -108,7 +108,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
             <QueryProvider>
                 <SearchProvider>
                     {children}
-                    <GlobalLoader />
+                    <GlobalLoaderHost />
                     <Toaster theme="dark" position="top-right" richColors closeButton />
                 </SearchProvider>
             </QueryProvider>

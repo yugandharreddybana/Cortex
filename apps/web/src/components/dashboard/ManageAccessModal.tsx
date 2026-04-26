@@ -61,7 +61,7 @@ export function ManageAccessModal({
   const fetchPermissions = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      const resp = await fetch(`/api/permissions?type=${resourceType}&id=${resourceId}`);
+      const resp = await fetch(`/api/permissions/${resourceId}?type=${resourceType}`);
       if (resp.ok) {
         const data = await resp.json();
         const normalized = Array.isArray(data)

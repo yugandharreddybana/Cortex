@@ -5,7 +5,12 @@
       "Bash(git -C /f/Projects/Cortex status --short)",
       "Bash(git -C /f/Projects/Cortex diff HEAD -- apps/api/.env)",
       "Bash(git -C /f/Projects/Cortex show HEAD:apps/api/.env)",
-      "Bash(git -C /f/Projects/Cortex log --all --full-history -- apps/api/.env)"
+      "Bash(git -C /f/Projects/Cortex log --all --full-history -- apps/api/.env)",
+      "Bash(npx -y tsc --noEmit)",
+      "Bash(npx -y tsc -p tsconfig.json --noEmit)",
+      "Bash(npx -y tsx --eval \"import\\('./routes/ai.ts'\\).then\\(\\(\\)=>console.log\\('OK'\\)\\).catch\\(e=>{console.error\\(e.message\\);process.exit\\(1\\)}\\)\")",
+      "Bash(grep -n \"const.*prompt.*\\\\${.*input\\\\|const.*prompt.*\\\\${.*message\\\\|const.*prompt.*\\\\${.*JSON.stringify\" \"F:/Projects/FinanceTracker/server/routes/ai.ts\")",
+      "Bash(xargs grep *)"
     ]
   }
 }

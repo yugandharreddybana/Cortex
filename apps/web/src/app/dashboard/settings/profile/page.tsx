@@ -31,7 +31,7 @@ const passwordSchema = z.object({
 });
 type PasswordValues = z.infer<typeof passwordSchema>;
 
-import { SettingSkeleton } from "@/components/dashboard/SettingSkeleton";
+import { Loader } from "@/components/ui/Loader";
 
 export default function ProfilePage() {
   const user           = useAuthStore((s) => s.user);
@@ -143,7 +143,7 @@ export default function ProfilePage() {
   );
 
   if (!hasFetched || (isLoading && !user)) {
-    return <SettingSkeleton />;
+    return <Loader page label="Loading settings…" />;
   }
 
   return (

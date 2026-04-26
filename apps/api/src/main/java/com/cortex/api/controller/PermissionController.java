@@ -29,6 +29,27 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/v1/permissions")
 public class PermissionController {
 
+    /** GET /api/v1/permissions?type=HIGHLIGHT|FOLDER&id=5 — list all permissions (query param version for compatibility) */
+    @GetMapping
+    @Transactional
+    public List<PermissionDTO> listByQuery(Authentication auth,
+                                          @RequestParam String type,
+                                          @RequestParam Long id) {
+        if (type == null || type.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "type is required");
+        }
+        SharedLink.ResourceType resourceType;
+        try {
+            resourceType = SharedLink.ResourceType.valueOf(type.toUpperCase());
+        } catch (IllegalArgumentException e) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid resource type: " + type);
+        }
+        requireOwner(auth, id, resourceType);
+
+        return permissionRepo.findByResourceIdAndResourceType(id, resourceType)
+                .stream().map(this::toDTO).toList();
+    }
+
     private final ResourcePermissionRepository permissionRepo;
     private final UserRepository userRepo;
     private final HighlightRepository highlightRepo;

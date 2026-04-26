@@ -14,7 +14,7 @@ import { EmptyState } from "./EmptyState";
 import { ShareDialog, ShareIcon } from "./ShareDialog";
 import { HighlightAIPanel } from "./HighlightAIPanel";
 import { useDashboardStore } from "@/store/dashboard";
-import { LoadingSkeleton } from "./LoadingSkeleton";
+import { Loader } from "@/components/ui/Loader";
 import type { Highlight, Folder, Tag } from "@/store/dashboard";
 import { DevilsAdvocate } from "./DevilsAdvocate";
 import { RequestAccessModal } from "./RequestAccessModal";
@@ -135,7 +135,11 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
 
   useHotkeys(handleDelete);
 
-  if (isLoading || isSearching) return <LoadingSkeleton />;
+  if (isLoading || isSearching) return (
+    <div className="min-h-[40vh] flex items-center justify-center">
+      <Loader size="md" variant="accent" />
+    </div>
+  );
 
   return (
     <>

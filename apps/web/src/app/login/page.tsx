@@ -12,7 +12,7 @@ import { toast } from "sonner";
 import { sendExtensionToken } from "@/lib/extension-auth";
 import { premiumToast } from "@/lib/premium-feedback";
 import { useDashboardStore } from "@/store/dashboard";
-import { Loader2 } from "lucide-react";
+import { Loader } from "@/components/ui/Loader";
 
 const ease = [0.20, 0.90, 0.30, 1.00] as const;
 
@@ -82,9 +82,7 @@ function LoginContent() {
 
   if (!authChecked) {
     return (
-      <div className="min-h-screen bg-bg flex items-center justify-center">
-        <Loader2 className="w-8 h-8 animate-spin text-accent" />
-      </div>
+      <Loader page label="Loading…" />
     );
   }
 
@@ -312,7 +310,7 @@ function LoginContent() {
             >
               {isSubmitting ? (
                 <span className="flex items-center justify-center gap-2">
-                  <SpinnerIcon />
+                  <Loader size="sm" variant="white" />
                   Signing in…
                 </span>
               ) : (
@@ -456,9 +454,6 @@ function CortexMark() {
   );
 }
 
-function SpinnerIcon() {
-  return <Loader2 className="w-4 h-4 animate-spin" />;
-}
 
 function EyeIcon() {
   return (

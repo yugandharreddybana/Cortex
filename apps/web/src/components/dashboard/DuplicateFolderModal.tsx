@@ -4,7 +4,7 @@ import * as React from "react";
 import * as AlertDialog from "@radix-ui/react-alert-dialog";
 import { motion, AnimatePresence } from "framer-motion";
 import { cn } from "@cortex/ui";
-import { Spinner } from "@/components/ui/Spinner";
+import { Loader } from "@/components/ui/Loader";
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -163,7 +163,7 @@ export function DuplicateFolderModal({
                     >
                       {isPending ? (
                         <span className="flex items-center justify-center gap-2">
-                          <Spinner size="sm" variant="muted" />
+                          <Loader size="sm" variant="muted" />
                           Duplicating…
                         </span>
                       ) : (

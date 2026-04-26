@@ -4,7 +4,7 @@ import * as React from "react";
 import { toast } from "sonner";
 import { cn } from "@cortex/ui";
 import { useDashboardStore } from "@/store/dashboard";
-import { Loader2 } from "lucide-react";
+import { Loader } from "@/components/ui/Loader";
 
 // ─── Dummy data builder ───────────────────────────────────────────────────────
 function buildExportPayload(
@@ -125,7 +125,7 @@ export default function DataExportPage() {
         >
           {exporting ? (
             <>
-              <SpinnerIcon />
+              <Loader size="xs" variant="white" />
               Preparing…
             </>
           ) : (
@@ -185,6 +185,3 @@ function DownloadIcon() {
   );
 }
 
-function SpinnerIcon() {
-  return <Loader2 className="w-3.5 h-3.5 animate-spin" />;
-}

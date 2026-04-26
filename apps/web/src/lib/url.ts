@@ -1,58 +1,78 @@
 /**
- * Ensures a URL is absolute by prepending https:// if it lacks a protocol.
- * This prevents relative path resolution which causes 404s in the dashboard.
+ * URL helpers — absolute-URL coercion + Scroll-to-Text-Fragment generation.
+ *
+ * Text Fragments spec: https://wicg.github.io/scroll-to-text-fragment/
+ * Format:  #:~:text=[prefix-,]textStart[,textEnd][,-suffix]
+ *
+ * Supported natively by Chrome / Edge / Brave / Opera / Arc / Vivaldi.
+ * Firefox/Safari ignore the fragment — link still resolves to the page.
  */
+
 export function ensureAbsoluteUrl(url: string | undefined): string {
   if (!url || url === "#") return "#";
-  
-  // Check for common protocols
   const hasProtocol = /^[a-z][a-z0-9+.-]*:/i.test(url);
-  if (hasProtocol) {
-    return url;
-  }
-  
-  // Default to https for security
+  if (hasProtocol) return url;
   return `https://${url}`;
 }
 
-/**
- * Generates a Chrome-compatible scroll-to-text fragment.
- * Format: #:~:text=[prefix-,]textStart[,textEnd][,-suffix]
- * 
- * Spec: https://github.com/WICG/scroll-to-text-fragment
+/** Spec-required percent-encoding for the text-fragment value. */
+function encodeFragmentSegment(s: string): string {
+  return encodeURIComponent(s)
+    .replace(/-/g, "%2D")
+    .replace(/,/g, "%2C")
+    .replace(/&/g, "%26");
+}
+
+/** Normalize a snippet so it actually matches the page's rendered text:
+ *   • collapse all whitespace runs to a single space
+ *   • strip surrounding zero-width / non-printable chars
+ *   • trim leading/trailing punctuation that often differs (quotes, brackets)
  */
-export function generateTextFragment(text: string): string {
-  if (!text) return "";
-  
-  // Use a meaningful but safe slice of the text for the fragment.
-  // 150 characters is usually enough for a unique match on most pages.
-  const cleanText = text.trim().slice(0, 150);
-  if (!cleanText) return "";
-  
-  // encodeURIComponent handles most characters, but we need to explicitly
-  // handle the reserved characters -, ,, and & according to the spec.
-  // encodeURIComponent already handles &, but we'll be safe.
-  const encodedText = encodeURIComponent(cleanText)
-    .replace(/-/g, "%2d")
-    .replace(/,/g, "%2c");
-    
-  return `#:~:text=${encodedText}`;
+function normalizeSnippet(text: string): string {
+  return text
+    .replace(/[​-‍﻿]/g, "")     // zero-width
+    .replace(/\s+/g, " ")
+    .replace(/^["'“”‘’«»\[\(\{<\s]+/, "")
+    .replace(/["'“”‘’«»\]\)\}>\s]+$/, "")
+    .trim();
 }
 
 /**
- * Formats a source URL with an optional text fragment for automatic highlighting.
+ * Generate a Text-Fragment hash for the given snippet.
+ *
+ *  • Short (≤80 chars):     #:~:text=<full>
+ *  • Long  (>80 chars):     #:~:text=<first6words>,<last6words>
+ *    (range form is far more robust on long passages because exact-match on
+ *    150 chars often fails when the page collapses whitespace differently.)
+ */
+export function generateTextFragment(text: string): string {
+  if (!text) return "";
+  const cleaned = normalizeSnippet(text);
+  if (!cleaned) return "";
+
+  if (cleaned.length <= 80) {
+    return `#:~:text=${encodeFragmentSegment(cleaned)}`;
+  }
+
+  const words = cleaned.split(" ");
+  if (words.length <= 12) {
+    // Few words but long tokens — fall back to truncated single value.
+    return `#:~:text=${encodeFragmentSegment(cleaned.slice(0, 150))}`;
+  }
+  const start = words.slice(0, 6).join(" ");
+  const end   = words.slice(-6).join(" ");
+  return `#:~:text=${encodeFragmentSegment(start)},${encodeFragmentSegment(end)}`;
+}
+
+/**
+ * Build the "Open source" URL for a saved highlight. Appends a Text Fragment
+ * so supporting browsers scroll to and highlight the passage automatically.
  */
 export function formatSourceUrl(url: string | undefined, highlightText?: string): string {
-  const absoluteUrl = ensureAbsoluteUrl(url);
-  if (absoluteUrl === "#") return "#";
-  
-  if (!highlightText) return absoluteUrl;
-  
-  // Only append fragment if there isn't one already (to avoid breaking deep links)
-  if (absoluteUrl.includes("#")) {
-    return absoluteUrl;
-  }
-  
-  const fragment = generateTextFragment(highlightText);
-  return absoluteUrl + fragment;
+  const absolute = ensureAbsoluteUrl(url);
+  if (absolute === "#") return "#";
+  if (!highlightText) return absolute;
+  // Don't clobber an existing fragment (deep links into specific page sections).
+  if (absolute.includes("#")) return absolute;
+  return absolute + generateTextFragment(highlightText);
 }

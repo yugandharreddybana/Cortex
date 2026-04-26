@@ -30,7 +30,7 @@ import { TagEditDialog } from "./TagEditDialog";
 import { RenameFolderDialog } from "./RenameFolderDialog";
 import { ShareDialog, ShareIcon } from "./ShareDialog";
 import { ShieldAlert } from "lucide-react";
-import { Spinner } from "@/components/ui/Spinner";
+import { Loader } from "@/components/ui/Loader";
 import { RequestAccessModal } from "./RequestAccessModal";
 import { ManageAccessModal } from "./ManageAccessModal";
 
@@ -795,7 +795,7 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                   <path d="M2 1L6 4L2 7" />
                 </svg>
                 <span className="text-2xs font-semibold uppercase tracking-widest text-muted">Shared with me</span>
-                {isLoadingShared ? <Spinner size="xs" variant="accent" className="ml-auto" /> : <span className="ml-auto bg-white/10 text-white/50 text-[10px] px-1.5 rounded-full tabular-nums leading-4">{sharedWithMe.length}</span>}
+                {isLoadingShared ? <Loader size="xs" variant="accent" className="ml-auto" /> : <span className="ml-auto bg-white/10 text-white/50 text-[10px] px-1.5 rounded-full tabular-nums leading-4">{sharedWithMe.length}</span>}
               </button>
               {sharedExpanded && (
                 <div className="px-3 pb-10 space-y-0.5">

@@ -18,8 +18,9 @@ import com.cortex.api.repository.FolderRepository;
 import com.cortex.api.repository.HighlightRepository;
 import com.cortex.api.repository.ResourcePermissionRepository;
 import com.cortex.api.repository.TagRepository;
+import com.cortex.api.repository.HighlightTagRepository;
 import com.cortex.api.repository.UserRepository;
-import com.cortex.api.service.OllamaService;
+import com.cortex.api.service.GeminiService;
 import com.cortex.api.service.WebSocketService;
 import com.cortex.api.service.NotificationService;
 import jakarta.transaction.Transactional;
@@ -42,6 +43,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/v1/highlights")
 public class HighlightController {
+    private final HighlightTagRepository highlightTagRepo;
 
     private final HighlightRepository highlightRepo;
     private final UserRepository userRepo;
@@ -50,35 +52,39 @@ public class HighlightController {
     private final WebSocketService webSocketService;
     private final com.cortex.api.service.FolderService folderService;
     private final com.cortex.api.service.SecurityService securityService;
-    private final OllamaService ollamaService;
+    private final GeminiService geminiService;
     private final com.cortex.api.service.ReferralService referralService;
     private final NotificationService notificationService;
     private final ResourcePermissionRepository permissionRepo;
     private final EntityManager em;
 
-    public HighlightController(HighlightRepository highlightRepo,
-                               UserRepository userRepo,
-                               TagRepository tagRepo,
-                               FolderRepository folderRepo,
-                               WebSocketService webSocketService,
-                               com.cortex.api.service.FolderService folderService,
-                               com.cortex.api.service.SecurityService securityService,
-                               OllamaService ollamaService,
-                               com.cortex.api.service.ReferralService referralService,
-                               NotificationService notificationService,
-                               ResourcePermissionRepository permissionRepo,
-                               EntityManager em) {
-        this.highlightRepo = highlightRepo;
-        this.userRepo = userRepo;
-        this.tagRepo = tagRepo;
+    public HighlightController(
+        FolderRepository folderRepo,
+        HighlightRepository highlightRepo,
+        ResourcePermissionRepository permissionRepo,
+        TagRepository tagRepo,
+        UserRepository userRepo,
+        GeminiService geminiService,
+        WebSocketService webSocketService,
+        NotificationService notificationService,
+        HighlightTagRepository highlightTagRepo,
+        com.cortex.api.service.FolderService folderService,
+        com.cortex.api.service.SecurityService securityService,
+        com.cortex.api.service.ReferralService referralService,
+        EntityManager em
+    ) {
         this.folderRepo = folderRepo;
+        this.highlightRepo = highlightRepo;
+        this.permissionRepo = permissionRepo;
+        this.tagRepo = tagRepo;
+        this.userRepo = userRepo;
+        this.geminiService = geminiService;
         this.webSocketService = webSocketService;
+        this.notificationService = notificationService;
+        this.highlightTagRepo = highlightTagRepo;
         this.folderService = folderService;
         this.securityService = securityService;
-        this.ollamaService = ollamaService;
         this.referralService = referralService;
-        this.notificationService = notificationService;
-        this.permissionRepo = permissionRepo;
         this.em = em;
     }
 
@@ -451,7 +457,7 @@ public class HighlightController {
 
             String prompt = "You are a research assistant. Write a cohesive, single-paragraph 'Living Literature Review' that synthesizes the following highlights into a continuous, logical narrative. Do not list them; connect the central themes.\n\nHighlights:\n- " + texts;
 
-            ollamaService.generate(prompt)
+            geminiService.generate(prompt)
                 .publishOn(Schedulers.boundedElastic())
                 .subscribe(synthesis -> {
                     folder.setSynthesis(synthesis);
@@ -609,9 +615,13 @@ public class HighlightController {
             }
         }
 
-        // Delete existing tag associations for the current user from the collection
+        // Explicitly delete from DB before removing from collection
         if (!currentUserTags.isEmpty()) {
+            for (HighlightTag ht : currentUserTags) {
+                highlightTagRepo.delete(ht);
+            }
             h.getHighlightTags().removeAll(currentUserTags);
+            currentUserTags.clear(); // Ensure no references remain to deleted objects
         }
 
         if (tagIds.isEmpty()) return;

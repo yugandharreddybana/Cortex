@@ -7,15 +7,18 @@ import { useSearchStore } from "@/store/useSearchStore";
 /**
  * useHotkeys — global keyboard shortcuts for mouse-free navigation.
  *
- * Super+C           → open New Highlight dialog
- * Super+F           → open Cmd+K palette
- * Super+G           → toggle grid / list view
- * Super+J / Super+K → move focus ring down / up through highlight cards
- * Super+X           → toggle checkbox on focused card
- * Super+Backspace   → delete focused card (calls onDelete with the id)
+ * Cross-platform shortcuts (Cmd on macOS, Ctrl elsewhere):
+ *   Mod+Shift+S       → open New Highlight dialog (capture)  ← primary
+ *   Mod+Shift+F       → open command palette / search
+ *   Mod+G             → toggle grid / list view
+ *   Mod+J / Mod+K     → move focus ring down / up through highlight cards
+ *   Mod+X             → toggle checkbox on focused card
+ *   Mod+Backspace     → delete focused card (calls onDelete with the id)
  *
- * All shortcuts require the Super (Windows/Meta) key modifier.
- * They are silently ignored when focus is inside an
+ * Ctrl+K is intentionally NOT bound — Chrome/Edge use it for the address bar.
+ * Cmd+C / Ctrl+C is intentionally NOT bound — that is the OS copy shortcut.
+ *
+ * Shortcuts are silently ignored when focus is inside an
  * input, textarea, select, or contenteditable element.
  */
 export function useHotkeys(onDelete: (id: string) => void) {
@@ -43,22 +46,30 @@ export function useHotkeys(onDelete: (id: string) => void) {
         target.isContentEditable
       ) return;
 
-      // Require Meta (Windows/Super) key — ignore bare or Ctrl/Alt-only presses
-      if (!e.metaKey) return;
-      // Let Ctrl+Meta combos pass through to OS
-      if (e.altKey) return;
+      // Cross-platform "Mod" key: Cmd on macOS, Ctrl elsewhere.
+      const isMac = typeof navigator !== "undefined" && /Mac|iPhone|iPad/i.test(navigator.platform);
+      const mod   = isMac ? e.metaKey : e.ctrlKey;
+      if (!mod || e.altKey) return;
 
-      switch (e.key) {
-        case "c":
-          e.preventDefault();
-          setNewHighlightOpen(true);
-          break;
+      const key = e.key.toLowerCase();
 
-        case "f":
-          e.preventDefault();
-          setSearchOpen(true);
-          break;
+      // Mod+Shift combos → primary actions (don't collide with browser defaults)
+      if (e.shiftKey) {
+        switch (key) {
+          case "s":
+            e.preventDefault();
+            setNewHighlightOpen(true);
+            return;
+          case "f":
+            e.preventDefault();
+            setSearchOpen(true);
+            return;
+        }
+        return;
+      }
 
+      // Mod-only navigation shortcuts
+      switch (key) {
         case "g":
           e.preventDefault();
           setViewMode(viewMode === "grid" ? "list" : "grid");
@@ -70,6 +81,8 @@ export function useHotkeys(onDelete: (id: string) => void) {
           break;
 
         case "k":
+          // Don't override Ctrl+K (Chrome address bar) — only fire on macOS Cmd+K
+          if (!isMac) return;
           e.preventDefault();
           setFocusedIdx(Math.max(focusedIdx - 1, 0));
           break;
@@ -81,8 +94,8 @@ export function useHotkeys(onDelete: (id: string) => void) {
           break;
         }
 
-        case "Backspace":
-        case "Delete": {
+        case "backspace":
+        case "delete": {
           e.preventDefault();
           const h = highlights[focusedIdx];
           if (h) onDeleteRef.current(h.id);

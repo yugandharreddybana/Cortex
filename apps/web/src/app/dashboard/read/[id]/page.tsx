@@ -12,7 +12,7 @@ import { useAuthStore } from "@/store/authStore";
 import { FolderCreateDialog } from "@/components/dashboard/FolderCreateDialog";
 import { NewTagDialog } from "@/components/dashboard/NewTagDialog";
 import { Trash2 } from "lucide-react";
-import { Spinner } from "@/components/ui/Spinner";
+import { Loader } from "@/components/ui/Loader";
 import { formatSourceUrl } from "@/lib/url";
 import { useResourceSync } from "@/hooks/useResourceSync";
 
@@ -532,7 +532,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
               isDeleting && "opacity-50 cursor-not-allowed"
             )}>
             {isDeleting ? (
-              <Spinner size="xs" variant="accent" />
+              <Loader size="xs" variant="accent" />
             ) : (
               <Trash2 className="w-3.5 h-3.5" />
             )}
@@ -826,7 +826,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
             <div className="space-y-4">
               {isFetchingComments ? (
                 <div className="flex justify-center py-6">
-                  <Spinner size="md" variant="accent" />
+                  <Loader size="md" variant="accent" />
                 </div>
               ) : comments.map((comment) => {
                 const isMyComment = currentUser && String(currentUser.id) === String(comment.authorId);
