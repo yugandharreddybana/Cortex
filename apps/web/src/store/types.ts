@@ -29,6 +29,19 @@ export interface Tag {
   createdAt?: string;
 }
 
+// ── NEW: metadata stored with AI-agent bookmarks ─────────────────────────────
+export interface HighlightMeta {
+  /** Matches the data-message-id attribute on the rendered message block */
+  messageId: string;
+  /** Character offset into the first matching text node */
+  startOffset: number;
+  endOffset: number;
+  /** First 80 chars of the selection — used as fuzzy fallback if offsets drift */
+  quote: string;
+  /** Optional: which conversation this bookmark lives in */
+  conversationId?: string;
+}
+
 export interface Highlight {
   id:         string;
   text:       string;
@@ -61,6 +74,8 @@ export interface Highlight {
   customPrompt?: string;
   isTruncated?: boolean;
   fullText?: string;
+  /** Navigation metadata — only present on highlightType === "ai_chat" bookmarks */
+  meta?: HighlightMeta;
 }
 
 export interface NotificationItem {
@@ -145,7 +160,7 @@ export interface DashboardState {
   setTagFilterExclusive: (tagIds: string[]) => void;
 
   // Highlight Actions
-  addHighlight:        (h: Pick<Highlight, "text" | "source"> & { folderId?: string, tagIds?: string[], url?: string }) => Promise<boolean>;
+  addHighlight:        (h: Pick<Highlight, "text" | "source"> & { folderId?: string, tagIds?: string[], url?: string, meta?: HighlightMeta }) => Promise<boolean>;
   updateHighlight:     (id: string, patch: Partial<Highlight> & { tagIds?: string[] }) => Promise<void>;
   moveHighlight:       (id: string, folderId: string | null, folderName?: string) => void;
   toggleFavorite:      (id: string) => void;

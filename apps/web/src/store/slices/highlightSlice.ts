@@ -1,12 +1,12 @@
 import { StateCreator } from "zustand";
-import { DashboardState, Highlight, Tag } from "../types";
+import { DashboardState, Highlight, HighlightMeta, Tag } from "../types";
 import { apiFetch } from "../helpers";
 
 export interface HighlightSlice {
   highlights: Highlight[];
   trash: Highlight[];
   isSearching: boolean;
-  addHighlight: (h: Pick<Highlight, "text" | "source"> & { folderId?: string, tagIds?: string[], url?: string }) => Promise<boolean>;
+  addHighlight: (h: Pick<Highlight, "text" | "source"> & { folderId?: string, tagIds?: string[], url?: string, meta?: HighlightMeta }) => Promise<boolean>;
   updateHighlight: (id: string, patch: Partial<Highlight> & { tagIds?: string[] }) => Promise<void>;
   moveHighlight: (id: string, folderId: string | null, folderName?: string) => void;
   toggleFavorite: (id: string) => void;
@@ -23,7 +23,7 @@ export const createHighlightSlice: StateCreator<DashboardState, [], [], Highligh
   trash: [],
   isSearching: false,
 
-  addHighlight: async ({ text, source, folderId, tagIds, url: explicitUrl }) => {
+  addHighlight: async ({ text, source, folderId, tagIds, url: explicitUrl, meta }) => {
     if (!text || text.trim().length === 0) return false;
     const trimmedText = text.trim();
     const displayText = trimmedText.length > 500 ? trimmedText.slice(0, 500) : trimmedText;
@@ -36,6 +36,12 @@ export const createHighlightSlice: StateCreator<DashboardState, [], [], Highligh
     const resolvedSource = isUrl && !explicitUrl
       ? (() => { try { return new URL(source.trim()).hostname; } catch { return source.trim(); } })()
       : source.trim() || "Manual entry";
+
+    const isAgentBookmark = !!meta;
+    const topic      = isAgentBookmark ? "AI Bookmark" : "Manual";
+    const topicColor = isAgentBookmark
+      ? "bg-blue-500/20 text-blue-300"
+      : "bg-purple-500/20 text-purple-300";
 
     interface HighlightCreateResponse {
       id: number;
@@ -65,12 +71,13 @@ export const createHighlightSlice: StateCreator<DashboardState, [], [], Highligh
           text: displayText,
           source: resolvedSource,
           url: resolvedUrl,
-          topic: "Manual",
-          topicColor: "bg-purple-500/20 text-purple-300",
+          topic,
+          topicColor,
           savedAt: new Date().toISOString(),
           folder: null,
           folderId: numericFolderId,
-          note: null,
+          // Store meta as JSON in the note field — zero schema migration needed
+          note: meta ? JSON.stringify(meta) : null,
           tagIds: tagIds ?? [],
           isCode: false,
           isFavorite: false,
@@ -82,13 +89,19 @@ export const createHighlightSlice: StateCreator<DashboardState, [], [], Highligh
     );
     if (!ok || !data) return false;
 
+    // Reconstruct meta from the note field returned by the API
+    let parsedMeta: HighlightMeta | undefined;
+    try {
+      if (data.note) parsedMeta = JSON.parse(data.note) as HighlightMeta;
+    } catch { /* plain-text note — not a bookmark */ }
+
     const newH: Highlight = {
       id:         String(data.id ?? ""),
       text:       String(data.text ?? displayText),
       source:     String(data.source ?? "Manual entry"),
       url:        String(data.url ?? "#"),
-      topic:      String(data.topic ?? "Manual"),
-      topicColor: String(data.topicColor ?? "bg-purple-500/20 text-purple-300"),
+      topic:      String(data.topic ?? topic),
+      topicColor: String(data.topicColor ?? topicColor),
       savedAt:    String(data.savedAt ?? new Date().toISOString()),
       folder:     data.folder != null ? String(data.folder) : undefined,
       folderId:   data.folderId != null ? String(data.folderId) : folderId,
@@ -99,9 +112,12 @@ export const createHighlightSlice: StateCreator<DashboardState, [], [], Highligh
       isArchived: Boolean(data.isArchived),
       isPinned:   Boolean(data.isPinned),
       highlightColor: data.highlightColor != null ? String(data.highlightColor) : undefined,
-      highlightType: (String(data.url ?? "#") !== "#" ? "web" : String(data.topic ?? "Manual") === "AI Text" ? "ai_chat" : "manual") as "web" | "ai_chat" | "manual",
+      highlightType: isAgentBookmark
+        ? "ai_chat"
+        : (String(data.url ?? "#") !== "#" ? "web" : "manual") as "web" | "ai_chat" | "manual",
       isTruncated: trimmedText.length > 500,
       fullText:   trimmedText.length > 500 ? trimmedText : undefined,
+      meta:       parsedMeta ?? meta,
     };
 
     set((s) => {
