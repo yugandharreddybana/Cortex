@@ -3,15 +3,17 @@
 import * as React from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Users, Shield, Trash2, Check, AlertCircle, Loader2, UserPlus, Search } from "lucide-react";
+import { X, Users, Shield, Trash2, Check, AlertCircle, UserPlus, Search } from "lucide-react";
 import { cn } from "@cortex/ui";
 import { useDashboardStore } from "@/store/dashboard";
+import { Loader } from "@/components/ui/Loader";
 import { toast } from "sonner";
 
 interface ManageAccessModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  resourceId: number;
+  /** Accepts string or number — coerced to number internally */
+  resourceId: string | number;
   resourceType: "FOLDER" | "HIGHLIGHT";
   resourceName: string;
 }
@@ -33,12 +35,15 @@ export function ManageAccessModal({
   resourceType,
   resourceName,
 }: ManageAccessModalProps) {
+  // Coerce resourceId to number — may be a string UUID or numeric string
+  const numericId = typeof resourceId === "string" ? parseInt(resourceId, 10) : resourceId;
+
   const [permissions, setPermissions] = React.useState<PermissionItem[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
   const [isSaving, setIsSaving] = React.useState(false);
   const [pendingUpdates, setPendingUpdates] = React.useState<Record<number, string>>({});
   const [pendingRemovals, setPendingRemovals] = React.useState<Set<number>>(new Set());
-  
+
   // Invitation State
   const [inviteEmail, setInviteEmail] = React.useState("");
   const [inviteRole, setInviteRole] = React.useState<"VIEWER" | "EDITOR">("VIEWER");
@@ -47,21 +52,27 @@ export function ManageAccessModal({
 
   const bulkManagePermissions = useDashboardStore((s) => s.bulkManagePermissions);
 
+  // ── Fetch existing collaborators for autocomplete ──────────────────────────
   const fetchCollaborators = React.useCallback(async () => {
     try {
       const resp = await fetch("/api/permissions/collaborators");
       if (resp.ok) {
-        setSuggestions(await resp.json());
+        const data = await resp.json();
+        setSuggestions(Array.isArray(data) ? data : []);
       }
     } catch (err) {
       console.error("Failed to fetch collaborators:", err);
     }
   }, []);
 
+  // ── Fetch current permissions for this resource ────────────────────────────
+  // Backend expects: GET /api/permissions?resourceId=:id&resourceType=:type
   const fetchPermissions = React.useCallback(async () => {
     setIsLoading(true);
     try {
-      const resp = await fetch(`/api/permissions/${resourceId}?type=${resourceType}`);
+      const resp = await fetch(
+        `/api/permissions?resourceId=${numericId}&resourceType=${resourceType}`
+      );
       if (resp.ok) {
         const data = await resp.json();
         const normalized = Array.isArray(data)
@@ -76,21 +87,22 @@ export function ManageAccessModal({
         setPermissions(normalized);
       } else {
         toast.error("Failed to load permissions");
+        setPermissions([]);
       }
     } catch (err) {
       console.error(err);
       toast.error("An error occurred while fetching permissions");
+      setPermissions([]);
     } finally {
       setIsLoading(false);
     }
-  }, [resourceId, resourceType]);
+  }, [numericId, resourceType]);
 
   React.useEffect(() => {
     if (open) {
       fetchPermissions();
       fetchCollaborators();
     } else {
-      // Reset state on close
       setPendingUpdates({});
       setPendingRemovals(new Set());
       setInviteEmail("");
@@ -121,60 +133,62 @@ export function ManageAccessModal({
     });
   };
 
+  // ── Invite a new member ────────────────────────────────────────────────────
+  // Backend DTO: { targetId, targetType, email, accessLevel }
   const handleAddMember = async () => {
     if (!inviteEmail.trim()) return;
-    
     setIsSaving(true);
     try {
       const resp = await fetch("/api/permissions", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          targetId: numericId,
+          targetType: resourceType,
           email: inviteEmail.trim(),
-          resourceId,
-          resourceType,
-          accessLevel: inviteRole
+          accessLevel: inviteRole,
         }),
       });
 
       if (resp.ok) {
         toast.success(`Access granted to ${inviteEmail}`);
         setInviteEmail("");
+        setShowSuggestions(false);
         fetchPermissions();
       } else {
-        const err = await resp.json();
+        const err = await resp.json().catch(() => ({}));
         toast.error(err.message || "Failed to grant access");
       }
-    } catch (err) {
+    } catch {
       toast.error("An error occurred while inviting user");
     } finally {
       setIsSaving(false);
     }
   };
 
+  // ── Bulk update / remove permissions ──────────────────────────────────────
+  // Backend DTO: { resourceId, resourceType, permissions: [{userId,accessLevel}], removals: [userId] }
   const handleSave = async () => {
     setIsSaving(true);
-    useDashboardStore.getState().setGlobalLoading(true);
     try {
-      const updates = Object.entries(pendingUpdates).map(([userId, accessLevel]) => ({
+      const permissionsPayload = Object.entries(pendingUpdates).map(([userId, accessLevel]) => ({
         userId: Number(userId),
         accessLevel,
       }));
       const removals = Array.from(pendingRemovals);
- 
-      if (updates.length === 0 && removals.length === 0) {
+
+      if (permissionsPayload.length === 0 && removals.length === 0) {
         onOpenChange(false);
         return;
       }
 
-      await bulkManagePermissions(resourceId, resourceType, updates, removals);
+      await bulkManagePermissions(numericId, resourceType, permissionsPayload, removals);
       toast.success("Permissions updated successfully");
       onOpenChange(false);
-    } catch (err) {
+    } catch {
       toast.error("Failed to update permissions");
     } finally {
       setIsSaving(false);
-      useDashboardStore.getState().setGlobalLoading(false);
     }
   };
 
@@ -236,7 +250,7 @@ export function ManageAccessModal({
                           </div>
                           <input
                             type="text"
-                            placeholder="Search by email or name..."
+                            placeholder="Search by email or name…"
                             value={inviteEmail}
                             onChange={(e) => {
                               setInviteEmail(e.target.value);
@@ -245,7 +259,7 @@ export function ManageAccessModal({
                             onFocus={() => setShowSuggestions(true)}
                             className="w-full bg-white/[0.03] border border-white/5 rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-accent/30 focus:bg-white/[0.05] transition-all"
                           />
-                          
+
                           {/* Suggestions Dropdown */}
                           <AnimatePresence>
                             {showSuggestions && (
@@ -256,7 +270,7 @@ export function ManageAccessModal({
                                 className="absolute left-0 right-0 top-full mt-2 z-[60] bg-elevated/90 backdrop-blur-2xl border border-white/[0.06] rounded-xl shadow-spatial-lg overflow-hidden max-h-48 overflow-y-auto"
                               >
                                 {suggestions
-                                  .filter(s => {
+                                  .filter((s) => {
                                     const q = inviteEmail.toLowerCase();
                                     if (!q) return true;
                                     return (
@@ -265,7 +279,7 @@ export function ManageAccessModal({
                                     );
                                   })
                                   .slice(0, 8)
-                                  .map(s => (
+                                  .map((s) => (
                                     <button
                                       key={s.id}
                                       onClick={() => {
@@ -277,13 +291,12 @@ export function ManageAccessModal({
                                       <span className="text-sm font-medium text-white/90">{s.fullName}</span>
                                       <span className="text-xs text-white/30">{s.email}</span>
                                     </button>
-                                  ))
-                                }
-                                {!suggestions.some((s) => {
+                                  ))}
+                                {suggestions.filter((s) => {
                                   const q = inviteEmail.toLowerCase();
                                   if (!q) return true;
                                   return s.email.toLowerCase().includes(q) || s.fullName.toLowerCase().includes(q);
-                                }) && (
+                                }).length === 0 && (
                                   <div className="px-4 py-2.5 text-xs text-white/35">
                                     No existing collaborators found. You can invite by email.
                                   </div>
@@ -300,11 +313,11 @@ export function ManageAccessModal({
                             )}
                           </AnimatePresence>
                         </div>
-                        
+
                         <select
                           title="Select role for new member"
                           value={inviteRole}
-                          onChange={(e) => setInviteRole(e.target.value as any)}
+                          onChange={(e) => setInviteRole(e.target.value as "VIEWER" | "EDITOR")}
                           className="bg-white/[0.03] border border-white/5 px-3 py-2 rounded-xl text-sm text-white/70 focus:outline-none focus:border-accent/30 transition-all cursor-pointer"
                         >
                           <option value="VIEWER" className="bg-[#1e1e1e]">Viewer</option>
@@ -316,11 +329,16 @@ export function ManageAccessModal({
                           onClick={handleAddMember}
                           className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent text-white shadow-glow hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:grayscale disabled:hover:scale-100"
                         >
-                          {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <UserPlus className="h-4 w-4" />}
+                          {isSaving ? (
+                            <Loader size="xs" variant="white" />
+                          ) : (
+                            <UserPlus className="h-4 w-4" />
+                          )}
                         </button>
                       </div>
                     </div>
 
+                    {/* Collaborators list */}
                     <div className="space-y-4">
                       <label className="text-[11px] font-bold uppercase tracking-wider text-white/30 px-1">
                         Collaborators
@@ -328,8 +346,8 @@ export function ManageAccessModal({
 
                       {isLoading ? (
                         <div className="flex h-40 flex-col items-center justify-center gap-3 text-white/20">
-                          <Loader2 className="h-8 w-8 animate-spin" />
-                          <p className="text-sm">Fetching collaborators...</p>
+                          <Loader size="md" variant="muted" />
+                          <p className="text-sm">Fetching collaborators…</p>
                         </div>
                       ) : permissions.length === 0 ? (
                         <div className="flex h-40 flex-col items-center justify-center gap-3 text-center text-white/20">
@@ -341,13 +359,15 @@ export function ManageAccessModal({
                           {permissions.map((perm) => {
                             const isRemoved = pendingRemovals.has(perm.userId);
                             const currentRole = pendingUpdates[perm.userId] || perm.accessLevel;
-                            
+
                             return (
                               <div
                                 key={perm.userId}
                                 className={cn(
                                   "group flex items-center justify-between rounded-xl border border-transparent p-3 transition-all duration-200",
-                                  isRemoved ? "bg-red-500/5 opacity-50 grayscale" : "hover:bg-white/5 hover:border-white/5"
+                                  isRemoved
+                                    ? "bg-red-500/5 opacity-50 grayscale"
+                                    : "hover:bg-white/5 hover:border-white/5",
                                 )}
                               >
                                 <div className="flex items-center gap-3 min-w-0">
@@ -382,13 +402,17 @@ export function ManageAccessModal({
                                         onClick={() => handleRemove(perm.userId)}
                                         className={cn(
                                           "p-2 rounded-lg transition-all",
-                                          isRemoved 
-                                            ? "text-accent hover:bg-accent/10" 
-                                            : "text-white/20 hover:text-red-400 hover:bg-red-500/10"
+                                          isRemoved
+                                            ? "text-accent hover:bg-accent/10"
+                                            : "text-white/20 hover:text-red-400 hover:bg-red-500/10",
                                         )}
                                         title={isRemoved ? "Restore access" : "Remove access"}
                                       >
-                                        {isRemoved ? <AlertCircle className="h-4 w-4" /> : <Trash2 className="h-4 w-4" />}
+                                        {isRemoved ? (
+                                          <AlertCircle className="h-4 w-4" />
+                                        ) : (
+                                          <Trash2 className="h-4 w-4" />
+                                        )}
                                       </button>
                                     </>
                                   )}
@@ -432,10 +456,10 @@ export function ManageAccessModal({
                           "relative flex items-center gap-2 rounded-xl px-5 py-2 text-sm font-semibold transition-all duration-200",
                           hasChanges && !isSaving
                             ? "bg-accent text-white shadow-glow hover:scale-105 active:scale-95"
-                            : "bg-white/5 text-white/20 cursor-not-allowed"
+                            : "bg-white/5 text-white/20 cursor-not-allowed",
                         )}
                       >
-                        {isSaving && <Loader2 className="h-4 w-4 animate-spin" />}
+                        {isSaving && <Loader size="xs" variant="white" />}
                         Save Changes
                       </button>
                     </div>

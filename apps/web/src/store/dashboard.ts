@@ -12,8 +12,7 @@ import { createAPIKeySlice } from "./slices/apiKeySlice";
 
 /**
  * Main dashboard store for Cortex.
- * Refactored into modular slices for better maintainability (Phase 3).
- * Total line reduction from 1100+ to ~100.
+ * Refactored into modular slices for better maintainability.
  */
 export const useDashboardStore = create<DashboardState>()(
   devtools(
@@ -27,23 +26,32 @@ export const useDashboardStore = create<DashboardState>()(
       ...createSmartCollectionSlice(set, get, api),
       ...createAPIKeySlice(set, get, api),
 
+      /**
+       * Bulk update / remove permissions for a resource.
+       *
+       * Backend DTO:
+       *   POST /api/permissions/bulk-manage
+       *   { resourceId, resourceType, permissions: [{userId, accessLevel}], removals: [userId] }
+       *
+       * Note: do NOT call setGlobalLoading here — the fetch interceptor in Providers.tsx
+       * already handles startLoading / stopLoading for every /api/ call.
+       */
       bulkManagePermissions: async (resourceId, resourceType, updates, removals) => {
-        set({ isGlobalLoading: true });
-        try {
-          const res = await fetch(`/api/permissions/bulk-manage`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ resourceId, resourceType, updates, removals }),
-          });
-          if (res.ok) {
-            get().invalidateFolders();
-            await get().fetchFolders();
-          }
-        } finally {
-          set({ isGlobalLoading: false });
+        const res = await fetch(`/api/permissions/bulk-manage`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            resourceId,
+            resourceType,
+            permissions: updates,   // backend key is `permissions`, not `updates`
+            removals,
+          }),
+        });
+        if (res.ok) {
+          get().invalidateFolders();
+          await get().fetchFolders();
         }
       },
-
 
       resetStore: () =>
         set({
