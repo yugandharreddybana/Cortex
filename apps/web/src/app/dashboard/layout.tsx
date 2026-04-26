@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import * as Dialog from "@radix-ui/react-dialog";
@@ -13,19 +13,24 @@ import { useWebSocket } from "@/hooks/useWebSocket";
 import { SessionGuard } from "@/components/providers/SessionGuard";
 import { useAuthStore } from "@/store/authStore";
 import { sendExtensionToken } from "@/lib/extension-auth";
+import { SelectionBookmarkPlugin } from "@/components/dashboard/SelectionBookmarkPlugin";
 
 /**
- * Dashboard Route Layout â€” responsive
+ * Dashboard Route Layout — responsive
  *
  * Desktop (md+):
- *  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
- *  â”‚ Sidebar  â”‚  Header (sticky top)                   â”‚
- *  â”‚ w-64     â”œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
- *  â”‚          â”‚  <page content>                        â”‚
- *  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”´â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
+ *  ┌──────────┬────────────────────────────────────────┐
+ *  │ Sidebar  │  Header (sticky top)                   │
+ *  │ w-64     ├────────────────────────────────────────┤
+ *  │          │  <page content>                        │
+ *  └──────────┴────────────────────────────────────────┘
  *
  * Mobile (<md):
- *  Fixed h-14 mobile header with hamburger â†’ Radix Dialog sheet from left
+ *  Fixed h-14 mobile header with hamburger → Radix Dialog sheet from left
+ *
+ * SelectionBookmarkPlugin is mounted here (once) so bookmark selection
+ * and navigation works across every dashboard page — highlights, AI chat,
+ * folders, read view, settings, etc. — without per-page wiring.
  */
 export default function DashboardLayout({
   children,
@@ -68,6 +73,11 @@ export default function DashboardLayout({
 
   return (
     <SessionGuard>
+      {/* SelectionBookmarkPlugin — global bookmark capture + navigation.
+          Mounted once here so it covers every dashboard page: highlights,
+          AI chat, folders, read view, settings, etc. */}
+      <SelectionBookmarkPlugin />
+
       <div className="h-screen overflow-hidden flex bg-bg">
 
         {/* Ambient light source */}
@@ -167,4 +177,3 @@ function CortexMark() {
     </svg>
   );
 }
-

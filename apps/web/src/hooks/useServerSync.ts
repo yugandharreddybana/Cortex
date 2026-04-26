@@ -157,6 +157,16 @@ interface ServerHighlight {
   isPinned: boolean;
   highlightColor: string | null;
   isDeleted: boolean;
+
+  // AI-chat bookmark fields
+  highlightType?: "web" | "ai_chat" | "manual";
+  meta?: {
+    messageId: string;
+    startOffset: number;
+    endOffset: number;
+    quote: string;
+    conversationId?: string;
+  };
 }
 
 interface ServerFolder {
@@ -198,5 +208,9 @@ function mapServerHighlight(h: ServerHighlight): Highlight {
     isArchived:     h.isArchived,
     isPinned:       h.isPinned ?? false,
     highlightColor: h.highlightColor ?? undefined,
+
+    // AI-chat bookmark navigation fields — essential for scroll-to + re-highlight
+    highlightType:  h.highlightType ?? undefined,
+    meta:           h.meta ?? undefined,
   };
 }
