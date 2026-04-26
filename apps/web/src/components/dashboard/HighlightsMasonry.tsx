@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
@@ -13,15 +13,16 @@ import { BulkActionBar } from "./BulkActionBar";
 import { EmptyState } from "./EmptyState";
 import { ShareDialog, ShareIcon } from "./ShareDialog";
 import { HighlightAIPanel } from "./HighlightAIPanel";
+import { ManageAccessModal } from "./ManageAccessModal";
 import { useDashboardStore } from "@/store/dashboard";
 import { Loader } from "@/components/ui/Loader";
 import type { Highlight, Folder, Tag } from "@/store/dashboard";
 import { DevilsAdvocate } from "./DevilsAdvocate";
 import { RequestAccessModal } from "./RequestAccessModal";
-import { Lock, ShieldAlert } from "lucide-react";
+import { Lock, ShieldAlert, Users } from "lucide-react";
 import { formatSourceUrl } from "@/lib/url";
 
-// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Helpers ──────────────────────────────────────────────────────────────────────────────────────────────────────────
 
 function formatVideoTime(seconds: number): string {
   const h = Math.floor(seconds / 3600);
@@ -40,7 +41,7 @@ function extractYouTubeId(url: string): string | null {
   return null;
 }
 
-// â”€â”€â”€ Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Component ────────────────────────────────────────────────────────────────────────────────────────────────────────
 export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => boolean } = {}) {
   const router                = useRouter();
   const allHighlights         = useDashboardStore((s) => s.highlights);
@@ -86,7 +87,7 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
     // Hide archived in main view (when no filterFn)
     if (!filterFn) list = list.filter((h) => !h.isArchived);
 
-    // Tags (intersection â€” highlight must have ALL selected tags)
+    // Tags (intersection – highlight must have ALL selected tags)
     if (activeTagFilters.length > 0) {
       list = list.filter((h) =>
         activeTagFilters.every((t) => h.tags?.some((ht) => String(ht.id) === String(t))) ?? false,
@@ -166,7 +167,7 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
           );
         }
 
-        // Specific folder empty state (already existed, but now consistent)
+        // Specific folder empty state
         if (activeFolder) {
           const folderObj = folders.find(f => f.id === activeFolder);
           const folderRole = folderObj?.effectiveRole || "OWNER";
@@ -174,7 +175,7 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
 
           return (
             <div className="flex flex-col items-center justify-center py-24 gap-4">
-              <span className="text-4xl">ðŸ“‚</span>
+              <span className="text-4xl">📂</span>
               <p className="text-sm font-medium text-white/50">This folder is empty</p>
               <p className="text-xs text-white/30 text-center max-w-xs">
                 {canEditInFolder 
@@ -193,7 +194,7 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
           );
         }
 
-        // Default empty state (No highlights at all)
+        // Default empty state
         return <EmptyState />;
       })() : (
         <>
@@ -212,7 +213,6 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
                 key={h.id}
                 highlight={h}
                 index={i}
-                // ... props same ...
                 isSelected={selectedHighlightIds.includes(h.id)}
                 isFocused={i === focusedIdx}
                 folders={folders}
@@ -249,7 +249,6 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
                 key={h.id}
                 highlight={h}
                 index={i}
-                // ... props same ...
                 isSelected={selectedHighlightIds.includes(h.id)}
                 isFocused={i === focusedIdx}
                 folders={folders}
@@ -292,7 +291,6 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
                 <path d="M19 9l-7 7-7-7" strokeLinecap="round" strokeLinejoin="round" />
               </svg>
             </div>
-            {/* Shimmer effect */}
             <div className="absolute inset-0 z-0 bg-gradient-to-r from-transparent via-white/[0.03] to-transparent -translate-x-full group-hover:animate-shimmer" />
           </button>
         </div>
@@ -316,7 +314,7 @@ export function HighlightsMasonry({ filterFn }: { filterFn?: (h: Highlight) => b
     </>
   );
 }
-// â”€â”€â”€ Empty state icons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Empty state icons ────────────────────────────────────────────────────────────────────────────────────────────────
 function SearchXIcon() {
   return (
     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" className="text-white/20">
@@ -338,7 +336,7 @@ function FilterXIcon() {
   );
 }
 
-// â”€â”€â”€ Grid Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Grid Card ────────────────────────────────────────────────────────────────────────────────────────────────────────
 function HighlightCard({
   highlight: h,
   index,
@@ -370,8 +368,9 @@ function HighlightCard({
   onRename:         () => void;
   onMove:           (folderId: string, folderName: string) => void;
 }) {
-  const [menuOpen, setMenuOpen] = React.useState(false);
-  const [shareOpen, setShareOpen] = React.useState(false);
+  const [menuOpen, setMenuOpen]                   = React.useState(false);
+  const [shareOpen, setShareOpen]                 = React.useState(false);
+  const [manageAccessOpen, setManageAccessOpen]   = React.useState(false);
   const router = useRouter();
   const updateHighlight = useDashboardStore((s) => s.updateHighlight);
   const [requestAccessOpen, setRequestAccessOpen] = React.useState(false);
@@ -382,14 +381,12 @@ function HighlightCard({
   const isViewer = effectiveRole === "VIEWER";
   const isCommenter = effectiveRole === "COMMENTER";
   const canEdit = effectiveRole === "OWNER" || effectiveRole === "EDITOR";
+  const isOwner = effectiveRole === "OWNER";
   const canRequestHigherAccess = isViewer || isCommenter;
 
   const hasPendingRequest = useDashboardStore((s) =>
     folder ? s.pendingAccessRequests[folder.id] === true : false
   );
-
-  // Removed redundant useEffect to prevent N+1 API calls. 
-  // Access status is lazy-loaded or handled at the page level.
 
   return (
     <>
@@ -402,26 +399,21 @@ function HighlightCard({
         ease:     [0.20, 0.90, 0.30, 1.00],
       }}
       className={cn(
-        // Masonry break
         "break-inside-avoid mb-4",
-        // Card surface
         "relative group/card overflow-hidden",
         "bg-surface rounded-2xl",
         "p-5",
-        // Border â€” dynamic on selection
         "border transition-all duration-200 ease-spatial",
         isSelected ? "border-white/70" : "border-white/[0.06] hover:border-white/[0.10]",
         isFocused && "ring-2 ring-white/50",
-        // Pinned glow top border
         h.isPinned && "border-t-2 border-t-accent/40",
-        // Interaction
         "cursor-pointer",
         "hover:shadow-spatial-sm",
         "active:scale-[0.99] transform-gpu will-change-transform",
       )}
       onClick={onOpen}
     >
-      {/* Checkbox (top-left, hidden until hover or selected) */}
+      {/* Checkbox */}
       <div
         className={cn(
           "absolute top-2.5 left-2.5 z-10 transition-opacity duration-150",
@@ -445,12 +437,13 @@ function HighlightCard({
         </div>
       </div>
 
-      {/* Pin badge (top-right corner, visible when pinned) */}
+      {/* Pin badge */}
       {h.isPinned && (
         <div className="absolute top-2.5 right-2.5 z-10 pointer-events-none">
           <PinBadgeIcon />
         </div>
       )}
+
       {/* Radial accent on hover */}
       <div
         aria-hidden
@@ -514,7 +507,7 @@ function HighlightCard({
                 ? "text-accent opacity-100"
                 : "text-white/40 hover:text-accent opacity-0 group-hover/card:opacity-100",
               !canEdit && h.isPinned && "cursor-default opacity-60",
-              !canEdit && !h.isPinned && "hidden", // Only show pinned state to viewers
+              !canEdit && !h.isPinned && "hidden",
             )}
             aria-label={h.isPinned ? "Unpin" : "Pin"}
             title={!canEdit ? "Only editors can pin highlights" : h.isPinned ? "Unpin" : "Pin"}
@@ -536,7 +529,7 @@ function HighlightCard({
                 ? "text-yellow-400 opacity-100"
                 : "text-white/40 hover:text-yellow-400 opacity-0 group-hover/card:opacity-100",
               !canEdit && h.isFavorite && "cursor-default opacity-60",
-              !canEdit && !h.isFavorite && "hidden", // Only show fav state to viewers
+              !canEdit && !h.isFavorite && "hidden",
             )}
             aria-label={h.isFavorite ? "Remove from favorites" : "Add to favorites"}
             title={!canEdit ? "Only editors can favorite highlights" : h.isFavorite ? "Remove from favorites" : "Add to favorites"}
@@ -609,6 +602,23 @@ function HighlightCard({
                     Rename
                   </DropdownMenu.Item>
                 )}
+
+                {/* ── Manage Access — OWNER only ── */}
+                {isOwner && (
+                  <DropdownMenu.Item
+                    className={cn(
+                      "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
+                      "text-[12px] text-white/70 hover:text-white",
+                      "hover:bg-white/[0.06] cursor-pointer",
+                      "outline-none transition-colors duration-100",
+                    )}
+                    onSelect={() => setManageAccessOpen(true)}
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    Manage Access
+                  </DropdownMenu.Item>
+                )}
+
                 {canRequestHigherAccess && (
                   <DropdownMenu.Item
                     disabled={hasPendingRequest}
@@ -629,6 +639,7 @@ function HighlightCard({
                     {hasPendingRequest ? "Request Raised" : "Request Higher Access"}
                   </DropdownMenu.Item>
                 )}
+
                 <DropdownMenu.Item
                   className={cn(
                     "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
@@ -658,6 +669,7 @@ function HighlightCard({
                   <CopyIcon />
                   Copy text
                 </DropdownMenu.Item>
+
                 <DropdownMenu.Sub>
                   <DropdownMenu.SubTrigger
                     disabled={!canEdit}
@@ -670,8 +682,8 @@ function HighlightCard({
                     )}
                   >
                     <FolderMoveIcon />
-                    Move toâ€¦
-                    <span className="ml-auto text-white/30 text-[10px]">â–¸</span>
+                    Move to…
+                    <span className="ml-auto text-white/30 text-[10px]">▸</span>
                   </DropdownMenu.SubTrigger>
                   <DropdownMenu.Portal>
                     <DropdownMenu.SubContent
@@ -688,6 +700,7 @@ function HighlightCard({
                     </DropdownMenu.SubContent>
                   </DropdownMenu.Portal>
                 </DropdownMenu.Sub>
+
                 <DropdownMenu.Item
                   className={cn(
                     "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
@@ -731,6 +744,7 @@ function HighlightCard({
                     </DropdownMenu.Item>
                   </>
                 )}
+
                 {canRequestHigherAccess && (
                   <>
                     <DropdownMenu.Item
@@ -748,9 +762,9 @@ function HighlightCard({
                         }
                       }}
                     >
-                    <ShieldAlert className="w-3.5 h-3.5" />
-                    {hasPendingRequest ? "Request Raised" : "Request Higher Access"}
-                  </DropdownMenu.Item>
+                      <ShieldAlert className="w-3.5 h-3.5" />
+                      {hasPendingRequest ? "Request Raised" : "Request Higher Access"}
+                    </DropdownMenu.Item>
                     <div className="px-2.5 py-2 text-[10px] text-white/30 italic max-w-[180px] leading-relaxed border-t border-white/[0.06] mt-1">
                       {isViewer
                         ? "Ask the owner for Commenter or Editor access."
@@ -845,7 +859,7 @@ function HighlightCard({
               <path d="M23.5 6.19a3.02 3.02 0 0 0-2.12-2.14C19.5 3.5 12 3.5 12 3.5s-7.5 0-9.38.55A3.02 3.02 0 0 0 .5 6.19 31.67 31.67 0 0 0 0 12a31.67 31.67 0 0 0 .5 5.81 3.02 3.02 0 0 0 2.12 2.14c1.88.55 9.38.55 9.38.55s7.5 0 9.38-.55a3.02 3.02 0 0 0 2.12-2.14A31.67 31.67 0 0 0 24 12a31.67 31.67 0 0 0-.5-5.81zM9.75 15.02V8.98L15.5 12l-5.75 3.02z" />
             </svg>
             <span className="truncate max-w-[160px]">
-              YouTube{h.videoTimestamp != null ? ` Â· ${formatVideoTime(h.videoTimestamp)}` : ""}
+              YouTube{h.videoTimestamp != null ? ` · ${formatVideoTime(h.videoTimestamp)}` : ""}
             </span>
           </a>
         ) : (
@@ -906,11 +920,16 @@ function HighlightCard({
     </motion.div>
 
     <ShareDialog open={shareOpen} onOpenChange={setShareOpen} type="h" id={h.id} title={h.text.slice(0, 60)} />
+    <ManageAccessModal
+      open={manageAccessOpen}
+      onOpenChange={setManageAccessOpen}
+      resourceType="highlight"
+      resourceId={h.id}
+      resourceTitle={h.text.slice(0, 60)}
+    />
     <RequestAccessModal 
       open={requestAccessOpen} 
-      onOpenChange={(open) => {
-        setRequestAccessOpen(open);
-      }}
+      onOpenChange={(open) => setRequestAccessOpen(open)}
       folderId={folder?.id || ""}
       folderName={folder?.name || ""}
       currentRole={effectiveRole !== "OWNER" ? effectiveRole : undefined}
@@ -919,7 +938,7 @@ function HighlightCard({
   );
 }
 
-// â”€â”€â”€ Micro-icons â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Micro-icons ──────────────────────────────────────────────────────────────────────────────────────────────────────
 function PinIcon({ filled }: { filled: boolean }) {
   return (
     <svg width="12" height="12" viewBox="0 0 16 16" fill={filled ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -995,7 +1014,7 @@ function CopyIcon() {
   );
 }
 
-// â”€â”€â”€ Folder Tree Sub-Menu (recursive for nested folders) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── Folder Tree Sub-Menu ─────────────────────────────────────────────────────────────────────────────────────────────
 function FolderTreeMenu({
   folders,
   onSelect,
@@ -1048,7 +1067,7 @@ function FolderTreeMenu({
               >
                 <span className="text-sm leading-none shrink-0">{folder.emoji}</span>
                 <span className="flex-1 truncate">{folder.name}</span>
-                <span className="text-white/30 text-[10px]">â–¸</span>
+                <span className="text-white/30 text-[10px]">▸</span>
               </DropdownMenu.SubTrigger>
               <DropdownMenu.Portal>
                 <DropdownMenu.SubContent
@@ -1061,7 +1080,6 @@ function FolderTreeMenu({
                     "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
                   )}
                 >
-                  {/* Option to move to this parent folder itself */}
                   <DropdownMenu.Item
                     className={cn(
                       "flex items-center gap-2 px-2.5 py-1.5 rounded-lg",
@@ -1132,7 +1150,7 @@ function ReadIcon() {
   );
 }
 
-// â”€â”€â”€ List Row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── List Row ─────────────────────────────────────────────────────────────────────────────────────────────────────────
 function HighlightListRow({
   highlight: h,
   index,
@@ -1162,23 +1180,22 @@ function HighlightListRow({
   onTogglePin:      () => void;
   onMove:           (folderId: string, folderName: string) => void;
 }) {
-  const [menuOpen, setMenuOpen] = React.useState(false);
-  const [shareOpen, setShareOpen] = React.useState(false);
+  const [menuOpen, setMenuOpen]                   = React.useState(false);
+  const [shareOpen, setShareOpen]                 = React.useState(false);
+  const [manageAccessOpen, setManageAccessOpen]   = React.useState(false);
   const [requestAccessOpen, setRequestAccessOpen] = React.useState(false);
 
-  // Find effective role from folder
   const folder = folders.find((f) => f.id === String(h.folderId));
   const effectiveRole = folder?.effectiveRole || "OWNER";
   const isViewer = effectiveRole === "VIEWER";
   const isCommenter = effectiveRole === "COMMENTER";
   const canEdit = effectiveRole === "OWNER" || effectiveRole === "EDITOR";
+  const isOwner = effectiveRole === "OWNER";
   const canRequestHigherAccess = isViewer || isCommenter;
 
   const hasPendingRequest = useDashboardStore((s) =>
     folder ? s.pendingAccessRequests[folder.id] === true : false
   );
-
-  // Removed redundant useEffect to prevent N+1 API calls.
 
   return (
     <>
@@ -1229,22 +1246,22 @@ function HighlightListRow({
       {h.tags && h.tags.length > 0 && (
         <div className="flex items-center gap-1.5 shrink-0">
           {h.tags.map(tag => (
-              <span
-                  key={tag.id}
-                  className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
-                  style={{
-                    backgroundColor: tag.color.startsWith("#") ? `${tag.color}15` : `color-mix(in srgb, ${tag.color} 15%, transparent)`,
-                    color: tag.color,
-                    border: `1px solid ${tag.color.startsWith("#") ? `${tag.color}30` : `color-mix(in srgb, ${tag.color} 30%, transparent)`}`,
-                  }}
-                >
-                {tag.name}
-              </span>
-            ))}
+            <span
+              key={tag.id}
+              className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium"
+              style={{
+                backgroundColor: tag.color.startsWith("#") ? `${tag.color}15` : `color-mix(in srgb, ${tag.color} 15%, transparent)`,
+                color: tag.color,
+                border: `1px solid ${tag.color.startsWith("#") ? `${tag.color}30` : `color-mix(in srgb, ${tag.color} 30%, transparent)`}`,
+              }}
+            >
+              {tag.name}
+            </span>
+          ))}
         </div>
       )}
 
-      {/* Text (single line, truncated) */}
+      {/* Text */}
       <p className="flex-1 min-w-0 text-sm text-white/70 truncate">
         {h.text}
       </p>
@@ -1317,56 +1334,40 @@ function HighlightListRow({
                 "data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95",
               )}
             >
+              {/* ── Manage Access — OWNER only ── */}
+              {isOwner && (
+                <DropdownMenu.Item
+                  className={cn(
+                    "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
+                    "text-[12px] text-white/70 hover:text-white",
+                    "hover:bg-white/[0.06] cursor-pointer",
+                    "outline-none transition-colors duration-100",
+                  )}
+                  onSelect={() => setManageAccessOpen(true)}
+                >
+                  <Users className="w-3.5 h-3.5" />
+                  Manage Access
+                </DropdownMenu.Item>
+              )}
+
               {canRequestHigherAccess && (
                 <DropdownMenu.Item
                   disabled={hasPendingRequest}
                   className={cn(
                     "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
                     "text-[12px] text-accent hover:text-accent/80",
-                    hasPendingRequest ? "opacity-50 cursor-not-allowed bg-accent/[0.02]" : "hover:bg-accent/[0.08] cursor-pointer outline-none transition-colors duration-100",
+                    hasPendingRequest ? "opacity-50 cursor-not-allowed" : "hover:bg-accent/[0.08] cursor-pointer outline-none transition-colors duration-100",
                   )}
                   onSelect={(e) => {
-                    if (hasPendingRequest) {
-                      e.preventDefault();
-                    } else {
-                      setRequestAccessOpen(true);
-                    }
+                    if (hasPendingRequest) e.preventDefault();
+                    else setRequestAccessOpen(true);
                   }}
                 >
                   <ShieldAlert className="w-3.5 h-3.5" />
-                  {hasPendingRequest ? "Requested access" : "Request Higher Access"}
+                  {hasPendingRequest ? "Request Raised" : "Request Higher Access"}
                 </DropdownMenu.Item>
               )}
-              <DropdownMenu.Sub>
-                <DropdownMenu.SubTrigger
-                  disabled={!canEdit}
-                  className={cn(
-                    "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
-                    "text-[12px] text-white/70 hover:text-white",
-                    "hover:bg-white/[0.06] cursor-pointer",
-                    "outline-none transition-colors duration-100",
-                    "data-[state=open]:bg-white/[0.06]",
-                  )}
-                >
-                  <FolderMoveIcon />
-                  Move toâ€¦
-                  <span className="ml-auto text-white/30 text-[10px]">â–¸</span>
-                </DropdownMenu.SubTrigger>
-                <DropdownMenu.Portal>
-                  <DropdownMenu.SubContent
-                    sideOffset={4}
-                    className={cn(
-                      "z-50 min-w-[160px] max-h-[280px] overflow-y-auto rounded-xl",
-                      "bg-elevated/90 backdrop-blur-2xl border border-white/[0.06]",
-                      "shadow-spatial-lg",
-                      "p-1",
-                      "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
-                    )}
-                  >
-                    <FolderTreeMenu folders={folders} onSelect={onMove} />
-                  </DropdownMenu.SubContent>
-                </DropdownMenu.Portal>
-              </DropdownMenu.Sub>
+
               <DropdownMenu.Item
                 className={cn(
                   "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
@@ -1378,6 +1379,36 @@ function HighlightListRow({
                 <ShareIcon />
                 Share
               </DropdownMenu.Item>
+
+              <DropdownMenu.Sub>
+                <DropdownMenu.SubTrigger
+                  disabled={!canEdit}
+                  className={cn(
+                    "flex items-center gap-2.5 px-2.5 py-2 rounded-lg",
+                    "text-[12px] text-white/70 hover:text-white",
+                    "hover:bg-white/[0.06] cursor-pointer outline-none transition-colors duration-100",
+                    "data-[state=open]:bg-white/[0.06]",
+                  )}
+                >
+                  <FolderMoveIcon />
+                  Move to…
+                  <span className="ml-auto text-white/30 text-[10px]">▸</span>
+                </DropdownMenu.SubTrigger>
+                <DropdownMenu.Portal>
+                  <DropdownMenu.SubContent
+                    sideOffset={4}
+                    className={cn(
+                      "z-50 min-w-[160px] max-h-[280px] overflow-y-auto rounded-xl",
+                      "bg-elevated/90 backdrop-blur-2xl border border-white/[0.08]",
+                      "shadow-spatial-md p-1.5",
+                      "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+                    )}
+                  >
+                    <FolderTreeMenu folders={folders} onSelect={onMove} />
+                  </DropdownMenu.SubContent>
+                </DropdownMenu.Portal>
+              </DropdownMenu.Sub>
+
               {canEdit && (
                 <DropdownMenu.Item
                   className={cn(
@@ -1391,6 +1422,7 @@ function HighlightListRow({
                   {h.isArchived ? "Unarchive" : "Archive"}
                 </DropdownMenu.Item>
               )}
+
               {canEdit && (
                 <>
                   <DropdownMenu.Separator className="my-1 h-px bg-white/[0.06]" />
@@ -1407,26 +1439,31 @@ function HighlightListRow({
                   </DropdownMenu.Item>
                 </>
               )}
+
               {canRequestHigherAccess && (
                 <div className="px-2.5 py-2 text-[10px] text-white/30 italic max-w-[180px] leading-relaxed border-t border-white/[0.06] mt-1">
                   {isViewer
                     ? "Ask the owner for Commenter or Editor access."
-                    : "Ask the owner for Editor access to edit/delete."}
+                    : "Ask the owner for Editor access to edit or delete."}
                 </div>
               )}
             </DropdownMenu.Content>
           </DropdownMenu.Portal>
         </DropdownMenu.Root>
       </div>
-
     </motion.div>
 
     <ShareDialog open={shareOpen} onOpenChange={setShareOpen} type="h" id={h.id} title={h.text.slice(0, 60)} />
-    <RequestAccessModal 
-      open={requestAccessOpen} 
-      onOpenChange={(open) => {
-        setRequestAccessOpen(open);
-      }}
+    <ManageAccessModal
+      open={manageAccessOpen}
+      onOpenChange={setManageAccessOpen}
+      resourceType="highlight"
+      resourceId={h.id}
+      resourceTitle={h.text.slice(0, 60)}
+    />
+    <RequestAccessModal
+      open={requestAccessOpen}
+      onOpenChange={(open) => setRequestAccessOpen(open)}
       folderId={folder?.id || ""}
       folderName={folder?.name || ""}
       currentRole={effectiveRole !== "OWNER" ? effectiveRole : undefined}
@@ -1435,78 +1472,60 @@ function HighlightListRow({
   );
 }
 
-// â”€â”€â”€ Rename Highlight Dialog â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+// ─── RenameHighlightDialog ────────────────────────────────────────────────────────────────────────────────────────────
 function RenameHighlightDialog({
   highlight,
   onClose,
   onSave,
 }: {
   highlight: Highlight | null;
-  onClose:   () => void;
-  onSave:    (id: string, newName: string) => void;
+  onClose: () => void;
+  onSave: (id: string, newName: string) => void;
 }) {
   const [value, setValue] = React.useState("");
 
   React.useEffect(() => {
-    if (highlight) setValue(highlight.source);
+    if (highlight) setValue(highlight.source || "");
   }, [highlight]);
-
-  function handleSave() {
-    if (highlight && value.trim()) {
-      onSave(highlight.id, value.trim());
-    }
-  }
 
   return (
     <Dialog.Root open={!!highlight} onOpenChange={(open) => { if (!open) onClose(); }}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0" />
-        <Dialog.Content
-          className={cn(
-            "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2",
-            "w-full max-w-sm rounded-2xl p-6",
-            "bg-elevated/90 backdrop-blur-2xl border border-white/[0.06]",
-            "shadow-spatial-lg",
-            "data-[state=open]:animate-in data-[state=closed]:animate-out",
-            "data-[state=open]:fade-in-0 data-[state=closed]:fade-out-0",
-            "data-[state=open]:zoom-in-95 data-[state=closed]:zoom-out-95",
-          )}
-        >
-          <Dialog.Title className="text-sm font-semibold text-white/90 mb-1">
-            Rename highlight
-          </Dialog.Title>
-          <Dialog.Description className="text-xs text-white/40 mb-4">
-            Edit the source name for this highlight.
-          </Dialog.Description>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=open]:fade-in-0" />
+        <Dialog.Content className={cn(
+          "fixed left-1/2 top-1/2 z-50 -translate-x-1/2 -translate-y-1/2",
+          "w-full max-w-sm rounded-2xl",
+          "bg-elevated border border-white/[0.08] shadow-spatial-xl",
+          "p-6",
+          "data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95",
+        )}>
+          <Dialog.Title className="text-sm font-semibold text-white mb-4">Rename source</Dialog.Title>
           <input
             autoFocus
             value={value}
             onChange={(e) => setValue(e.target.value)}
-            onKeyDown={(e) => { if (e.key === "Enter") handleSave(); if (e.key === "Escape") onClose(); }}
-            placeholder="Source nameâ€¦"
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && highlight) onSave(highlight.id, value);
+              if (e.key === "Escape") onClose();
+            }}
+            placeholder="Source name…"
             className={cn(
-              "w-full rounded-xl px-3 py-2 text-sm",
-              "bg-white/[0.06] border border-white/[0.10]",
-              "text-white placeholder:text-white/30",
-              "outline-none focus:ring-1 focus:ring-accent/50 focus:border-accent/40",
-              "transition-all duration-150",
+              "w-full rounded-xl bg-white/[0.05] border border-white/[0.08]",
+              "px-3 py-2 text-sm text-white placeholder:text-white/30",
+              "focus:outline-none focus:border-accent/50 focus:ring-1 focus:ring-accent/20",
+              "transition-colors duration-150",
             )}
           />
           <div className="flex justify-end gap-2 mt-4">
             <button
               onClick={onClose}
-              className="px-3 py-1.5 rounded-lg text-xs text-white/50 hover:text-white/80 hover:bg-white/[0.06] transition-colors"
+              className="px-3 py-1.5 rounded-lg text-xs text-white/50 hover:text-white hover:bg-white/[0.06] transition-colors duration-150"
             >
               Cancel
             </button>
             <button
-              onClick={handleSave}
-              disabled={!value.trim()}
-              className={cn(
-                "px-4 py-1.5 rounded-lg text-xs font-medium transition-colors",
-                "bg-accent/90 text-white hover:bg-accent",
-                "disabled:opacity-40 disabled:cursor-not-allowed",
-              )}
+              onClick={() => highlight && onSave(highlight.id, value)}
+              className="px-3 py-1.5 rounded-lg text-xs font-medium bg-accent/20 text-accent hover:bg-accent/30 transition-colors duration-150"
             >
               Save
             </button>

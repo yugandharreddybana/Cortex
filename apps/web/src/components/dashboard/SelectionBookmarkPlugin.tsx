@@ -8,6 +8,7 @@
  *   • Save Bookmark button
  *   • Inline folder picker
  *   • Inline tag multi-select
+ *   • Manage Access – set sharing (friends / team / role) before or after save
  *
  * AUTH GATE: If useAuthStore.user is null the component returns null
  * immediately — no event listeners, no UI, nothing is attached.
@@ -23,6 +24,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 import { useDashboardStore } from "@/store/dashboard";
 import { useAuthStore } from "@/store/authStore";
+import { ManageAccessModal } from "./ManageAccessModal";
 import type { Folder, Tag, HighlightMeta } from "@/store/types";
 
 interface SelectionAnchor {
@@ -43,16 +45,23 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
   const folders      = useDashboardStore((s) => s.folders);
   const tags         = useDashboardStore((s) => s.tags);
 
-  const [anchor, setAnchor]         = React.useState<SelectionAnchor | null>(null);
-  const [saving, setSaving]         = React.useState(false);
-  const [showPicker, setShowPicker] = React.useState(false);
-  const [selFolderId, setSelFolder] = React.useState<string | null>(null);
-  const [selTagIds, setSelTagIds]   = React.useState<string[]>([]);
-  const toolbarRef                  = React.useRef<HTMLDivElement>(null);
+  const [anchor, setAnchor]               = React.useState<SelectionAnchor | null>(null);
+  const [saving, setSaving]               = React.useState(false);
+  const [showPicker, setShowPicker]       = React.useState(false);
+  const [selFolderId, setSelFolder]       = React.useState<string | null>(null);
+  const [selTagIds, setSelTagIds]         = React.useState<string[]>([]);
+  const [savedHighlightId, setSavedId]   = React.useState<string | null>(null);
+  const [manageAccessOpen, setManageAccessOpen] = React.useState(false);
+  const toolbarRef                        = React.useRef<HTMLDivElement>(null);
 
   // Reset picker state whenever a new selection is made
   React.useEffect(() => {
-    if (anchor) { setShowPicker(false); setSelFolder(null); setSelTagIds([]); }
+    if (anchor) {
+      setShowPicker(false);
+      setSelFolder(null);
+      setSelTagIds([]);
+      setSavedId(null);
+    }
   }, [anchor?.text, anchor?.meta.messageId]);
 
   // Attach / detach mouse listeners — only when user is logged in
@@ -135,6 +144,8 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
         meta:     anchor.meta,
       });
       if (saved) {
+        // Keep the toolbar open so the user can optionally set access
+        setSavedId(typeof saved === "object" && "id" in saved ? (saved as { id: string }).id : null);
         const folderName = folders.find((f) => f.id === selFolderId)?.name;
         const tagNames   = tags.filter((t) => selTagIds.includes(t.id)).map((t) => t.name);
         toast.success("Bookmark saved!", {
@@ -143,6 +154,12 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
             folderName ? `Folder: ${folderName}` : null,
             tagNames.length ? `Tags: ${tagNames.join(", ")}` : null,
           ].filter(Boolean).join(" · "),
+          action: savedHighlightId
+            ? {
+                label: "Manage Access",
+                onClick: () => setManageAccessOpen(true),
+              }
+            : undefined,
         });
         window.getSelection()?.removeAllRanges();
         setAnchor(null); setShowPicker(false);
@@ -157,157 +174,187 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
   // Guest: render nothing
   if (!user) return null;
 
-  return createPortal(
-    <AnimatePresence>
-      {anchor && (
-        <motion.div
-          ref={toolbarRef}
-          key="bookmark-toolbar"
-          initial={{ opacity: 0, y: 8, scale: 0.95 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{   opacity: 0, y: 4, scale: 0.96 }}
-          transition={{ type: "spring", stiffness: 420, damping: 28 }}
-          style={{
-            position:  "fixed",
-            left:      anchor.x,
-            top:       anchor.y,
-            transform: "translate(-50%, -100%)",
-            zIndex:    9999,
-            maxWidth:  "min(360px, 90vw)",
-          }}
-          className="flex flex-col rounded-xl shadow-2xl bg-[#1c1b19]/95 backdrop-blur-xl border border-white/[0.08] select-none overflow-hidden"
-        >
-          {/* ── Top row: bookmark icon + label + folder/tag toggle + save + dismiss ── */}
-          <div className="flex items-center gap-2 px-3 py-2">
-            {/* Bookmark icon */}
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400/80 shrink-0" aria-hidden="true">
-              <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
-            </svg>
-
-            {/* Selected text preview */}
-            <span className="flex-1 text-xs text-white/60 truncate max-w-[140px]">
-              {anchor.text.length > 40 ? anchor.text.slice(0, 40) + "\u2026" : anchor.text}
-            </span>
-
-            {/* Folder + tag toggle button */}
-            <button
-              type="button"
-              onClick={() => setShowPicker((v) => !v)}
-              title="Set folder and tags"
-              className={[
-                "flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-colors duration-150",
-                showPicker
-                  ? "bg-white/[0.10] text-white/80"
-                  : "text-white/40 hover:text-white/70 hover:bg-white/[0.06]",
-              ].join(" ")}
+  return (
+    <>
+      {createPortal(
+        <AnimatePresence>
+          {anchor && (
+            <motion.div
+              ref={toolbarRef}
+              key="bookmark-toolbar"
+              initial={{ opacity: 0, y: 8, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{   opacity: 0, y: 4, scale: 0.96 }}
+              transition={{ type: "spring", stiffness: 420, damping: 28 }}
+              style={{
+                position:  "fixed",
+                left:      anchor.x,
+                top:       anchor.y,
+                transform: "translate(-50%, -100%)",
+                zIndex:    9999,
+                maxWidth:  "min(360px, 90vw)",
+              }}
+              className="flex flex-col rounded-xl shadow-2xl bg-[#1c1b19]/95 backdrop-blur-xl border border-white/[0.08] select-none overflow-hidden"
             >
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
-              </svg>
-              {selFolderId || selTagIds.length > 0
-                ? `${selFolderId ? "1 folder" : ""}${
-                    selFolderId && selTagIds.length ? " · " : ""
-                  }${selTagIds.length ? `${selTagIds.length} tag${selTagIds.length > 1 ? "s" : ""}` : ""}`
-                : "Add to…"}
-            </button>
+              {/* ── Top row: bookmark icon + label + folder/tag toggle + save + manage access + dismiss ── */}
+              <div className="flex items-center gap-2 px-3 py-2">
+                {/* Bookmark icon */}
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400/80 shrink-0" aria-hidden="true">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                </svg>
 
-            {/* Save button */}
-            <button
-              type="button"
-              onClick={handleSave}
-              disabled={saving}
-              className="px-2.5 py-1 rounded-md bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 text-xs font-medium transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
-            >
-              {saving ? "Saving…" : "Save"}
-            </button>
+                {/* Selected text preview */}
+                <span className="flex-1 text-xs text-white/60 truncate max-w-[120px]">
+                  {anchor.text.length > 35 ? anchor.text.slice(0, 35) + "\u2026" : anchor.text}
+                </span>
 
-            {/* Dismiss */}
-            <button
-              type="button"
-              onClick={() => { setAnchor(null); setShowPicker(false); }}
-              className="text-white/25 hover:text-white/60 transition-colors duration-150"
-              aria-label="Dismiss"
-            >
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                <path d="M1.5 1.5l7 7M8.5 1.5l-7 7"/>
-              </svg>
-            </button>
-          </div>
+                {/* Folder + tag toggle button */}
+                <button
+                  type="button"
+                  onClick={() => setShowPicker((v) => !v)}
+                  title="Set folder and tags"
+                  className={[
+                    "flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium transition-colors duration-150",
+                    showPicker
+                      ? "bg-white/[0.10] text-white/80"
+                      : "text-white/40 hover:text-white/70 hover:bg-white/[0.06]",
+                  ].join(" ")}
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                  </svg>
+                  {selFolderId || selTagIds.length > 0
+                    ? `${selFolderId ? "1 folder" : ""}${
+                        selFolderId && selTagIds.length ? " · " : ""
+                      }${selTagIds.length ? `${selTagIds.length} tag${selTagIds.length > 1 ? "s" : ""}` : ""}`
+                    : "Add to…"}
+                </button>
 
-          {/* ── Expandable folder + tag picker ── */}
-          <AnimatePresence initial={false}>
-            {showPicker && (
-              <motion.div
-                key="picker"
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{   height: 0, opacity: 0 }}
-                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
-                className="overflow-hidden border-t border-white/[0.06]"
-              >
-                <div className="px-3 py-2.5 space-y-3">
+                {/* Save button */}
+                <button
+                  type="button"
+                  onClick={handleSave}
+                  disabled={saving}
+                  className="px-2.5 py-1 rounded-md bg-blue-500/20 hover:bg-blue-500/30 text-blue-300 text-xs font-medium transition-colors duration-150 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  {saving ? "Saving…" : "Save"}
+                </button>
 
-                  {/* Folder section */}
-                  {folders.length > 0 && (
-                    <div>
-                      <p className="text-[10px] font-medium text-white/30 uppercase tracking-wider mb-1.5">Folder</p>
-                      <div className="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto">
-                        {/* No folder option */}
-                        <FolderChip
-                          label="None"
-                          emoji=""
-                          selected={selFolderId === null}
-                          onClick={() => setSelFolder(null)}
-                        />
-                        {folders.map((f) => (
-                          <FolderChip
-                            key={f.id}
-                            label={f.name}
-                            emoji={f.emoji}
-                            selected={selFolderId === f.id}
-                            onClick={() => setSelFolder(f.id === selFolderId ? null : f.id)}
-                          />
-                        ))}
-                      </div>
+                {/* Manage Access button — always visible so user can set access before/after saving */}
+                <button
+                  type="button"
+                  onClick={() => setManageAccessOpen(true)}
+                  title="Manage access — control who can view this bookmark"
+                  className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium text-white/40 hover:text-violet-300 hover:bg-violet-500/[0.10] transition-colors duration-150"
+                >
+                  {/* Users icon */}
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                    <circle cx="9" cy="7" r="4"/>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                  </svg>
+                  Access
+                </button>
+
+                {/* Dismiss */}
+                <button
+                  type="button"
+                  onClick={() => { setAnchor(null); setShowPicker(false); }}
+                  className="text-white/25 hover:text-white/60 transition-colors duration-150"
+                  aria-label="Dismiss"
+                >
+                  <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
+                    <path d="M1.5 1.5l7 7M8.5 1.5l-7 7"/>
+                  </svg>
+                </button>
+              </div>
+
+              {/* ── Expandable folder + tag picker ── */}
+              <AnimatePresence initial={false}>
+                {showPicker && (
+                  <motion.div
+                    key="picker"
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{   height: 0, opacity: 0 }}
+                    transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+                    className="overflow-hidden border-t border-white/[0.06]"
+                  >
+                    <div className="px-3 py-2.5 space-y-3">
+
+                      {/* Folder section */}
+                      {folders.length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-medium text-white/30 uppercase tracking-wider mb-1.5">Folder</p>
+                          <div className="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto">
+                            {/* No folder option */}
+                            <FolderChip
+                              label="None"
+                              emoji=""
+                              selected={selFolderId === null}
+                              onClick={() => setSelFolder(null)}
+                            />
+                            {folders.map((f) => (
+                              <FolderChip
+                                key={f.id}
+                                label={f.name}
+                                emoji={f.emoji}
+                                selected={selFolderId === f.id}
+                                onClick={() => setSelFolder(f.id === selFolderId ? null : f.id)}
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tags section */}
+                      {tags.length > 0 && (
+                        <div>
+                          <p className="text-[10px] font-medium text-white/30 uppercase tracking-wider mb-1.5">Tags</p>
+                          <div className="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto">
+                            {tags.map((t) => (
+                              <TagChip
+                                key={t.id}
+                                tag={t}
+                                selected={selTagIds.includes(t.id)}
+                                onClick={() =>
+                                  setSelTagIds((prev) =>
+                                    prev.includes(t.id)
+                                      ? prev.filter((x) => x !== t.id)
+                                      : [...prev, t.id],
+                                  )
+                                }
+                              />
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {folders.length === 0 && tags.length === 0 && (
+                        <p className="text-xs text-white/25 py-1">
+                          No folders or tags yet. Create them in the sidebar first.
+                        </p>
+                      )}
                     </div>
-                  )}
-
-                  {/* Tags section */}
-                  {tags.length > 0 && (
-                    <div>
-                      <p className="text-[10px] font-medium text-white/30 uppercase tracking-wider mb-1.5">Tags</p>
-                      <div className="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto">
-                        {tags.map((t) => (
-                          <TagChip
-                            key={t.id}
-                            tag={t}
-                            selected={selTagIds.includes(t.id)}
-                            onClick={() =>
-                              setSelTagIds((prev) =>
-                                prev.includes(t.id)
-                                  ? prev.filter((x) => x !== t.id)
-                                  : [...prev, t.id],
-                              )
-                            }
-                          />
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {folders.length === 0 && tags.length === 0 && (
-                    <p className="text-xs text-white/25 py-1">
-                      No folders or tags yet. Create them in the sidebar first.
-                    </p>
-                  )}
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.div>
+          )}
+        </AnimatePresence>,
+        document.body,
       )}
-    </AnimatePresence>,
-    document.body,
+
+      {/* ManageAccessModal — opened from the Access button or the post-save toast action */}
+      <ManageAccessModal
+        open={manageAccessOpen}
+        onOpenChange={setManageAccessOpen}
+        resourceType="highlight"
+        resourceId={savedHighlightId ?? ""}
+        resourceTitle={anchor?.text?.slice(0, 60) ?? "Bookmark"}
+      />
+    </>
   );
 }
 
