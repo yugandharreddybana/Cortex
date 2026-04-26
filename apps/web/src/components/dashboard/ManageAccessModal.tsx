@@ -12,7 +12,7 @@ import { toast } from "sonner";
 interface ManageAccessModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  /** Accepts string or number — coerced to number internally */
+  /** Accepts string or number -- coerced to number internally */
   resourceId: string | number;
   resourceType: "FOLDER" | "HIGHLIGHT";
   resourceName: string;
@@ -35,7 +35,6 @@ export function ManageAccessModal({
   resourceType,
   resourceName,
 }: ManageAccessModalProps) {
-  // Coerce resourceId to number — may be a string UUID or numeric string
   const numericId = typeof resourceId === "string" ? parseInt(resourceId, 10) : resourceId;
 
   const [permissions, setPermissions] = React.useState<PermissionItem[]>([]);
@@ -44,7 +43,6 @@ export function ManageAccessModal({
   const [pendingUpdates, setPendingUpdates] = React.useState<Record<number, string>>({});
   const [pendingRemovals, setPendingRemovals] = React.useState<Set<number>>(new Set());
 
-  // Invitation State
   const [inviteEmail, setInviteEmail] = React.useState("");
   const [inviteRole, setInviteRole] = React.useState<"VIEWER" | "EDITOR">("VIEWER");
   const [suggestions, setSuggestions] = React.useState<{ id: number; email: string; fullName: string }[]>([]);
@@ -52,7 +50,6 @@ export function ManageAccessModal({
 
   const bulkManagePermissions = useDashboardStore((s) => s.bulkManagePermissions);
 
-  // ── Fetch existing collaborators for autocomplete ──────────────────────────
   const fetchCollaborators = React.useCallback(async () => {
     try {
       const resp = await fetch("/api/permissions/collaborators");
@@ -65,8 +62,7 @@ export function ManageAccessModal({
     }
   }, []);
 
-  // ── Fetch current permissions for this resource ────────────────────────────
-  // Backend expects: GET /api/permissions?resourceId=:id&resourceType=:type
+  // GET /api/permissions?resourceId=:id&resourceType=:type
   const fetchPermissions = React.useCallback(async () => {
     setIsLoading(true);
     try {
@@ -133,8 +129,7 @@ export function ManageAccessModal({
     });
   };
 
-  // ── Invite a new member ────────────────────────────────────────────────────
-  // Backend DTO: { targetId, targetType, email, accessLevel }
+  // POST /api/permissions -- body must match GrantRequest: { email, resourceId, resourceType, accessLevel }
   const handleAddMember = async () => {
     if (!inviteEmail.trim()) return;
     setIsSaving(true);
@@ -143,8 +138,8 @@ export function ManageAccessModal({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          targetId: numericId,
-          targetType: resourceType,
+          resourceId: numericId,
+          resourceType: resourceType,
           email: inviteEmail.trim(),
           accessLevel: inviteRole,
         }),
@@ -166,8 +161,6 @@ export function ManageAccessModal({
     }
   };
 
-  // ── Bulk update / remove permissions ──────────────────────────────────────
-  // Backend DTO: { resourceId, resourceType, permissions: [{userId,accessLevel}], removals: [userId] }
   const handleSave = async () => {
     setIsSaving(true);
     try {
@@ -250,7 +243,7 @@ export function ManageAccessModal({
                           </div>
                           <input
                             type="text"
-                            placeholder="Search by email or name…"
+                            placeholder="Search by email or name..."
                             value={inviteEmail}
                             onChange={(e) => {
                               setInviteEmail(e.target.value);
@@ -260,7 +253,6 @@ export function ManageAccessModal({
                             className="w-full bg-white/[0.03] border border-white/5 rounded-xl pl-9 pr-4 py-2 text-sm text-white placeholder:text-white/20 focus:outline-none focus:border-accent/30 focus:bg-white/[0.05] transition-all"
                           />
 
-                          {/* Suggestions Dropdown */}
                           <AnimatePresence>
                             {showSuggestions && (
                               <motion.div
@@ -347,7 +339,7 @@ export function ManageAccessModal({
                       {isLoading ? (
                         <div className="flex h-40 flex-col items-center justify-center gap-3 text-white/20">
                           <Loader size="md" variant="muted" />
-                          <p className="text-sm">Fetching collaborators…</p>
+                          <p className="text-sm">Fetching collaborators...</p>
                         </div>
                       ) : permissions.length === 0 ? (
                         <div className="flex h-40 flex-col items-center justify-center gap-3 text-center text-white/20">

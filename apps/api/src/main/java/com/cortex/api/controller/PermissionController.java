@@ -29,24 +29,28 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/v1/permissions")
 public class PermissionController {
 
-    /** GET /api/v1/permissions?type=HIGHLIGHT|FOLDER&id=5 — list all permissions (query param version for compatibility) */
+    /**
+     * GET /api/v1/permissions?resourceId=5&resourceType=FOLDER
+     * Lists all permissions for the given resource.
+     * Param names MUST match what the frontend sends (resourceId, resourceType).
+     */
     @GetMapping
     @Transactional
     public List<PermissionDTO> listByQuery(Authentication auth,
-                                          @RequestParam String type,
-                                          @RequestParam Long id) {
-        if (type == null || type.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "type is required");
+                                           @RequestParam Long resourceId,
+                                           @RequestParam String resourceType) {
+        if (resourceType == null || resourceType.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "resourceType is required");
         }
-        SharedLink.ResourceType resourceType;
+        SharedLink.ResourceType type;
         try {
-            resourceType = SharedLink.ResourceType.valueOf(type.toUpperCase());
+            type = SharedLink.ResourceType.valueOf(resourceType.toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid resource type: " + type);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid resource type: " + resourceType);
         }
-        requireOwner(auth, id, resourceType);
+        requireOwner(auth, resourceId, type);
 
-        return permissionRepo.findByResourceIdAndResourceType(id, resourceType)
+        return permissionRepo.findByResourceIdAndResourceType(resourceId, type)
                 .stream().map(this::toDTO).toList();
     }
 
@@ -74,35 +78,39 @@ public class PermissionController {
         this.permissionService = permissionService;
     }
 
-    /** GET /api/v1/permissions/{resourceId}?type=HIGHLIGHT|FOLDER — list all permissions */
+    /** GET /api/v1/permissions/{resourceId}?resourceType=HIGHLIGHT|FOLDER */
     @GetMapping("/{resourceId}")
     @Transactional
     public List<PermissionDTO> list(Authentication auth,
                                     @PathVariable Long resourceId,
-                                    @RequestParam String type) {
-        if (type == null || type.isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "type is required");
+                                    @RequestParam String resourceType) {
+        if (resourceType == null || resourceType.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "resourceType is required");
         }
-        SharedLink.ResourceType resourceType;
+        SharedLink.ResourceType type;
         try {
-            resourceType = SharedLink.ResourceType.valueOf(type.toUpperCase());
+            type = SharedLink.ResourceType.valueOf(resourceType.toUpperCase());
         } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid resource type: " + type);
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid resource type: " + resourceType);
         }
-        requireOwner(auth, resourceId, resourceType);
+        requireOwner(auth, resourceId, type);
 
-        return permissionRepo.findByResourceIdAndResourceType(resourceId, resourceType)
+        return permissionRepo.findByResourceIdAndResourceType(resourceId, type)
                 .stream().map(this::toDTO).toList();
     }
 
-    /** POST /api/v1/permissions — grant access to a user (invite) */
+    /**
+     * POST /api/v1/permissions
+     * Grant access to a user (invite).
+     * GrantRequest fields: { email, resourceId, resourceType, accessLevel }
+     */
     @PostMapping
     @Transactional
     public ResponseEntity<PermissionDTO> grant(Authentication auth,
                                                 @RequestBody GrantRequest req) {
         User granter = userRepo.findById(Long.parseLong(auth.getName()))
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED));
- 
+
         if (req.resourceType == null || req.resourceType.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "resourceType is required");
         }
@@ -112,16 +120,16 @@ public class PermissionController {
         } catch (IllegalArgumentException e) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid resource type: " + req.resourceType);
         }
-        
+
         requireOwner(auth, req.resourceId, resourceType);
- 
+
         ResourcePermission perm = permissionService.grantAccess(
                 granter, req.email, req.resourceId, resourceType, req.accessLevel);
- 
+
         return ResponseEntity.status(HttpStatus.CREATED).body(toDTO(perm));
     }
 
-    /** PUT /api/v1/permissions/{permissionId} — update access level */
+    /** PUT /api/v1/permissions/{permissionId} -- update access level */
     @PutMapping("/{permissionId}")
     @Transactional
     public PermissionDTO update(Authentication auth,
@@ -163,7 +171,8 @@ public class PermissionController {
     }
 
     /**
-     * POST /api/v1/permissions/bulk-manage — Update or revoke multiple permissions at once.
+     * POST /api/v1/permissions/bulk-manage
+     * Update or revoke multiple permissions at once.
      */
     @PostMapping("/bulk-manage")
     @Transactional
@@ -196,7 +205,6 @@ public class PermissionController {
                         .ifPresent(perm -> {
                             User user = perm.getUser();
                             permissionRepo.delete(perm);
-                            // Notify user of revocation
                             notificationService.emitAccessRevoked(user, owner.getFullName(), resourceTitle, req.resourceId, resourceType.name());
                             if (resourceType == SharedLink.ResourceType.FOLDER) {
                                 notificationService.triggerFolderAccessRevokedEmail(user, owner, resourceTitle);
@@ -212,7 +220,7 @@ public class PermissionController {
                 try {
                     level = AccessLevel.valueOf(update.accessLevel.toUpperCase());
                 } catch (IllegalArgumentException e) {
-                    continue; // Skip invalid
+                    continue;
                 }
 
                 permissionRepo.findByUserIdAndResourceIdAndResourceType(update.userId, req.resourceId, resourceType)
@@ -220,7 +228,6 @@ public class PermissionController {
                             if (perm.getAccessLevel() != level) {
                                 perm.setAccessLevel(level);
                                 permissionRepo.save(perm);
-                                // Notify user of update
                                 User user = perm.getUser();
                                 notificationService.emitAccessUpdated(user, owner.getFullName(), resourceTitle, level.name(), req.resourceId, resourceType.name());
                                 if (resourceType == SharedLink.ResourceType.FOLDER) {
@@ -234,7 +241,7 @@ public class PermissionController {
         return ResponseEntity.ok(Map.of("ok", true));
     }
 
-    /** PUT /api/v1/permissions/link-access — update link-level access settings */
+    /** PUT /api/v1/permissions/link-access -- update link-level access settings */
     @PutMapping("/link-access")
     @Transactional
     public ResponseEntity<Map<String, String>> updateLinkAccess(Authentication auth,
@@ -285,17 +292,15 @@ public class PermissionController {
         return ResponseEntity.ok(Map.of("linkAccess", linkAccess.name(), "defaultLinkRole", defaultRole.name()));
     }
 
-    /** GET /api/v1/permissions/collaborators — list all unique users shared with/by me */
+    /** GET /api/v1/permissions/collaborators -- list all unique users shared with/by me */
     @Transactional
     @GetMapping("/collaborators")
     public List<CollaboratorDTO> getCollaborators(Authentication auth) {
         Long userId = Long.parseLong(auth.getName());
         Set<User> collaborators = new HashSet<>();
 
-        // 1. People shared WITH me
         List<ResourcePermission> incoming = permissionRepo.findByUserId(userId);
         for (ResourcePermission p : incoming) {
-            // The owner of the resource is a collaborator
             if (p.getResourceType() == SharedLink.ResourceType.FOLDER) {
                 folderRepo.findById(p.getResourceId()).ifPresent(f -> collaborators.add(f.getUser()));
             } else {
@@ -303,7 +308,6 @@ public class PermissionController {
             }
         }
 
-        // 2. People I shared WITH
         List<com.cortex.api.entity.Folder> myFolders = folderRepo.findByUserId(userId);
         for (com.cortex.api.entity.Folder f : myFolders) {
             List<ResourcePermission> perms = permissionRepo.findByResourceIdAndResourceType(f.getId(), SharedLink.ResourceType.FOLDER);
@@ -314,7 +318,7 @@ public class PermissionController {
 
         return collaborators.stream()
                 .filter(java.util.Objects::nonNull)
-                .filter(u -> u.getId() != null && !u.getId().equals(userId)) // exclude self and invalid IDs
+                .filter(u -> u.getId() != null && !u.getId().equals(userId))
                 .map(u -> {
                     CollaboratorDTO dto = new CollaboratorDTO();
                     dto.id = u.getId();
@@ -338,7 +342,6 @@ public class PermissionController {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No access");
         }
 
-        // Also return link access settings if owner
         boolean isOwner = securityService.isOwner(resourceId, resourceType);
         String linkAccess = null;
         String defaultLinkRole = null;
@@ -368,7 +371,7 @@ public class PermissionController {
         return result;
     }
 
-    // ── Helpers ──
+    // -- Helpers --
 
     private void requireOwner(Authentication auth, Long resourceId, SharedLink.ResourceType type) {
         if (!securityService.isOwner(resourceId, type)) {
@@ -389,7 +392,7 @@ public class PermissionController {
         return dto;
     }
 
-    // ── DTOs ──
+    // -- DTOs --
 
     public static class PermissionDTO {
         public Long id;
@@ -407,7 +410,7 @@ public class PermissionController {
         public Long resourceId;
         public String resourceType;
         public String accessLevel;
-        public String resourceTitle; // optional: if provided by client, used as fallback label
+        public String resourceTitle;
     }
 
     public static class UpdateRequest {
@@ -445,7 +448,7 @@ public class PermissionController {
             CollaboratorDTO that = (CollaboratorDTO) o;
             return java.util.Objects.equals(id, that.id);
         }
- 
+
         @Override
         public int hashCode() {
             return java.util.Objects.hashCode(id);
