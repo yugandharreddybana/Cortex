@@ -923,9 +923,9 @@ function HighlightCard({
     <ManageAccessModal
       open={manageAccessOpen}
       onOpenChange={setManageAccessOpen}
-      resourceType="highlight"
+      resourceType="HIGHLIGHT"
       resourceId={h.id}
-      resourceTitle={h.text.slice(0, 60)}
+      resourceName={h.text}
     />
     <RequestAccessModal 
       open={requestAccessOpen} 
@@ -1457,9 +1457,9 @@ function HighlightListRow({
     <ManageAccessModal
       open={manageAccessOpen}
       onOpenChange={setManageAccessOpen}
-      resourceType="highlight"
+      resourceType="HIGHLIGHT"
       resourceId={h.id}
-      resourceTitle={h.text.slice(0, 60)}
+      resourceName={h.text}
     />
     <RequestAccessModal
       open={requestAccessOpen}

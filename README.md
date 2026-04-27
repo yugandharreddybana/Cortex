@@ -73,7 +73,7 @@ Cortex is architected as a modern Monorepo using `pnpm` workspaces.
 - **Shared Notifications**: Get unread badges and notification alerts when you are invited to a folder or someone mentions you in a comment.
 
 ### 4. Strict Hierarchical RBAC Permissions
-- **Folder-Level Access**: Grant users `VIEWER` or `EDITOR` access to specific folders.
+- **Folder-Level Access**: Grant users `VIEWER` `COMMENTER` or `EDITOR` access to specific folders.
 - **Inheritance**: Permissions cascade. Giving someone `EDITOR` access to a root folder automatically grants them access to all nested child folders and highlights.
 - **Hidden Shared Highlights**: Users can "hide" a shared highlight locally without deleting it for the original owner.
 
@@ -149,7 +149,7 @@ The primary application logic lives in the Spring Boot backend (`/api/v1/`). All
 
 ### 🛡 Permissions (`PermissionController`)
 - `GET /api/v1/permissions/{resourceId}`: View who has access to a specific folder/highlight.
-- `POST /api/v1/permissions`: Grant access to a user (VIEWER/EDITOR).
+- `POST /api/v1/permissions`: Grant access to a user (VIEWER/COMMENTER/EDITOR).
 - `PUT /api/v1/permissions/{permissionId}`: Update access level.
 - `DELETE /api/v1/permissions/{permissionId}`: Revoke access.
 - `PUT /api/v1/permissions/link-access`: Update public link accessibility rules.

@@ -186,6 +186,7 @@ export default function CaptureClient() {
         <input
           value={source}
           onChange={(e) => setSource(e.target.value)}
+          placeholder="Enter source or title"
           className={cn(
             "w-full h-10 rounded-xl bg-white/[0.04] border border-white/[0.08]",
             "px-3.5 text-sm text-white/85 focus:outline-none focus:border-accent/50",
@@ -195,9 +196,10 @@ export default function CaptureClient() {
         <div className="grid grid-cols-2 gap-4 mt-4">
           <div>
             <label className="block text-xs font-medium text-white/50 mb-1.5">Folder</label>
-            <select
+           <select
               value={folderId ?? ""}
               onChange={(e) => setFolderId(e.target.value || undefined)}
+              title="Select folder"
               className={cn(
                 "w-full h-10 rounded-xl bg-white/[0.04] border border-white/[0.08]",
                 "px-3 text-sm text-white/85 focus:outline-none focus:border-accent/50",
@@ -207,7 +209,7 @@ export default function CaptureClient() {
               {flatFolders.map((f) => (
                 <option key={f.id} value={f.id}>{f.prefix}{f.emoji ? `${f.emoji} ` : ""}{f.name}</option>
               ))}
-            </select>
+            </select> 
           </div>
           <div>
             <label className="block text-xs font-medium text-white/50 mb-1.5">Tags</label>

@@ -7,7 +7,7 @@ import { cn } from "@cortex/ui";
 import { Button } from "@cortex/ui";
 import { Badge } from "@cortex/ui";
 
-// â”€â”€â”€ Stagger config â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Stagger config 
 const fadeUp = {
   hidden:  { opacity: 0, y: 20 },
   visible: { opacity: 1, y: 0  },
@@ -23,7 +23,7 @@ const itemTransition = {
   ease:     [0.20, 0.90, 0.30, 1.00] as [number, number, number, number],
 };
 
-// â”€â”€â”€ Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Component 
 export function Hero() {
   return (
     <section
@@ -35,7 +35,7 @@ export function Hero() {
       )}
       aria-label="Hero section"
     >
-      {/* â”€â”€ Radial glow behind text â”€â”€ */}
+      {/*  Radial glow behind text  */}
       <div
         aria-hidden
         className={cn(
@@ -47,13 +47,13 @@ export function Hero() {
         )}
       />
 
-      {/* â”€â”€ Background mesh â”€â”€ */}
+      {/*  Background mesh  */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 bg-mesh-gradient -z-10"
       />
 
-      {/* â”€â”€ Spotlight orb â”€â”€ */}
+      {/*  Spotlight orb  */}
       <motion.div
         aria-hidden
         initial={{ opacity: 0, scale: 0.5 }}
@@ -67,7 +67,7 @@ export function Hero() {
         )}
       />
 
-      {/* â”€â”€ Content â”€â”€ */}
+      {/*  Content  */}
       <motion.div
         className="flex flex-col items-center text-center max-w-4xl mx-auto z-10"
         variants={staggerContainer}
@@ -117,7 +117,7 @@ export function Hero() {
             "mb-10",
           )}
         >
-          Cortex captures every highlight, article, and note you encounter â€”
+          Cortex captures every highlight, article, and note you encounter ”
           then resurfaces it with AI-powered context exactly when you need it.
           Your second brain, running at the speed of thought.
         </motion.p>
@@ -142,13 +142,13 @@ export function Hero() {
           transition={itemTransition}
           className="flex flex-col sm:flex-row items-center gap-3"
         >
-          {/* Primary â€” Sign up */}
+          {/* Primary ” Sign up */}
           <a href="/signup">
             <Button size="lg" shine>
               Get Started Free
             </Button>
           </a>
-          {/* Secondary â€” Chrome Web Store */}
+          {/* Secondary ” Chrome Web Store */}
           <a
             href="https://chrome.google.com/webstore/detail/mock-cortex-id"
             target="_blank"
@@ -173,7 +173,7 @@ export function Hero() {
         </motion.p>
       </motion.div>
 
-      {/* â”€â”€ Hero graphic / mock â”€â”€ */}
+      {/*  Hero graphic / mock  */}
       <motion.div
         initial={{ opacity: 0, y: 40, scale: 0.97 }}
         animate={{ opacity: 1, y: 0,  scale: 1    }}
@@ -212,7 +212,7 @@ export function Hero() {
   );
 }
 
-// â”€â”€â”€ Icon helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Icon helpers 
 function ChromeIcon() {
   return (
     <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
@@ -256,15 +256,15 @@ function DashboardPlaceholder() {
   const folders: any[] = [];
 
   const cards = [
-    { topic: "Technology", topicColor: "bg-blue-500/20 text-blue-300", text: "The best way to predict the future is to invent it. Personal computing was a direct result of this philosophyâ€¦", source: "The Dream Machine", time: "2h ago" },
-    { topic: "Productivity", topicColor: "bg-emerald-500/20 text-emerald-300", text: "Attention is the new oil. But unlike oil, it can be regenerated â€” through rest, deep work, and ruthless subtractionâ€¦", source: "Deep Work â€” Cal Newport", time: "5h ago" },
-    { topic: "Design", topicColor: "bg-violet-500/20 text-violet-300", text: "Design is not just what it looks like and feels like. Design is how it worksâ€¦", source: "Steve Jobs â€” Fortune 2003", time: "1d ago" },
-    { topic: "AI", topicColor: "bg-pink-500/20 text-pink-300", text: "Language models learn statistical regularities so well that they begin to capture semantic structureâ€¦", source: "Anthropic Research", time: "2d ago" },
+    { topic: "Technology", topicColor: "bg-blue-500/20 text-blue-300", text: "The best way to predict the future is to invent it. Personal computing was a direct result of this philosophy", source: "The Dream Machine", time: "2h ago" },
+    { topic: "Productivity", topicColor: "bg-emerald-500/20 text-emerald-300", text: "Attention is the new oil. But unlike oil, it can be regenerated ” through rest, deep work, and ruthless subtraction", source: "Deep Work ” Cal Newport", time: "5h ago" },
+    { topic: "Design", topicColor: "bg-violet-500/20 text-violet-300", text: "Design is not just what it looks like and feels like. Design is how it works", source: "Steve Jobs ” Fortune 2003", time: "1d ago" },
+    { topic: "AI", topicColor: "bg-pink-500/20 text-pink-300", text: "Language models learn statistical regularities so well that they begin to capture semantic structure", source: "Anthropic Research", time: "2d ago" },
   ];
 
   return (
     <div className="w-full h-full flex select-none pointer-events-none" style={{ fontSize: "10px" }}>
-      {/* â”€â”€ Mini sidebar â”€â”€ */}
+      {/*  Mini sidebar  */}
       <div className="w-[160px] shrink-0 border-r border-white/[0.06] flex flex-col py-3 px-2 gap-0.5 hidden sm:flex">
         {/* Logo */}
         <div className="flex items-center gap-1.5 px-2 pb-3 mb-1 border-b border-white/[0.06]">
@@ -277,8 +277,8 @@ function DashboardPlaceholder() {
         {/* Search */}
         <div className="mx-1 mb-2 px-2 py-1.5 rounded-lg bg-white/[0.03] border border-white/[0.07] text-white/25 flex items-center gap-1.5">
           <svg width="8" height="8" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round"><path d="M7 13A6 6 0 107 1a6 6 0 000 12zM13 13l2 2" /></svg>
-          <span>Searchâ€¦</span>
-          <span className="ml-auto text-white/15 font-mono" style={{ fontSize: "8px" }}>âŒ˜K</span>
+          <span>Search</span>
+          <span className="ml-auto text-white/15 font-mono" style={{ fontSize: "8px" }}>â˜K</span>
         </div>
 
         {/* Nav items */}
@@ -317,7 +317,7 @@ function DashboardPlaceholder() {
         ))}
       </div>
 
-      {/* â”€â”€ Main content â”€â”€ */}
+      {/*  Main content  */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header bar */}
         <div className="flex items-center justify-between px-4 py-2.5 border-b border-white/[0.06]">
@@ -379,7 +379,7 @@ function DashboardPlaceholder() {
         </div>
       </div>
 
-      {/* â”€â”€ Animated cursor / interaction hints â”€â”€ */}
+      {/*  Animated cursor / interaction hints  */}
       <motion.div
         className="absolute"
         style={{ top: "55%", left: "45%" }}

@@ -110,12 +110,13 @@ function TagPill({ name, color, onRemove }: { name: string; color: string; onRem
       className={cn(
         "inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium",
         c ? `${c.bg} ${c.text} border ${c.border}` : "border border-white/[0.06]",
+        isHex ? "tagpill-hex" : undefined
       )}
-      style={isHex ? { background: `${color}20`, color, borderColor: `${color}40` } : undefined}
+      data-color={isHex ? color : undefined}
     >
       {name}
       {onRemove && (
-        <button onClick={onRemove} className="ml-1 opacity-60 hover:opacity-100 transition-opacity">
+        <button onClick={onRemove} className="ml-1 opacity-60 hover:opacity-100 transition-opacity" aria-label="Remove tag" title="Remove tag">
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
             <path d="M2 2l6 6M8 2L2 8" />
           </svg>
@@ -167,7 +168,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
   // Permissions
   const currentFolder = React.useMemo(() => folders.find((f) => f.id === highlight.folderId), [folders, highlight.folderId]);
   const role = currentFolder?.effectiveRole || "OWNER";
-  const isViewer = role === "VIEWER";
+  const isViewer = role === "VIEWER" || role === "COMMENTER";
   const canEdit = role === "OWNER" || role === "EDITOR";
 
   // Comments State
@@ -378,13 +379,13 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
       .flatMap(f => [
         <div key={f.id} className="group flex items-center w-full mb-0.5 relative">
           {/* Depth indentation */}
-          <div style={{ width: depth * 16, flexShrink: 0 }} />
+          <div className="folder-indent" data-depth={depth} />
 
           {/* Depth left border indicator */}
           {depth > 0 && (
             <div
-              className="absolute top-[-4px] bottom-[-4px] w-px bg-white/[0.06]"
-              style={{ left: depth * 16 - 8 }}
+              className="absolute top-[-4px] bottom-[-4px] w-px bg-white/[0.06] folder-border"
+              data-depth={depth}
             />
           )}
 
@@ -541,12 +542,16 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
           {/* Typography controls */}
           <Popover.Root>
             <Popover.Trigger asChild>
-              <button className={cn(
-                "w-9 h-9 rounded-lg flex items-center justify-center",
-                "bg-white/[0.03] border border-white/[0.06]",
-                "text-white/70 hover:text-white hover:bg-white/[0.08]",
-                "transition-all duration-150",
-              )}>
+              <button
+                className={cn(
+                  "w-9 h-9 rounded-lg flex items-center justify-center",
+                  "bg-white/[0.03] border border-white/[0.06]",
+                  "text-white/70 hover:text-white hover:bg-white/[0.08]",
+                  "transition-all duration-150",
+                )}
+                aria-label="Typography controls"
+                title="Typography controls"
+              >
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" aria-hidden="true">
                   <path d="M2 11h10M4 3h6M7 3v8" />
                 </svg>
@@ -631,8 +636,8 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
         className="flex-1 overflow-y-auto"
       >
         <article
-          className="max-w-3xl mx-auto px-6 py-12"
-          style={{ fontFamily: font.value }}
+          className={cn("max-w-3xl mx-auto px-6 py-12", font.value ? "custom-font" : undefined)}
+          data-font={font.value || undefined}
         >
           {/* Viewer Banner */}
           {isViewer && (
@@ -640,7 +645,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="shrink-0 text-blue-400">
                 <circle cx="12" cy="12" r="10" /><line x1="12" y1="16" x2="12" y2="12" /><line x1="12" y1="8" x2="12.01" y2="8" />
               </svg>
-              <span>This is a shared highlight with <strong>View-only</strong> access. You cannot edit it or add new comments.</span>
+              <span>This is a shared highlight with <strong>{role === "VIEWER" ? "View-only" : "Commenter"}</strong> access. You cannot edit it or add new comments.</span>
             </div>
           )}
 
@@ -773,7 +778,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
             const src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}${highlight.videoTimestamp ? `?start=${Math.floor(highlight.videoTimestamp)}` : ""}`;
             return (
               <div className="mb-10">
-                <div className="relative w-full rounded-xl overflow-hidden border border-white/[0.08] shadow-spatial-lg" style={{ aspectRatio: "16/9" }}>
+                <div className="relative w-full rounded-xl overflow-hidden border border-white/[0.08] shadow-spatial-lg aspect-video">
                   <iframe
                     src={src}
                     className="absolute inset-0 w-full h-full"
@@ -803,7 +808,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                 if (isViewer) {
                   return (
                     <span className="text-xs text-white/40 italic">
-                      Viewers can only view comments
+                      {role === "VIEWER" ? "Viewers" : "Commenters"} can only view comments
                     </span>
                   );
                 }
@@ -881,6 +886,8 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                               "resize-none overflow-hidden transition-all duration-200"
                             )}
                             rows={3}
+                            placeholder="Edit your comment..."
+                            title="Edit comment"
                           />
                           <div className="mt-2 flex justify-end gap-2">
                             <button
@@ -955,7 +962,7 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
                       <div className="mt-3 flex items-center justify-end">
                         <Popover.Root>
                           <Popover.Trigger asChild>
-                            <button className="p-1.5 rounded-full text-white/20 hover:text-white/60 hover:bg-white/5 transition-all">
+                            <button className="p-1.5 rounded-full text-white/20 hover:text-white/60 hover:bg-white/5 transition-all" aria-label="Add reaction" title="Add reaction">
                               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                                 <circle cx="12" cy="12" r="10"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/>
                               </svg>

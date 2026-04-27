@@ -34,7 +34,7 @@ import { Loader } from "@/components/ui/Loader";
 import { RequestAccessModal } from "./RequestAccessModal";
 import { ManageAccessModal } from "./ManageAccessModal";
 
-// â”€â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Helpers 
 
 function XTinyIcon() { return <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M1 1l6 6M7 1L1 7" /></svg>; }
 function DotsHorizontalIcon() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><circle cx="3" cy="7" r="1.1" /><circle cx="7" cy="7" r="1.1" /><circle cx="11" cy="7" r="1.1" /></svg>; }
@@ -84,7 +84,7 @@ function resolveTagColor(color: string): TagColorConfig | null {
   return TAG_COLOR_MAP[color] ?? TAG_COLOR_MAP.blue; 
 }
 
-// â”€â”€â”€ Components â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Components 
 
 
 
@@ -226,7 +226,7 @@ function FolderDropdown({ folder, onRename, onDelete, onShare, onDuplicate, onCr
               <DropdownItem onSelect={onRename}><PencilIcon /> Rename</DropdownItem>
               <DropdownMenu.Sub>
                 <DropdownMenu.SubTrigger className={cn("flex items-center gap-2.5 px-3 py-2 rounded-lg w-full text-sm text-white/70 cursor-pointer select-none outline-none hover:bg-white/[0.06] focus:bg-white/[0.06] transition-colors duration-100")}>
-                  <MoveIcon /> Move toâ€¦ <span className="ml-auto text-white/30 text-[10px]">â–¸</span>
+                  <MoveIcon /> Move to <span className="ml-auto text-white/30 text-[10px]">â–¸</span>
                 </DropdownMenu.SubTrigger>
                 <DropdownMenu.Portal>
                   <DropdownMenu.SubContent sideOffset={4} className={cn("z-50 min-w-[160px] max-h-[280px] overflow-y-auto rounded-xl bg-elevated/90 backdrop-blur-2xl border border-white/[0.08] shadow-spatial-md p-1.5")}>
@@ -374,7 +374,7 @@ function RecursiveFolderNode({
                 )}
               </div>
               <span className="bg-white/10 text-white/60 text-[10px] px-1.5 rounded-full tabular-nums leading-4 shrink-0 min-w-[20px] flex items-center justify-center">
-                {isLoading ? "â€¦" : (folderCountMap[folder.id] || 0)}
+                {isLoading ? "" : (folderCountMap[folder.id] || 0)}
               </span>
             </Link>
             <FolderDropdown folder={folder} onRename={() => onRename(folder)} onDelete={() => onDelete(folder)} onShare={() => onShare(folder)} onDuplicate={() => onDuplicate(folder)} onCreateSubfolder={() => onCreateSubfolder(folder.id)} onPin={() => onPin(folder)} onMove={(targetId: string) => onMove(folder, targetId)} onManageAccess={() => folder._onManageAccess?.()} />
@@ -418,7 +418,7 @@ function RecursiveFolderNode({
   );
 }
 
-// â”€â”€â”€ Main Sidebar â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Main Sidebar 
 
 interface SharedWithMeItem {
   viewId: string;
@@ -469,6 +469,7 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
   const [sharedWithMe, setSharedWithMe] = React.useState<SharedWithMeItem[]>([]);
   const [isLoadingShared, setIsLoadingShared] = React.useState(true);
   const [sharedExpanded, setSharedExpanded] = React.useState(false);
+  const [manageAccessOpen, setManageAccessOpen] = React.useState(false);
 
   React.useEffect(() => {
     fetch("/api/share/shared-with-me", { credentials: "include" })
@@ -558,7 +559,7 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
             <button onClick={() => onCmdK?.()} className={cn("w-full flex items-center gap-2.5 px-3 py-2 rounded-xl text-sm text-muted border border-white/[0.06] bg-white/[0.02] transition-all duration-200 ease-spatial hover:text-secondary hover:border-white/[0.10] hover:bg-white/[0.04]")}>
               <SearchIcon />
               <span className="flex-1 text-left">Search...</span>
-              <kbd className="text-2xs bg-white/[0.07] border border-white/10 rounded px-1 leading-4 font-mono">âŒ˜K</kbd>
+              <kbd className="text-2xs bg-white/[0.07] border border-white/10 rounded px-1 leading-4 font-mono">â˜K</kbd>
             </button>
           </div>
 

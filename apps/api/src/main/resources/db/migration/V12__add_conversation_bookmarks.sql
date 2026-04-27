@@ -1,6 +1,0 @@
--- THIS FILE HAS BEEN SUPERSEDED.
--- The conversation_bookmarks migration was moved to V13__add_conversation_bookmarks.sql
--- to resolve a Flyway duplicate-version conflict with V12__heal_users_schema.sql.
--- This file is intentionally left as a no-op placeholder so that any local dev
--- environments that already applied V12 under this name do not break.
--- New environments will pick up V13 automatically.

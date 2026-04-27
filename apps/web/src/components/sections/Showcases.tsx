@@ -4,7 +4,7 @@ import * as React from "react";
 import { motion, useInView } from "framer-motion";
 import { cn } from "@cortex/ui";
 
-// â”€â”€â”€ CAPTURE visual â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  CAPTURE visual 
 function CaptureVisual() {
   const [step, setStep] = React.useState(0);
   // 0 = idle, 1 = selection active, 2 = toolbar visible, 3 = saved
@@ -48,7 +48,7 @@ function CaptureVisual() {
         {/* Title */}
         <div className="h-4 w-3/4 rounded bg-white/[0.12] mb-4" />
 
-        {/* Body lines â€” the key paragraph */}
+        {/* Body lines ” the key paragraph */}
         <div className="h-2.5 w-full rounded bg-white/[0.06]" />
         <div className="h-2.5 w-11/12 rounded bg-white/[0.06]" />
 
@@ -108,8 +108,14 @@ function CaptureVisual() {
               </button>
             ))}
             <div className="w-px h-4 bg-white/[0.08]" />
-            <button className="w-6 h-6 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.07] flex items-center justify-center transition-colors">
-              <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true"><path d="M2 9L9 2M5.5 2H9v3.5" /></svg>
+            <button
+              className="w-6 h-6 rounded-lg text-white/30 hover:text-white/60 hover:bg-white/[0.07] flex items-center justify-center transition-colors"
+              aria-label="Remove"
+              title="Remove"
+            >
+              <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.3" aria-hidden="true">
+                <path d="M2 9L9 2M5.5 2H9v3.5" />
+              </svg>
             </button>
             {/* Pointer */}
             <div className="absolute -bottom-1.5 left-8 w-3 h-3 bg-[#1C1C1E] border-r border-b border-white/[0.12] rotate-45" />
@@ -157,14 +163,14 @@ function CaptureVisual() {
   );
 }
 
-// â”€â”€â”€ RECALL visual â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  RECALL visual 
 function RecallVisual() {
   const [query, setQuery]           = React.useState("");
   const [showResults, setShowResults] = React.useState(false);
   const [activeIdx, setActiveIdx]   = React.useState(0);
   const [cycle, setCycle]           = React.useState(0);   // increment to replay
 
-  const TARGET = "that article about LLM latencyâ€¦";
+  const TARGET = "that article about LLM latency";
 
   React.useEffect(() => {
     let i = 0;
@@ -255,7 +261,7 @@ function RecallVisual() {
           transition={{ duration: 0.25, ease: [0.20, 0.90, 0.30, 1.00] }}
         >
           <div className="px-3 py-2">
-            <p className="text-[9px] text-white/25 uppercase tracking-widest px-1 mb-1.5">Best matches â€” semantic search</p>
+            <p className="text-[9px] text-white/25 uppercase tracking-widest px-1 mb-1.5">Best matches ” semantic search</p>
             <div className="space-y-0.5">
               {RESULTS.map((r, i) => (
                 <motion.div
@@ -278,7 +284,7 @@ function RecallVisual() {
                   {/* Text */}
                   <div className="flex-1 min-w-0">
                     <p className="text-[11px] text-white/80 font-medium truncate">{r.title}</p>
-                    <p className="text-[9px] text-white/30 mt-0.5 truncate">{r.src} Â· {r.when}</p>
+                    <p className="text-[9px] text-white/30 mt-0.5 truncate">{r.src} · {r.when}</p>
                   </div>
                   {/* Tag */}
                   <span
@@ -299,7 +305,7 @@ function RecallVisual() {
           {/* Footer */}
           <div className="flex items-center justify-between px-4 py-2.5 border-t border-white/[0.06]">
             <div className="flex items-center gap-3">
-              {[["â†‘â†“", "navigate"], ["â†µ", "open"], ["âŒ˜K", "close"]].map(([k, l]) => (
+              {[["â†‘â†“", "navigate"], ["â†µ", "open"], ["â˜K", "close"]].map(([k, l]) => (
                 <span key={k} className="flex items-center gap-1 text-[9px] text-white/25">
                   <kbd className="bg-white/[0.06] border border-white/[0.08] rounded px-1 py-0.5 font-mono">{k}</kbd>
                   {l}
@@ -312,7 +318,7 @@ function RecallVisual() {
 
         {!showResults && (
           <div className="px-4 py-4 text-center text-[11px] text-white/20">
-            Type to search your knowledgeâ€¦
+            Type to search your knowledge
           </div>
         )}
       </div>
@@ -320,13 +326,13 @@ function RecallVisual() {
   );
 }
 
-// â”€â”€â”€ Data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Data 
 const SHOWCASES = [
   {
     id:      "capture",
     tag:     "Capture",
     heading: "Select. Saved. Forever.",
-    body:    "The Cortex extension watches your selections in real-time. Highlight any text on any page and a frictionless toolbar appears â€” one tap to save with full source attribution, auto-tags, and folder placement predicted by AI.",
+    body:    "The Cortex extension watches your selections in real-time. Highlight any text on any page and a frictionless toolbar appears ” one tap to save with full source attribution, auto-tags, and folder placement predicted by AI.",
     visual:  <CaptureVisual />,
     flip:    false,
     accent:  "#8B5CF6",
@@ -335,14 +341,14 @@ const SHOWCASES = [
     id:      "search",
     tag:     "Recall",
     heading: "Cmd+K your entire memory.",
-    body:    "Surface anything you've ever saved in under 100ms. Cortex's semantic index understands meaning, not just keywords â€” ask \"that article about LLM latency\" and find it instantly, even if you saved it months ago.",
+    body:    "Surface anything you've ever saved in under 100ms. Cortex's semantic index understands meaning, not just keywords ” ask \"that article about LLM latency\" and find it instantly, even if you saved it months ago.",
     visual:  <RecallVisual />,
     flip:    true,
     accent:  "#60A5FA",
   },
 ] as const;
 
-// â”€â”€â”€ Component â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Component 
 export function ShowcasesSection() {
   return (
     <section
@@ -357,7 +363,7 @@ export function ShowcasesSection() {
   );
 }
 
-// â”€â”€â”€ Row â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Row 
 interface ShowcaseRowProps {
   tag:     string;
   heading: string;
@@ -394,7 +400,7 @@ function ShowcaseRow({ tag, heading, body, visual, flip, accent }: ShowcaseRowPr
         flip && "lg:[&>*:first-child]:order-2",
       )}
     >
-      {/* â”€â”€ Text â”€â”€ */}
+      {/*  Text  */}
       <motion.div
         variants={textVariants}
         initial="hidden"
@@ -416,7 +422,7 @@ function ShowcaseRow({ tag, heading, body, visual, flip, accent }: ShowcaseRowPr
         </p>
       </motion.div>
 
-      {/* â”€â”€ Media â”€â”€ */}
+      {/*  Media  */}
       <motion.div
         variants={mediaVariants}
         initial="hidden"

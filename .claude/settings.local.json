@@ -10,7 +10,9 @@
       "Bash(npx -y tsc -p tsconfig.json --noEmit)",
       "Bash(npx -y tsx --eval \"import\\('./routes/ai.ts'\\).then\\(\\(\\)=>console.log\\('OK'\\)\\).catch\\(e=>{console.error\\(e.message\\);process.exit\\(1\\)}\\)\")",
       "Bash(grep -n \"const.*prompt.*\\\\${.*input\\\\|const.*prompt.*\\\\${.*message\\\\|const.*prompt.*\\\\${.*JSON.stringify\" \"F:/Projects/FinanceTracker/server/routes/ai.ts\")",
-      "Bash(xargs grep *)"
+      "Bash(xargs grep *)",
+      "Bash(pdftotext -layout \"C:/Users/Yugiii/Downloads/CareerOps_Technical_Specification.pdf\" \"C:/Users/Yugiii/Downloads/CareerOps_spec.txt\")",
+      "Read(//c/Users/Yugiii/Downloads/**)"
     ]
   }
 }

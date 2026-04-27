@@ -51,7 +51,7 @@ export default function Error({
           We lost our train of thought.
         </h1>
         <p className="text-sm text-white/40 leading-relaxed mb-1">
-          Something unexpected happened. Your data is safe â€” this is just a
+          Something unexpected happened. Your data is safe ” this is just a
           temporary hiccup.
         </p>
         {error.digest && (

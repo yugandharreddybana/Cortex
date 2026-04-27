@@ -26,7 +26,7 @@ export default function BillingPage() {
   const config = TIER_CONFIG[tier] ?? TIER_CONFIG.starter;
   const memberSince = user?.createdAt
     ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
-    : "â€”";
+    : "”";
 
   const handleManageBilling = async () => {
     setLoadingPortal(true);
@@ -64,7 +64,7 @@ export default function BillingPage() {
         </p>
       </motion.div>
 
-      {/* â”€â”€ Section 1: Current Plan â”€â”€ */}
+      {/*  Section 1: Current Plan  */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -109,7 +109,7 @@ export default function BillingPage() {
         </div>
       </motion.div>
 
-      {/* â”€â”€ Section 2: Change Plan â”€â”€ */}
+      {/*  Section 2: Change Plan  */}
       <motion.div
         initial={{ opacity: 0, y: 12 }}
         animate={{ opacity: 1, y: 0 }}
@@ -163,7 +163,7 @@ export default function BillingPage() {
         </div>
       </motion.div>
 
-      {/* â”€â”€ Section 3: Danger Zone (only for paid plans) â”€â”€ */}
+      {/*  Section 3: Danger Zone (only for paid plans)  */}
       {tier !== "starter" && (
       <motion.div
         initial={{ opacity: 0, y: 12 }}
@@ -195,7 +195,7 @@ export default function BillingPage() {
       </motion.div>
       )}
 
-      {/* â”€â”€ Teams Upgrade Dialog â”€â”€ */}
+      {/*  Teams Upgrade Dialog  */}
       <Dialog.Root open={teamsOpen} onOpenChange={setTeamsOpen}>
         <AnimatePresence>
           {teamsOpen && (
@@ -238,7 +238,7 @@ export default function BillingPage() {
                         <p className="text-xs text-white/40">Mock Stripe Checkout</p>
                       </div>
                       <Dialog.Close className="ml-auto w-7 h-7 rounded-lg border border-white/[0.08] text-white/40 hover:text-white/70 hover:border-white/20 transition-colors duration-150 flex items-center justify-center text-base leading-none">
-                        âœ•
+                        â•
                       </Dialog.Close>
                     </div>
 
@@ -268,7 +268,7 @@ export default function BillingPage() {
                         "Everything in Pro, for everyone",
                       ].map((f) => (
                         <li key={f} className="flex items-start gap-2 text-sm text-white/55">
-                          <span className="text-emerald-400 mt-0.5 shrink-0">âœ“</span>
+                          <span className="text-emerald-400 mt-0.5 shrink-0">â“</span>
                           {f}
                         </li>
                       ))}
@@ -277,7 +277,7 @@ export default function BillingPage() {
                     {/* Mock card line */}
                     <div className="flex items-center gap-3 rounded-xl border border-white/[0.07] bg-white/[0.03] p-3 mb-5">
                       <div className="w-8 h-5 rounded bg-gradient-to-br from-[#252525] to-[#1a1a1a] border border-white/10 text-[8px] text-white/30 flex items-center justify-center font-mono">VISA</div>
-                      <span className="text-sm text-white/40 font-mono tracking-wider">â€¢â€¢â€¢â€¢ â€¢â€¢â€¢â€¢ â€¢â€¢â€¢â€¢ 4242</span>
+                      <span className="text-sm text-white/40 font-mono tracking-wider">¢¢¢¢ ¢¢¢¢ ¢¢¢¢ 4242</span>
                     </div>
 
                     <button
@@ -295,7 +295,7 @@ export default function BillingPage() {
                         "shadow-[0_0_20px_rgba(129,140,248,0.3)]",
                       )}
                     >
-                      Confirm Upgrade â€” $75 / mo
+                      Confirm Upgrade ” $75 / mo
                     </button>
                     <p className="text-center text-[11px] text-white/25 mt-3">
                       Secured by Stripe Â· Cancel anytime Â· No hidden fees
@@ -308,7 +308,7 @@ export default function BillingPage() {
         </AnimatePresence>
       </Dialog.Root>
 
-      {/* â”€â”€ Cancel AlertDialog â”€â”€ */}
+      {/*  Cancel AlertDialog  */}
       <AlertDialog.Root open={cancelOpen} onOpenChange={setCancelOpen}>
         <AnimatePresence>
           {cancelOpen && (

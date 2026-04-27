@@ -204,6 +204,7 @@ export default function ProfilePage() {
           <div className="space-y-2">
             <input
               ref={fileInputRef}
+              aria-label="Upload new photo"
               type="file"
               accept="image/jpeg,image/png,image/gif"
               className="hidden"
@@ -308,7 +309,7 @@ export default function ProfilePage() {
                 "disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100",
               )}
             >
-              {profileSaving ? "Savingâ€¦" : "Save Changes"}
+              {profileSaving ? "Saving" : "Save Changes"}
             </button>
           </div>
         )}
@@ -334,7 +335,7 @@ export default function ProfilePage() {
               type="password"
               autoComplete="current-password"
               {...regPwd("currentPassword")}
-              placeholder="â€¢â€¢â€¢â€¢â€¢â€¢â€¢â€¢"
+              placeholder="¢¢¢¢¢¢¢¢"
               className={inputCls}
             />
             {pwdErrors.currentPassword && (
@@ -385,7 +386,7 @@ export default function ProfilePage() {
               "disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100",
             )}
           >
-            {pwdSaving ? "Changingâ€¦" : "Change Password"}
+            {pwdSaving ? "Changing" : "Change Password"}
           </button>
         </div>
       </motion.form>
@@ -411,7 +412,7 @@ export default function ProfilePage() {
               <p className="text-sm text-white/80 font-medium">
                 {user.createdAt
                   ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })
-                  : "â€”"}
+                  : "”"}
               </p>
             </div>
           </div>

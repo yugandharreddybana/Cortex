@@ -5,13 +5,13 @@ import { motion, useInView } from "framer-motion";
 import { cn } from "@cortex/ui";
 import { SpotlightCard } from "@/components/ui/SpotlightCard";
 
-// â”€â”€â”€ Features data â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Features data 
 const FEATURES = [
   {
     id:      "folders",
     tag:     "Organization",
     heading: "Infinite Folders, Zero Limits.",
-    body:    "Deeply nested, emoji-tagged folders â€” your personal taxonomy.",
+    body:    "Deeply nested, emoji-tagged folders ” your personal taxonomy.",
     accent:  "#8B5CF6",
     span:    "md:col-span-2",   // wide
   },
@@ -65,7 +65,7 @@ const FEATURES = [
   },
 ] as const;
 
-// â”€â”€â”€ Visual placeholders â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Visual placeholders 
 
 function FolderTreeVisual() {
   const items = [
@@ -105,7 +105,7 @@ function NLQueryVisual() {
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white/30 shrink-0" aria-hidden="true">
           <circle cx="5" cy="5" r="3.5" /><path d="M8 8l2 2" />
         </svg>
-        <span className="text-xs text-white/35 flex-1">that article about LLM latencyâ€¦</span>
+        <span className="text-xs text-white/35 flex-1">that article about LLM latency</span>
         <kbd className="text-[10px] text-white/20 font-mono shrink-0">â†µ</kbd>
       </div>
       {[
@@ -180,8 +180,8 @@ function CodeBlockVisual() {
     [3,  "",                             ""                ],
     [4,  "// Response",                  "text-white/25"   ],
     [5,  '{ "data": [',                  "text-white/50"   ],
-    [6,  '  { "id": "h_01Jâ€¦",',          "text-white/40"   ],
-    [7,  '    "text": "LLMs achieveâ€¦",', "text-white/40"   ],
+    [6,  '  { "id": "h_01J",',          "text-white/40"   ],
+    [7,  '    "text": "LLMs achieve",', "text-white/40"   ],
     [8,  '    "tags": ["AI", "NLP"]',    "text-emerald-400/70"],
     [9,  "  }",                          "text-white/40"   ],
     [10, "]}",                           "text-white/50"   ],
@@ -212,7 +212,7 @@ function TagsFilterVisual() {
         <svg width="11" height="11" viewBox="0 0 11 11" fill="none" stroke="currentColor" strokeWidth="1.5" className="text-white/30 shrink-0" aria-hidden="true">
           <circle cx="4.5" cy="4.5" r="3" /><path d="M7 7l2 2" />
         </svg>
-        <span className="text-[11px] text-white/30 flex-1">Filter by tagâ€¦</span>
+        <span className="text-[11px] text-white/30 flex-1">Filter by tag</span>
       </div>
       {/* Tag pills */}
       <div className="flex flex-wrap gap-2">
@@ -294,7 +294,7 @@ function ReadingModeVisual() {
   );
 }
 
-// â”€â”€â”€ Visuals registry â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Visuals registry 
 const VISUALS: Record<string, React.ReactNode> = {
   folders:    <FolderTreeVisual />,
   context:    <NLQueryVisual />,
@@ -305,7 +305,7 @@ const VISUALS: Record<string, React.ReactNode> = {
   reading:    <ReadingModeVisual />,
 };
 
-// â”€â”€â”€ Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Section 
 export function BentoGrid() {
   const ref = React.useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-80px" });
@@ -344,7 +344,7 @@ export function BentoGrid() {
   );
 }
 
-// â”€â”€â”€ Card â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+//  Card 
 interface BentoCardProps {
   tag:           string;
   heading:       string;
