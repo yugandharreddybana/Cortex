@@ -48,8 +48,13 @@ export const useDashboardStore = create<DashboardState>()(
           }),
         });
         if (res.ok) {
-          get().invalidateFolders();
-          await get().fetchFolders();
+          if (resourceType === "HIGHLIGHT") {
+            // Refresh highlights so permission changes are reflected immediately
+            await get().fetchHighlights?.();
+          } else {
+            get().invalidateFolders();
+            await get().fetchFolders();
+          }
         }
       },
 
