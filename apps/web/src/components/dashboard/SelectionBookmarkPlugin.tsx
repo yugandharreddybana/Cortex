@@ -3,8 +3,11 @@
 /**
  * SelectionBookmarkPlugin
  * =======================
- * Drop this anywhere inside your AI-agent conversation view.
- * When the user selects text, a floating toolbar appears with:
+ * Drop this anywhere inside your dashboard layout (already mounted in
+ * apps/web/src/app/dashboard/layout.tsx).
+ *
+ * When the user selects ANY text anywhere in the dashboard a floating
+ * toolbar appears above the selection with:
  *   • Save Bookmark button
  *   • Inline folder picker
  *   • Inline tag multi-select
@@ -13,9 +16,14 @@
  * AUTH GATE: If useAuthStore.user is null the component returns null
  * immediately — no event listeners, no UI, nothing is attached.
  *
+ * Works on:
+ *   - AI-agent conversation views (uses data-message-id when available)
+ *   - Highlights page, folders, read view, settings — any dashboard text
+ *
  * Usage:
+ *   <SelectionBookmarkPlugin />
+ *   // optionally pass containerRef to restrict to a specific scroll container:
  *   <SelectionBookmarkPlugin containerRef={chatRef} />
- *   // chatRef should be the ref on your conversation scroll container
  */
 
 import * as React from "react";
@@ -25,7 +33,7 @@ import { toast } from "sonner";
 import { useDashboardStore } from "@/store/dashboard";
 import { useAuthStore } from "@/store/authStore";
 import { ManageAccessModal } from "./ManageAccessModal";
-import type { Folder, Tag, HighlightMeta } from "@/store/types";
+import type { Tag, HighlightMeta } from "@/store/types";
 
 interface SelectionAnchor {
   x: number;
@@ -39,20 +47,20 @@ interface SelectionBookmarkPluginProps {
 }
 
 export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPluginProps) {
-  // ── AUTH GATE ─────────────────────────────────────────────────────────────
+  // ── AUTH GATE ──────────────────────────────────────────────────────────────────
   const user         = useAuthStore((s) => s.user);
   const addHighlight = useDashboardStore((s) => s.addHighlight);
   const folders      = useDashboardStore((s) => s.folders);
   const tags         = useDashboardStore((s) => s.tags);
 
-  const [anchor, setAnchor]               = React.useState<SelectionAnchor | null>(null);
-  const [saving, setSaving]               = React.useState(false);
-  const [showPicker, setShowPicker]       = React.useState(false);
-  const [selFolderId, setSelFolder]       = React.useState<string | null>(null);
-  const [selTagIds, setSelTagIds]         = React.useState<string[]>([]);
-  const [savedHighlightId, setSavedId]   = React.useState<string | null>(null);
+  const [anchor, setAnchor]                     = React.useState<SelectionAnchor | null>(null);
+  const [saving, setSaving]                     = React.useState(false);
+  const [showPicker, setShowPicker]             = React.useState(false);
+  const [selFolderId, setSelFolder]             = React.useState<string | null>(null);
+  const [selTagIds, setSelTagIds]               = React.useState<string[]>([]);
+  const [savedHighlightId, setSavedId]          = React.useState<string | null>(null);
   const [manageAccessOpen, setManageAccessOpen] = React.useState(false);
-  const toolbarRef                        = React.useRef<HTMLDivElement>(null);
+  const toolbarRef                              = React.useRef<HTMLDivElement>(null);
 
   // Reset picker state whenever a new selection is made
   React.useEffect(() => {
@@ -68,6 +76,10 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
   React.useEffect(() => {
     if (!user) return;
 
+    /**
+     * Tries to find the nearest ancestor with data-message-id (AI chat view).
+     * Returns null on regular dashboard pages — that is fine and expected.
+     */
     function resolveMessageBlock(range: Range): HTMLElement | null {
       let node: Node | null =
         range.startContainer.nodeType === Node.ELEMENT_NODE
@@ -81,22 +93,41 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
     }
 
     function onMouseUp(e: MouseEvent) {
+      // Ignore clicks that land on the toolbar itself
       if (toolbarRef.current?.contains(e.target as Node)) return;
+
       const sel = window.getSelection();
-      if (!sel || sel.isCollapsed || !sel.rangeCount) { setAnchor(null); return; }
-      const selectedText = sel.toString().trim();
-      if (selectedText.length < 2) { setAnchor(null); return; }
-      const range = sel.getRangeAt(0);
-      if (containerRef?.current && !containerRef.current.contains(range.commonAncestorContainer)) {
-        setAnchor(null); return;
+      if (!sel || sel.isCollapsed || !sel.rangeCount) {
+        setAnchor(null);
+        return;
       }
-      const block = resolveMessageBlock(range);
-      if (!block) { setAnchor(null); return; }
-      const rect      = range.getBoundingClientRect();
-      const messageId = block.dataset.messageId ?? "unknown";
+
+      const selectedText = sel.toString().trim();
+      if (selectedText.length < 2) {
+        setAnchor(null);
+        return;
+      }
+
+      const range = sel.getRangeAt(0);
+
+      // If a containerRef is passed, only activate inside that container
+      if (
+        containerRef?.current &&
+        !containerRef.current.contains(range.commonAncestorContainer)
+      ) {
+        setAnchor(null);
+        return;
+      }
+
+      const rect = range.getBoundingClientRect();
+
+      // Try to resolve an AI chat message block — falls back gracefully to null
+      const block     = resolveMessageBlock(range);
+      const messageId = block?.dataset.messageId ?? `page-${Date.now()}`;
+
       setAnchor({
-        x: rect.left + rect.width / 2,
-        y: rect.top - 12,
+        x:    rect.left + rect.width / 2,
+        y:    rect.top - 12,
         text: selectedText,
         meta: {
           messageId,
@@ -108,7 +139,10 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
     }
 
     function onKeyUp(e: KeyboardEvent) {
-      if (e.key === "Escape") { setAnchor(null); setShowPicker(false); }
+      if (e.key === "Escape") {
+        setAnchor(null);
+        setShowPicker(false);
+      }
     }
 
     document.addEventListener("mouseup", onMouseUp);
@@ -124,7 +158,8 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
     if (!anchor) return;
     function onMouseDown(e: MouseEvent) {
       if (!toolbarRef.current?.contains(e.target as Node)) {
-        setAnchor(null); setShowPicker(false);
+        setAnchor(null);
+        setShowPicker(false);
       }
     }
     document.addEventListener("mousedown", onMouseDown);
@@ -138,31 +173,31 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
       const saved = await addHighlight({
         text:     anchor.text,
         source:   `agent:${anchor.meta.messageId}`,
-        url:      `#message-${anchor.meta.messageId}`,
+        url:      window.location.href,
         folderId: selFolderId ?? undefined,
         tagIds:   selTagIds,
         meta:     anchor.meta,
       });
       if (saved) {
-        // Keep the toolbar open so the user can optionally set access
-        setSavedId(typeof saved === "object" && "id" in saved ? (saved as { id: string }).id : null);
+        const id = typeof saved === "object" && saved !== null && "id" in saved
+          ? (saved as { id: string }).id
+          : null;
+        setSavedId(id);
         const folderName = folders.find((f) => f.id === selFolderId)?.name;
         const tagNames   = tags.filter((t) => selTagIds.includes(t.id)).map((t) => t.name);
         toast.success("Bookmark saved!", {
           description: [
-            `"${anchor.text.slice(0, 50)}${anchor.text.length > 50 ? "\u2026" : ""}"`,
+            `"${anchor.text.slice(0, 50)}${anchor.text.length > 50 ? "…" : ""}",`,
             folderName ? `Folder: ${folderName}` : null,
             tagNames.length ? `Tags: ${tagNames.join(", ")}` : null,
           ].filter(Boolean).join(" · "),
-          action: savedHighlightId
-            ? {
-                label: "Manage Access",
-                onClick: () => setManageAccessOpen(true),
-              }
+          action: id
+            ? { label: "Manage Access", onClick: () => setManageAccessOpen(true) }
             : undefined,
         });
         window.getSelection()?.removeAllRanges();
-        setAnchor(null); setShowPicker(false);
+        setAnchor(null);
+        setShowPicker(false);
       } else {
         toast.error("Couldn't save bookmark", { description: "Please try again." });
       }
@@ -198,6 +233,7 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
             >
               {/* ── Top row: bookmark icon + label + folder/tag toggle + save + manage access + dismiss ── */}
               <div className="flex items-center gap-2 px-3 py-2">
+
                 {/* Bookmark icon */}
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400/80 shrink-0" aria-hidden="true">
                   <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
@@ -205,7 +241,7 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
 
                 {/* Selected text preview */}
                 <span className="flex-1 text-xs text-white/60 truncate max-w-[120px]">
-                  {anchor.text.length > 35 ? anchor.text.slice(0, 35) + "\u2026" : anchor.text}
+                  {anchor.text.length > 35 ? anchor.text.slice(0, 35) + "…" : anchor.text}
                 </span>
 
                 {/* Folder + tag toggle button */}
@@ -224,9 +260,11 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
                     <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
                   </svg>
                   {selFolderId || selTagIds.length > 0
-                    ? `${selFolderId ? "1 folder" : ""}${
-                        selFolderId && selTagIds.length ? " · " : ""
-                      }${selTagIds.length ? `${selTagIds.length} tag${selTagIds.length > 1 ? "s" : ""}` : ""}`
+                    ? [
+                        selFolderId ? "1 folder" : "",
+                        selFolderId && selTagIds.length ? " · " : "",
+                        selTagIds.length ? `${selTagIds.length} tag${selTagIds.length > 1 ? "s" : ""}` : "",
+                      ].join("")
                     : "Add to…"}
                 </button>
 
@@ -240,14 +278,13 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
                   {saving ? "Saving…" : "Save"}
                 </button>
 
-                {/* Manage Access button — always visible so user can set access before/after saving */}
+                {/* Manage Access button */}
                 <button
                   type="button"
                   onClick={() => setManageAccessOpen(true)}
                   title="Manage access — control who can view this bookmark"
                   className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium text-white/40 hover:text-violet-300 hover:bg-violet-500/[0.10] transition-colors duration-150"
                 >
-                  {/* Users icon */}
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                     <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
                     <circle cx="9" cy="7" r="4"/>
@@ -288,7 +325,6 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
                         <div>
                           <p className="text-[10px] font-medium text-white/30 uppercase tracking-wider mb-1.5">Folder</p>
                           <div className="flex flex-wrap gap-1.5 max-h-[80px] overflow-y-auto">
-                            {/* No folder option */}
                             <FolderChip
                               label="None"
                               emoji=""
@@ -346,7 +382,7 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
         document.body,
       )}
 
-      {/* ManageAccessModal — opened from the Access button or the post-save toast action */}
+      {/* ManageAccessModal */}
       <ManageAccessModal
         open={manageAccessOpen}
         onOpenChange={setManageAccessOpen}
@@ -358,7 +394,7 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
   );
 }
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+// ── Sub-components ─────────────────────────────────────────────────────────────────────────
 
 function FolderChip({
   label, emoji, selected, onClick,
