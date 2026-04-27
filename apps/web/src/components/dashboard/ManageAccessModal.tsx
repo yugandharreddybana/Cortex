@@ -24,7 +24,7 @@ interface PermissionItem {
   userName?: string;
   userEmail?: string;
   email?: string;
-  accessLevel: "VIEWER" | "COMMENTER"  | "EDITOR" | "OWNER" ;
+  accessLevel: "VIEWER" | "COMMENTER" | "EDITOR" | "OWNER";
   avatarUrl?: string;
 }
 
