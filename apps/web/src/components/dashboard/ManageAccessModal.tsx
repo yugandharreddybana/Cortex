@@ -24,7 +24,7 @@ interface PermissionItem {
   userName?: string;
   userEmail?: string;
   email?: string;
-  accessLevel: "VIEWER" | "EDITOR" | "OWNER";
+  accessLevel: "VIEWER" | "COMMENTER" | "EDITOR" | "OWNER";
   avatarUrl?: string;
 }
 
@@ -44,7 +44,7 @@ export function ManageAccessModal({
   const [pendingRemovals, setPendingRemovals] = React.useState<Set<number>>(new Set());
 
   const [inviteEmail, setInviteEmail] = React.useState("");
-  const [inviteRole, setInviteRole] = React.useState<"VIEWER" | "EDITOR">("VIEWER");
+  const [inviteRole, setInviteRole] = React.useState<"VIEWER" | "COMMENTER" | "EDITOR">("VIEWER");
   const [suggestions, setSuggestions] = React.useState<{ id: number; email: string; fullName: string }[]>([]);
   const [showSuggestions, setShowSuggestions] = React.useState(false);
 
@@ -309,10 +309,11 @@ export function ManageAccessModal({
                         <select
                           title="Select role for new member"
                           value={inviteRole}
-                          onChange={(e) => setInviteRole(e.target.value as "VIEWER" | "EDITOR")}
+                          onChange={(e) => setInviteRole(e.target.value as "VIEWER" | "COMMENTER" | "EDITOR")}
                           className="bg-white/[0.03] border border-white/5 px-3 py-2 rounded-xl text-sm text-white/70 focus:outline-none focus:border-accent/30 transition-all cursor-pointer"
                         >
                           <option value="VIEWER" className="bg-[#1e1e1e]">Viewer</option>
+                          <option value="COMMENTER" className="bg-[#1e1e1e]">Commenter</option>
                           <option value="EDITOR" className="bg-[#1e1e1e]">Editor</option>
                         </select>
 
@@ -387,6 +388,7 @@ export function ManageAccessModal({
                                         className="bg-transparent text-xs text-white/60 focus:outline-none hover:text-white transition-colors cursor-pointer"
                                       >
                                         <option value="VIEWER" className="bg-[#1e1e1e]">Viewer</option>
+                                        <option value="COMMENTER" className="bg-[#1e1e1e]">Commenter</option>
                                         <option value="EDITOR" className="bg-[#1e1e1e]">Editor</option>
                                       </select>
 
