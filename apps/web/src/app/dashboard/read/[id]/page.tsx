@@ -11,7 +11,8 @@ import { useDashboardStore } from "@/store/dashboard";
 import { useAuthStore } from "@/store/authStore";
 import { FolderCreateDialog } from "@/components/dashboard/FolderCreateDialog";
 import { NewTagDialog } from "@/components/dashboard/NewTagDialog";
-import { Trash2 } from "lucide-react";
+import { ManageAccessModal } from "@/components/dashboard/ManageAccessModal";
+import { Trash2, Users } from "lucide-react";
 import { Loader } from "@/components/ui/Loader";
 import { formatSourceUrl } from "@/lib/url";
 import { useResourceSync } from "@/hooks/useResourceSync";
@@ -168,8 +169,12 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
   // Permissions
   const currentFolder = React.useMemo(() => folders.find((f) => f.id === highlight.folderId), [folders, highlight.folderId]);
   const role = currentFolder?.effectiveRole || "OWNER";
+  const isOwner = role === "OWNER";
   const isViewer = role === "VIEWER" || role === "COMMENTER";
   const canEdit = role === "OWNER" || role === "EDITOR";
+
+  // Manage Access Modal State
+  const [manageAccessOpen, setManageAccessOpen] = React.useState(false);
 
   // Comments State
   const [comments, setComments] = React.useState<CommentType[]>([]);
@@ -226,13 +231,8 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
         router.push("/dashboard");
         break;
       case "HIGHLIGHT_UPDATED":
-        // The global useWebSocket hook usually handles store sync,
-        // but if we're on a shared folder, we might need to nudge the store
-        // or the local view. The component re-renders when the store changes.
         break;
       case "HIGHLIGHT_RESTORED":
-        // Similar to UPDATED, the store will be updated and this component will re-render.
-        // We log it for debugging and to ensure the path is covered.
         console.log("Highlight restored via real-time sync", data.id);
         break;
     }
@@ -492,6 +492,23 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
               </svg>
               <span className="hidden sm:inline">Source</span>
             </a>
+          )}
+
+          {/* Manage Access Button — owner only */}
+          {isOwner && (
+            <button
+              onClick={() => setManageAccessOpen(true)}
+              aria-label="Manage Access"
+              title="Manage Access"
+              className={cn(
+                "w-9 h-9 rounded-lg flex items-center justify-center",
+                "bg-white/[0.03] border border-white/[0.06]",
+                "text-white/70 hover:text-white hover:bg-white/[0.08]",
+                "transition-all duration-150",
+              )}
+            >
+              <Users className="w-3.5 h-3.5" />
+            </button>
           )}
 
           {/* Edit Button */}
@@ -1252,6 +1269,15 @@ function ReadingModeContent({ highlight }: { highlight: any }) {
           </Dialog.Content>
         </Dialog.Portal>
       </Dialog.Root>
+
+      {/* ─── Manage Access Modal ────────────────────────────────────── */}
+      <ManageAccessModal
+        open={manageAccessOpen}
+        onOpenChange={setManageAccessOpen}
+        resourceType="HIGHLIGHT"
+        resourceId={highlight.id}
+        resourceName={highlight.text}
+      />
 
       <FolderCreateDialog
         open={folderDialogOpen}
