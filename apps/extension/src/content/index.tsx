@@ -180,13 +180,154 @@ function handleCmdK(e: KeyboardEvent) {
   openDrawerWithSelection();
 }
 
+// ─── Selection Bubble (appears on text selection / mouseup) ──────────────────
+// A floating pill that renders above the selected text with a "Save to Cortex"
+// button. Clicking it opens the SidebarCapture drawer with the text pre-filled.
+
+let bubbleEl: HTMLDivElement | null = null;
+let bubbleDismissTimer: ReturnType<typeof setTimeout> | null = null;
+
+function removeBubble() {
+  if (bubbleDismissTimer) {
+    clearTimeout(bubbleDismissTimer);
+    bubbleDismissTimer = null;
+  }
+  if (bubbleEl) {
+    bubbleEl.style.opacity = "0";
+    bubbleEl.style.transform = "translateX(-50%) translateY(4px)";
+    const el = bubbleEl;
+    setTimeout(() => el.remove(), 150);
+    bubbleEl = null;
+  }
+}
+
+function showSelectionBubble(x: number, y: number, text: string) {
+  if (!cortexEnabled) return;
+  removeBubble();
+
+  const bubble = document.createElement("div");
+  bubble.id = "cortex-selection-bubble";
+
+  // Clamp x so bubble never overflows viewport edges
+  const bubbleWidth = 160;
+  const clampedX = Math.max(bubbleWidth / 2 + 8, Math.min(x, window.innerWidth - bubbleWidth / 2 - 8));
+
+  Object.assign(bubble.style, {
+    position:        "fixed",
+    top:             `${Math.max(8, y - 48)}px`,
+    left:            `${clampedX}px`,
+    transform:       "translateX(-50%) translateY(4px)",
+    zIndex:          "2147483647",
+    display:         "flex",
+    alignItems:      "center",
+    gap:             "6px",
+    padding:         "7px 13px",
+    borderRadius:    "999px",
+    background:      "rgba(18, 18, 24, 0.97)",
+    backdropFilter:  "blur(16px)",
+    border:          "1px solid rgba(129,140,248,0.25)",
+    boxShadow:       "0 4px 20px rgba(0,0,0,0.55), 0 0 0 1px rgba(129,140,248,0.08)",
+    fontFamily:      "-apple-system, BlinkMacSystemFont, 'Inter', sans-serif",
+    fontSize:        "12px",
+    fontWeight:      "600",
+    color:           "rgba(255,255,255,0.92)",
+    cursor:          "pointer",
+    userSelect:      "none",
+    whiteSpace:      "nowrap",
+    pointerEvents:   "auto",
+    transition:      "opacity 0.15s ease, transform 0.15s ease",
+    opacity:         "0",
+    letterSpacing:   "0.01em",
+  } satisfies Partial<CSSStyleDeclaration>);
+
+  // Cortex logo mark + label
+  bubble.innerHTML = `
+    <svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="rgba(129,140,248,1)" stroke-width="1.6" stroke-linecap="round">
+      <circle cx="6" cy="6" r="4"/>
+      <path d="M6 4v2l1.5 1.5"/>
+    </svg>
+    <span style="color:rgba(255,255,255,0.92)">Save to Cortex</span>
+  `;
+
+  document.body.appendChild(bubble);
+  bubbleEl = bubble;
+
+  // Fade + slide in
+  requestAnimationFrame(() => {
+    requestAnimationFrame(() => {
+      if (bubbleEl === bubble) {
+        bubble.style.opacity = "1";
+        bubble.style.transform = "translateX(-50%) translateY(0)";
+      }
+    });
+  });
+
+  // Click — open drawer with the selected text
+  bubble.addEventListener("mousedown", (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    removeBubble();
+    renderDrawer(text);
+  });
+
+  // Hover highlight
+  bubble.addEventListener("mouseenter", () => {
+    bubble.style.background = "rgba(129,140,248,0.15)";
+    bubble.style.borderColor = "rgba(129,140,248,0.5)";
+  });
+  bubble.addEventListener("mouseleave", () => {
+    bubble.style.background = "rgba(18, 18, 24, 0.97)";
+    bubble.style.borderColor = "rgba(129,140,248,0.25)";
+  });
+
+  // Auto-dismiss after 4 seconds
+  bubbleDismissTimer = setTimeout(removeBubble, 4000);
+}
+
+function handleMouseUp(e: MouseEvent) {
+  if (!cortexEnabled) return;
+  // Don't trigger if the click was on the bubble itself
+  if (bubbleEl && bubbleEl.contains(e.target as Node)) return;
+
+  // Small delay so the browser finalises the selection range
+  setTimeout(() => {
+    const sel = window.getSelection();
+    const text = sel?.toString().trim() ?? "";
+
+    if (!text || text.length < 3) {
+      removeBubble();
+      return;
+    }
+
+    // Position bubble at horizontal midpoint of the selection, just above it
+    try {
+      const range = sel!.getRangeAt(0);
+      const rect  = range.getBoundingClientRect();
+      // getBoundingClientRect returns coords relative to viewport (fixed positioning)
+      const x = rect.left + rect.width / 2;
+      const y = rect.top; // fixed position — no scroll adjustment needed
+      showSelectionBubble(x, y, text);
+    } catch {
+      // Range may be invalid on some pages — silently skip
+    }
+  }, 10);
+}
+
+function handleDocumentMouseDown(e: MouseEvent) {
+  // Dismiss bubble when user clicks anywhere that isn't the bubble
+  if (bubbleEl && !bubbleEl.contains(e.target as Node)) {
+    removeBubble();
+  }
+}
+
 // ─── SPA Navigator ────────────────────────────────────────────────────────────
 // Survives client-side routing (React Router, Next.js, etc.) that swaps the DOM
 // without a real page reload.  The `isCmdKBound` guard prevents double-binding if
 // the observer fires on the same URL multiple times.
 
-let isCmdKBound = false;
-let lastHref    = "";
+let isCmdKBound  = false;
+let isBubbleBound = false;
+let lastHref     = "";
 
 function rebindListeners() {
   if (isCmdKBound) {
@@ -196,7 +337,17 @@ function rebindListeners() {
   document.addEventListener("keydown", handleCmdK, { capture: true });
   window.addEventListener(  "keydown", handleCmdK, { capture: true });
   isCmdKBound = true;
-  console.log("[SPA Navigator] Cmd+K rebound on", window.location.href);
+
+  // Rebind selection bubble listeners
+  if (isBubbleBound) {
+    document.removeEventListener("mouseup",   handleMouseUp);
+    document.removeEventListener("mousedown", handleDocumentMouseDown);
+  }
+  document.addEventListener("mouseup",   handleMouseUp);
+  document.addEventListener("mousedown", handleDocumentMouseDown);
+  isBubbleBound = true;
+
+  console.log("[SPA Navigator] Listeners rebound on", window.location.href);
 }
 
 function pingWakeAndRefreshState() {
@@ -236,6 +387,9 @@ function onUrlChange() {
   lastHref = href;
   console.log("[SPA Navigator] URL changed →", href);
 
+  // Dismiss any open bubble on navigation
+  removeBubble();
+
   // Debounce: React/Vue re-renders fire MutationObserver many times per navigation
   if (_spaDebounceTimer) clearTimeout(_spaDebounceTimer);
   _spaDebounceTimer = setTimeout(() => {
@@ -252,7 +406,7 @@ function mount() {
   // Wake the SW and request initial enabled state
   pingWakeAndRefreshState();
 
-  // Bind Cmd+K on both capture layers (prevents SPA frameworks from eating it)
+  // Bind Cmd+K + selection bubble listeners
   rebindListeners();
 
   // ── Monkey-patch History API (pushState / replaceState) ─────────────────
@@ -295,6 +449,8 @@ function mount() {
         // Phase 16.1 — MV3: background sends enabled state updates via message
         if (message?.type === "CORTEX_ENABLED_STATE") {
           setEnabledState(message.enabled === true);
+          // Hide bubble immediately if extension is disabled
+          if (!message.enabled) removeBubble();
         }
 
         if (!cortexEnabled && !ALLOWED_MESSAGES_WHEN_DISABLED.includes(message?.type)) {

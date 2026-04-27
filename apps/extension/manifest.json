@@ -40,7 +40,8 @@
     "unlimitedStorage",
     "alarms",
     "scripting",
-    "contextMenus"
+    "contextMenus",
+    "clipboardRead"
   ],
   "host_permissions": [
     "*://*.youtube.com/*",
