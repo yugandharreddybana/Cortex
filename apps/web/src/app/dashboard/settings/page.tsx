@@ -11,14 +11,14 @@ export default function SettingsPage() {
   const [tab, setTab] = React.useState<Tab>("bookmarklet");
   const [copied, setCopied] = React.useState(false);
 
-  // Build the bookmarklet href using the current origin
   const appUrl = typeof window !== "undefined" ? window.location.origin : "";
-  const bookmarkletHref = appUrl ? buildBookmarklet(appUrl) : "#";
+  const bookmarkletHref = appUrl ? buildBookmarklet(appUrl) : "";
 
   function handleCopy() {
+    if (!bookmarkletHref) return;
     navigator.clipboard.writeText(bookmarkletHref).then(() => {
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      setTimeout(() => setCopied(false), 3000);
     });
   }
 
@@ -31,7 +31,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Tab bar */}
-      <div className="flex gap-1 border-b border-white/[0.07] pb-0">
+      <div className="flex gap-1 border-b border-white/[0.07]">
         {([
           { key: "bookmarklet", label: "Bookmarklet" },
           { key: "profile",     label: "Profile" },
@@ -54,88 +54,103 @@ export default function SettingsPage() {
 
       {/* ── BOOKMARKLET TAB ── */}
       {tab === "bookmarklet" && (
-        <div className="space-y-6">
-          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 space-y-5">
+        <div className="space-y-5">
+
+          {/* Hero card */}
+          <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-6 space-y-6">
             <div className="space-y-1">
               <h2 className="text-base font-semibold text-white">Save to Cortex — Bookmarklet</h2>
               <p className="text-sm text-white/50 leading-relaxed">
-                Highlight any text on <span className="text-white/80">any website</span> — ChatGPT, Claude,
-                Wikipedia, news articles — and save it to Cortex instantly.
-                No extension install required.
+                Highlight text on <span className="text-white/80">any website</span> — ChatGPT, Claude,
+                Wikipedia, news articles — and save it to Cortex in one click.
+                No browser extension required.
               </p>
             </div>
 
-            {/* Drag target */}
-            <div className="flex flex-col items-center gap-4 py-6 rounded-xl border border-dashed border-white/[0.12] bg-white/[0.01]">
-              <p className="text-xs text-white/30 uppercase tracking-widest font-semibold">Step 1 — drag this to your bookmarks bar</p>
-              {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
-              <a
-                href={bookmarkletHref}
-                draggable
-                onClick={(e) => e.preventDefault()}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-accent/20 hover:bg-accent/30 border border-accent/30 text-accent text-sm font-semibold cursor-grab active:cursor-grabbing select-none transition-colors duration-150 shadow-[0_0_16px_rgba(129,140,248,0.15)]"
-                title="Drag me to your bookmarks bar"
-              >
-                <BookmarkIcon />
-                Save to Cortex
-              </a>
-              <p className="text-[11px] text-white/25">
-                Drag the button above to your browser&apos;s bookmarks / favourites bar
-              </p>
-            </div>
-
-            {/* Step 2 */}
+            {/* ── Step 1: Copy the code ── */}
             <div className="space-y-3">
-              <p className="text-xs text-white/30 uppercase tracking-widest font-semibold">Step 2 — use it on any page</p>
-              <ol className="space-y-2 text-sm text-white/60">
+              <StepLabel n={1} text="Copy the bookmarklet code" />
+              <div className="flex gap-2 items-stretch">
+                <div className="flex-1 rounded-xl bg-white/[0.03] border border-white/[0.07] px-4 py-3 font-mono text-[11px] text-white/30 truncate flex items-center">
+                  {bookmarkletHref ? bookmarkletHref.slice(0, 72) + "…" : "Loading…"}
+                </div>
+                <button
+                  onClick={handleCopy}
+                  disabled={!bookmarkletHref}
+                  className={[
+                    "px-5 py-3 rounded-xl text-sm font-semibold transition-all duration-200 shrink-0",
+                    copied
+                      ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/30"
+                      : "bg-accent/20 hover:bg-accent/30 text-accent border border-accent/30 shadow-[0_0_12px_rgba(129,140,248,0.15)]",
+                  ].join(" ")}
+                >
+                  {copied ? "✓ Copied!" : "Copy Code"}
+                </button>
+              </div>
+            </div>
+
+            {/* ── Step 2: Show bookmarks bar ── */}
+            <div className="space-y-3">
+              <StepLabel n={2} text="Show your bookmarks bar" />
+              <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 space-y-2 text-sm text-white/50">
+                <BrowserHint browser="Edge / Chrome" shortcut="Ctrl+Shift+B" mac="Cmd+Shift+B" />
+                <BrowserHint browser="Firefox" shortcut="View → Toolbars → Bookmarks Toolbar" />
+                <BrowserHint browser="Safari" shortcut="View → Show Favourites Bar" />
+              </div>
+            </div>
+
+            {/* ── Step 3: Add bookmark manually ── */}
+            <div className="space-y-3">
+              <StepLabel n={3} text="Add it to your bookmarks bar" />
+              <ol className="space-y-2.5 text-sm text-white/55">
                 <li className="flex gap-3">
-                  <span className="w-5 h-5 rounded-full bg-white/[0.06] text-white/50 text-[10px] flex items-center justify-center shrink-0 mt-0.5 font-bold">1</span>
-                  Go to any website — ChatGPT, Claude, an article, anything
+                  <Bullet />
+                  <span>Right-click an empty space in your bookmarks bar and choose <Kbd>Add page</Kbd> or <Kbd>New bookmark</Kbd></span>
                 </li>
                 <li className="flex gap-3">
-                  <span className="w-5 h-5 rounded-full bg-white/[0.06] text-white/50 text-[10px] flex items-center justify-center shrink-0 mt-0.5 font-bold">2</span>
-                  Select / highlight the text you want to save
+                  <Bullet />
+                  <span>Set the <span className="text-white/80">Name</span> to <Kbd>Save to Cortex</Kbd></span>
                 </li>
                 <li className="flex gap-3">
-                  <span className="w-5 h-5 rounded-full bg-white/[0.06] text-white/50 text-[10px] flex items-center justify-center shrink-0 mt-0.5 font-bold">3</span>
-                  Click <span className="px-1.5 py-0.5 rounded bg-white/[0.08] text-white/80 font-mono text-xs">Save to Cortex</span> in your bookmarks bar
+                  <Bullet />
+                  <span>Set the <span className="text-white/80">URL / Address</span> field to the code you copied in Step 1 — paste it with <Kbd>Ctrl+V</Kbd></span>
                 </li>
                 <li className="flex gap-3">
-                  <span className="w-5 h-5 rounded-full bg-white/[0.06] text-white/50 text-[10px] flex items-center justify-center shrink-0 mt-0.5 font-bold">4</span>
-                  A small popup opens — confirm and save. Done!
+                  <Bullet />
+                  <span>Click <Kbd>Save</Kbd> — you&apos;re done!</span>
                 </li>
               </ol>
             </div>
 
-            {/* Browser-specific tips */}
-            <div className="rounded-xl bg-white/[0.03] border border-white/[0.06] p-4 space-y-2">
-              <p className="text-xs font-semibold text-white/50 uppercase tracking-wider">Browser tips</p>
-              <ul className="space-y-1.5 text-xs text-white/40">
-                <li><span className="text-white/60 font-medium">Edge / Chrome:</span> Press <kbd className="px-1 py-0.5 rounded bg-white/[0.08] font-mono">Ctrl+Shift+B</kbd> to show the bookmarks bar, then drag</li>
-                <li><span className="text-white/60 font-medium">Firefox:</span> View → Toolbars → Bookmarks Toolbar, then drag</li>
-                <li><span className="text-white/60 font-medium">Safari:</span> View → Show Favourites Bar, then drag</li>
-                <li><span className="text-white/60 font-medium">Can&apos;t drag?</span> Copy the code below and add it as a new bookmark manually</li>
-              </ul>
+            {/* ── How to use it ── */}
+            <div className="rounded-xl border border-white/[0.06] bg-white/[0.02] p-4 space-y-2">
+              <p className="text-xs font-semibold text-white/40 uppercase tracking-wider">How to use it</p>
+              <ol className="space-y-1.5 text-xs text-white/50">
+                <li>1. Go to any website — ChatGPT, Claude, a news article, anywhere</li>
+                <li>2. Select / highlight the text you want to save with your mouse</li>
+                <li>3. Click <span className="text-white/75 font-medium">Save to Cortex</span> in your bookmarks bar</li>
+                <li>4. A small popup opens with your text pre-filled — click Save</li>
+              </ol>
             </div>
 
-            {/* Manual fallback — copy code */}
-            <div className="space-y-2">
-              <p className="text-xs text-white/30 uppercase tracking-widest font-semibold">Can&apos;t drag? Add manually</p>
-              <div className="flex gap-2">
-                <div className="flex-1 rounded-lg bg-white/[0.04] border border-white/[0.07] px-3 py-2 font-mono text-[11px] text-white/40 truncate">
-                  {bookmarkletHref.slice(0, 80)}&hellip;
-                </div>
-                <button
-                  onClick={handleCopy}
-                  className="px-3 py-2 rounded-lg bg-white/[0.06] hover:bg-white/[0.10] text-white/60 hover:text-white text-xs font-medium transition-colors duration-150 shrink-0"
-                >
-                  {copied ? "Copied!" : "Copy"}
-                </button>
-              </div>
-              <p className="text-[11px] text-white/25">
-                Create a new bookmark in your browser, paste this as the URL, name it &ldquo;Save to Cortex&rdquo;
-              </p>
+          </div>
+
+          {/* Optional drag fallback — secondary, low emphasis */}
+          <div className="rounded-xl border border-white/[0.05] bg-white/[0.01] p-4 flex items-center gap-4">
+            <div className="flex-1">
+              <p className="text-xs text-white/30 font-medium">Alternative: drag to bookmarks bar</p>
+              <p className="text-[11px] text-white/20 mt-0.5">Works on some browsers — drag the button directly to your bar</p>
             </div>
+            {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+            <a
+              href={bookmarkletHref || "#"}
+              draggable
+              onClick={(e) => e.preventDefault()}
+              className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-white/[0.05] hover:bg-white/[0.08] border border-white/[0.07] text-white/50 text-xs font-medium cursor-grab active:cursor-grabbing select-none transition-colors duration-150 shrink-0"
+            >
+              <BookmarkIcon />
+              Save to Cortex
+            </a>
           </div>
         </div>
       )}
@@ -180,7 +195,46 @@ export default function SettingsPage() {
   );
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
+// ── Sub-components ───────────────────────────────────────────────────────────
+
+function StepLabel({ n, text }: { n: number; text: string }) {
+  return (
+    <div className="flex items-center gap-3">
+      <span className="w-6 h-6 rounded-full bg-accent/20 border border-accent/30 text-accent text-xs font-bold flex items-center justify-center shrink-0">
+        {n}
+      </span>
+      <span className="text-sm font-medium text-white/80">{text}</span>
+    </div>
+  );
+}
+
+function Bullet() {
+  return (
+    <span className="w-5 h-5 rounded-full bg-white/[0.05] text-white/30 text-[10px] font-bold flex items-center justify-center shrink-0 mt-0.5">
+      •
+    </span>
+  );
+}
+
+function Kbd({ children }: { children: React.ReactNode }) {
+  return (
+    <kbd className="px-1.5 py-0.5 rounded bg-white/[0.08] border border-white/[0.10] font-mono text-[11px] text-white/70">
+      {children}
+    </kbd>
+  );
+}
+
+function BrowserHint({ browser, shortcut, mac }: { browser: string; shortcut: string; mac?: string }) {
+  return (
+    <div className="flex items-baseline gap-2">
+      <span className="text-white/60 font-medium w-36 shrink-0">{browser}</span>
+      <span className="text-white/35 text-xs">
+        <Kbd>{shortcut}</Kbd>
+        {mac && <> or <Kbd>{mac}</Kbd></>}
+      </span>
+    </div>
+  );
+}
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
@@ -197,7 +251,7 @@ function capitalize(s: string) {
 
 function BookmarkIcon() {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
       <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
     </svg>
   );
