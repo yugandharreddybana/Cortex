@@ -4,6 +4,8 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -11,10 +13,12 @@ import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class JwtService {
 
+    private static final Logger log = LoggerFactory.getLogger(JwtService.class);
     private static final int MIN_SECRET_BYTES = 32; // 256 bits for HS256
 
     private final SecretKey signingKey;
@@ -25,6 +29,7 @@ public class JwtService {
             @Value("${cortex.jwt.secret}") String secret,
             @Value("${cortex.jwt.expiration-ms}") long expirationMs,
             @Value("${cortex.jwt.extension-expiration-ms}") long extensionExpirationMs) {
+
         if (secret == null || secret.isBlank()) {
             throw new IllegalStateException(
                     "cortex.jwt.secret is not set. Define CORTEX_JWT_SECRET (min " + MIN_SECRET_BYTES + " bytes).");
@@ -67,12 +72,25 @@ public class JwtService {
         }
     }
 
-    public String getSubject(String token) {
+    /**
+     * FIX: Returns Optional<String> instead of nullable String to force callers
+     * to handle the empty case explicitly, preventing silent NPEs.
+     */
+    public Optional<String> getSubjectSafe(String token) {
         try {
-            return parseToken(token).getSubject();
-        } catch (Exception e) {
-            return null;
+            String subject = parseToken(token).getSubject();
+            return Optional.ofNullable(subject).filter(s -> !s.isBlank());
+        } catch (JwtException | IllegalArgumentException e) {
+            log.debug("Could not extract subject from token: {}", e.getMessage());
+            return Optional.empty();
         }
+    }
+
+    /**
+     * Backward-compatible nullable variant. Prefer getSubjectSafe() in new code.
+     */
+    public String getSubject(String token) {
+        return getSubjectSafe(token).orElse(null);
     }
 
     private String buildToken(String subject, Map<String, Object> claims, long expMs) {
