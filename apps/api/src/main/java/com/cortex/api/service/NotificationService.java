@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
@@ -445,6 +446,7 @@ public class NotificationService {
     /**
      * Broadcast activity to all members of a shared folder except the actor.
      */
+    @Transactional
     public void notifyAllFolderMembers(User actor, Folder folder, Highlight highlight, String action, String detail, String actionType) {
         if (folder == null) return;
         
