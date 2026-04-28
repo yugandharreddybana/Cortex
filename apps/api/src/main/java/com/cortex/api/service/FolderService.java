@@ -1,3 +1,8 @@
+    /**
+     * Returns only the subtrees (shared roots and their descendants) for which the user has explicit access.
+     * Does NOT include any parent folders or unrelated folders.
+     * Used for scenarios where only a subfolder is shared and the user should not see parent folders.
+     */
 
 package com.cortex.api.service;
 
@@ -67,6 +72,34 @@ public class FolderService {
         this.notificationService = notificationService;
         this.tagRepository = tagRepository;
         this.highlightTagRepository = highlightTagRepository;
+    }
+
+    public List<Folder> getAccessibleSubtreeFoldersByUserId(Long userId) {
+        // Folders the user owns
+        List<Folder> ownFolders = folderRepository.findByUserId(userId);
+
+        // Folders explicitly shared with this user (roots)
+        List<Long> sharedRootIds = permissionRepository
+                .findByUserIdAndResourceTypeAndStatus(userId, SharedLink.ResourceType.FOLDER, PermissionStatus.ACCEPTED)
+                .stream().map(ResourcePermission::getResourceId).toList();
+
+        if (sharedRootIds.isEmpty()) {
+            return ownFolders;
+        }
+
+        // All descendants (including the root itself) for each shared root
+        List<Long> allAccessibleIds = folderRepository.findAllDescendantIdsByParentIds(sharedRootIds);
+        List<Folder> sharedTreeFolders = folderRepository.findAllById(allAccessibleIds);
+
+        // Remove any folders the user already owns (avoid duplicates)
+        Set<Long> ownIds = ownFolders.stream().map(Folder::getId).collect(java.util.stream.Collectors.toSet());
+        List<Folder> filteredShared = sharedTreeFolders.stream()
+                .filter(f -> !ownIds.contains(f.getId()))
+                .toList();
+
+        List<Folder> combined = new java.util.ArrayList<>(ownFolders);
+        combined.addAll(filteredShared);
+        return combined;
     }
 
     public List<Folder> getFoldersByUserId(Long userId) {

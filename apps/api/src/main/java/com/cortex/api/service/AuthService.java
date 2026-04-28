@@ -114,7 +114,7 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> {
                     log.warn("[LOGIN] User not found for email: {}", request.email());
-                    return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+                    return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
                 });
 
         log.debug("[LOGIN] User found: id={}, email={}", user.getId(), user.getEmail());
@@ -147,7 +147,7 @@ public class AuthService {
         }
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
             log.warn("[LOGIN] Invalid password for user {}", user.getEmail());
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid email or password");
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
 
         log.debug("[LOGIN] Password valid for user: {}. Generating token...", user.getEmail());

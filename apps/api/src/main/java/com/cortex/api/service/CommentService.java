@@ -130,8 +130,10 @@ public class CommentService {
         Comment comment = commentRepo.findById(commentId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
 
-        if (!comment.getAuthor().getId().equals(requesterId) && !securityService.hasHighlightAccess(comment.getHighlight().getId(), "EDITOR")) {
-            throw new ResponseStatusException(HttpStatus.FORBIDDEN);
+        // Author can delete their own comment. Folder/highlight editors may moderate.
+        if (!comment.getAuthor().getId().equals(requesterId)
+                && !securityService.hasHighlightAccess(comment.getHighlight().getId(), "EDITOR")) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "You do not have permission to delete this comment");
         }
 
         Highlight h = comment.getHighlight();

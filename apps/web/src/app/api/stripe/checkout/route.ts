@@ -9,7 +9,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
-    const payload = await req.json();
+    let payload: unknown = {};
+    try {
+      payload = await req.json();
+    } catch {
+      payload = {};
+    }
 
     const response = await fetch(`${API_BASE}/api/v1/stripe/checkout`, {
       method: "POST",
@@ -28,6 +33,12 @@ export async function POST(req: NextRequest) {
     const data = await response.json();
     return NextResponse.json(data);
   } catch (err: any) {
+    if (err?.message?.includes("SECRET_COOKIE_PASSWORD")) {
+      return NextResponse.json(
+        { error: "Server session configuration missing" },
+        { status: 503 }
+      );
+    }
     return NextResponse.json(
       { error: err.message || "Failed to create checkout session" },
       { status: 500 }

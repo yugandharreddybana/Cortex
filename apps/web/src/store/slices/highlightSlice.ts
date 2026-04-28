@@ -16,9 +16,16 @@ export interface HighlightSlice {
   restoreHighlight: (id: string) => Promise<void>;
   searchHighlights: (query: string) => Promise<void>;
   fetchTrash: () => Promise<void>;
+  fetchHighlights: () => Promise<void>;
 }
 
 export const createHighlightSlice: StateCreator<DashboardState, [], [], HighlightSlice> = (set, get) => ({
+    fetchHighlights: async () => {
+      const { ok, data } = await apiFetch<Highlight[]>("/api/highlights");
+      if (ok && data) {
+        set({ highlights: data });
+      }
+    },
   highlights: [],
   trash: [],
   isSearching: false,

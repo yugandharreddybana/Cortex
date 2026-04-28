@@ -104,6 +104,9 @@ public class AuthController {
      */
     @PostMapping("/refresh-token")
     public ResponseEntity<AuthResponse> refresh(Authentication auth) {
+        if (auth == null || auth.getName() == null || auth.getName().isBlank()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
         Long userId = Long.parseLong(auth.getName());
         AuthResponse response = authService.refresh(userId.toString());
         return ResponseEntity.ok(response);

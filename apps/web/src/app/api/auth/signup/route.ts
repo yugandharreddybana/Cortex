@@ -56,9 +56,17 @@ export async function POST(request: NextRequest) {
   const data = await upstream.json() as { token: string; user: { id: string; email: string; tier: string } };
 
   // Store the JWT inside the iron-session encrypted cookie (consistent with login)
-  const session = await getSession();
-  session.user = { token: data.token };
-  await session.save();
+  let session;
+  try {
+    session = await getSession();
+    session.user = { token: data.token };
+    await session.save();
+  } catch {
+    return NextResponse.json(
+      { success: false, error: "Server session configuration missing" },
+      { status: 503 },
+    );
+  }
 
   const response = NextResponse.json({
     success: true,

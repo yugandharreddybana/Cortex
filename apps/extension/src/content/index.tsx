@@ -240,14 +240,32 @@ function showSelectionBubble(x: number, y: number, text: string) {
     letterSpacing:   "0.01em",
   } satisfies Partial<CSSStyleDeclaration>);
 
-  // Cortex logo mark + label
-  bubble.innerHTML = `
-    <svg width="13" height="13" viewBox="0 0 12 12" fill="none" stroke="rgba(129,140,248,1)" stroke-width="1.6" stroke-linecap="round">
-      <circle cx="6" cy="6" r="4"/>
-      <path d="M6 4v2l1.5 1.5"/>
-    </svg>
-    <span style="color:rgba(255,255,255,0.92)">Save to Cortex</span>
-  `;
+  // Cortex logo mark + label (DOM API only; avoids innerHTML injection surface)
+  const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+  icon.setAttribute("width", "13");
+  icon.setAttribute("height", "13");
+  icon.setAttribute("viewBox", "0 0 12 12");
+  icon.setAttribute("fill", "none");
+  icon.setAttribute("stroke", "rgba(129,140,248,1)");
+  icon.setAttribute("stroke-width", "1.6");
+  icon.setAttribute("stroke-linecap", "round");
+
+  const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  circle.setAttribute("cx", "6");
+  circle.setAttribute("cy", "6");
+  circle.setAttribute("r", "4");
+  icon.appendChild(circle);
+
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  path.setAttribute("d", "M6 4v2l1.5 1.5");
+  icon.appendChild(path);
+
+  const label = document.createElement("span");
+  label.style.color = "rgba(255,255,255,0.92)";
+  label.textContent = "Save to Cortex";
+
+  bubble.appendChild(icon);
+  bubble.appendChild(label);
 
   document.body.appendChild(bubble);
   bubbleEl = bubble;

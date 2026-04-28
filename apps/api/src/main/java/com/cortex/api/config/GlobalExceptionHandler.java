@@ -21,7 +21,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<AuthResponse> handleBadCredentials(BadCredentialsException e) {
         log.warn("[AUTH_ERROR] Bad credentials: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(new AuthResponse(false, "Invalid email or password"));
+                .body(new AuthResponse(false, "Invalid credentials"));
     }
 
     @ExceptionHandler(AuthenticationException.class)

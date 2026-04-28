@@ -7,7 +7,12 @@ import { NextResponse } from "next/server";
  * can authenticate the STOMP WebSocket connection to the Java backend.
  */
 export async function GET() {
-  const session = await getSession();
+  let session;
+  try {
+    session = await getSession();
+  } catch {
+    return NextResponse.json({ error: "Server session configuration missing" }, { status: 503 });
+  }
   const token = session.user?.token ?? null;
 
   if (!token) {

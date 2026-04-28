@@ -40,9 +40,18 @@ public class StripeController {
         String successUrl = (String) payload.get("successUrl");
         String cancelUrl = (String) payload.get("cancelUrl");
 
+        if (planId == null || planId.isBlank() || successUrl == null || successUrl.isBlank() || cancelUrl == null || cancelUrl.isBlank()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Missing required checkout fields"));
+        }
+        if (isAnnual == null) {
+            isAnnual = Boolean.FALSE;
+        }
+
         try {
             String url = stripeService.createCheckoutSession(userOpt.get(), planId, isAnnual, successUrl, cancelUrl);
             return ResponseEntity.ok(Map.of("url", url));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
         } catch (StripeException e) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
         }
@@ -57,9 +66,14 @@ public class StripeController {
          }
 
          String returnUrl = payload.get("returnUrl");
+         if (returnUrl == null || returnUrl.isBlank()) {
+             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Missing returnUrl"));
+         }
          try {
              String url = stripeService.createPortalSession(userOpt.get(), returnUrl);
              return ResponseEntity.ok(Map.of("url", url));
+         } catch (IllegalArgumentException e) {
+             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
          } catch (Exception e) {
              return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
          }
@@ -68,7 +82,10 @@ public class StripeController {
     @PostMapping("/webhook")
     public ResponseEntity<String> handleWebhook(
             @RequestBody String payload,
-            @RequestHeader("Stripe-Signature") String sigHeader) {
+            @RequestHeader(value = "Stripe-Signature", required = false) String sigHeader) {
+        if (sigHeader == null || sigHeader.isBlank()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Missing Stripe-Signature header");
+        }
         try {
             stripeService.handleWebhook(payload, sigHeader);
             return ResponseEntity.ok("Success");

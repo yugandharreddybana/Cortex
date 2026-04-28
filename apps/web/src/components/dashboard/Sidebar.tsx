@@ -38,26 +38,26 @@ import { ManageAccessModal } from "./ManageAccessModal";
 
 function XTinyIcon() { return <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round"><path d="M1 1l6 6M7 1L1 7" /></svg>; }
 function DotsHorizontalIcon() { return <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor"><circle cx="3" cy="7" r="1.1" /><circle cx="7" cy="7" r="1.1" /><circle cx="11" cy="7" r="1.1" /></svg>; }
-function ChevronUpDownIcon()  { return <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 4.5L6 2L9 4.5M3 7.5L6 10L9 7.5" /></svg>; }
-function CortexMark()         { return <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round"><circle cx="6" cy="6" r="4" /><path d="M6 4v2l1.5 1.5" /></svg>; }
-function PinSmallIcon()       { return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 2.5L13.5 6.5L10 10L9 13L3 7L6 6L9.5 2.5Z" /><path d="M3 13L6 10" /></svg>; }
-function TrashNavIcon()       { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" /></svg>; }
+function ChevronUpDownIcon() { return <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"><path d="M3 4.5L6 2L9 4.5M3 7.5L6 10L9 7.5" /></svg>; }
+function CortexMark() { return <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="white" strokeWidth="1.5" strokeLinecap="round"><circle cx="6" cy="6" r="4" /><path d="M6 4v2l1.5 1.5" /></svg>; }
+function PinSmallIcon() { return <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"><path d="M9.5 2.5L13.5 6.5L10 10L9 13L3 7L6 6L9.5 2.5Z" /><path d="M3 13L6 10" /></svg>; }
+function TrashNavIcon() { return <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6" /><path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" /><path d="M10 11v6M14 11v6" /><path d="M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2" /></svg>; }
 
 const ic = (d: string, size = 16) => <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={d} /></svg>;
-function GridIcon()       { return ic("M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h5v5H9z"); }
-function StarIcon()       { return ic("M8 2l1.8 3.6L14 6.4l-3 2.9.7 4.1L8 11.4l-3.7 1.9.7-4.1L2 6.4l4.2-.8z"); }
-function ArchiveIcon()    { return ic("M3 5h10M4 5v7a1 1 0 001 1h6a1 1 0 001-1V5M6 9h4"); }
-function SearchIcon()     { return ic("M7 13A6 6 0 107 1a6 6 0 000 12zM13 13l2 2"); }
-function PlusIcon()       { return ic("M8 3v10M3 8h10"); }
-function InfoIcon()       { return ic("M8 15A7 7 0 108 1a7 7 0 000 14zM8 11V7M8 5h.01"); }
-function PencilIcon()     { return ic("M11 2l3 3-8 8H3v-3l8-8z"); }
-function MoveIcon()       { return ic("M3 8h10M9 5l3 3-3 3M11 12v2a1 1 0 01-1 1H3a1 1 0 01-1-1V5a1 1 0 011-1h2"); }
-function TrashIcon()      { return ic("M3 5h10M5 5V3h6v2M6 8v4M10 8v4"); }
-function CopyIcon()       { return ic("M10 2H4a1 1 0 00-1 1v9a1 1 0 001 1h8a1 1 0 001-1V5l-3-3zM9 2v3h3M3 7h8"); }
-function UserIcon()       { return ic("M8 7a3 3 0 100-6 3 3 0 000 6zM3 14a5 5 0 0110 0"); }
+function GridIcon() { return ic("M2 2h5v5H2zM9 2h5v5H9zM2 9h5v5H2zM9 9h5v5H9z"); }
+function StarIcon() { return ic("M8 2l1.8 3.6L14 6.4l-3 2.9.7 4.1L8 11.4l-3.7 1.9.7-4.1L2 6.4l4.2-.8z"); }
+function ArchiveIcon() { return ic("M3 5h10M4 5v7a1 1 0 001 1h6a1 1 0 001-1V5M6 9h4"); }
+function SearchIcon() { return ic("M7 13A6 6 0 107 1a6 6 0 000 12zM13 13l2 2"); }
+function PlusIcon() { return ic("M8 3v10M3 8h10"); }
+function InfoIcon() { return ic("M8 15A7 7 0 108 1a7 7 0 000 14zM8 11V7M8 5h.01"); }
+function PencilIcon() { return ic("M11 2l3 3-8 8H3v-3l8-8z"); }
+function MoveIcon() { return ic("M3 8h10M9 5l3 3-3 3M11 12v2a1 1 0 01-1 1H3a1 1 0 01-1-1V5a1 1 0 011-1h2"); }
+function TrashIcon() { return ic("M3 5h10M5 5V3h6v2M6 8v4M10 8v4"); }
+function CopyIcon() { return ic("M10 2H4a1 1 0 00-1 1v9a1 1 0 001 1h8a1 1 0 001-1V5l-3-3zM9 2v3h3M3 7h8"); }
+function UserIcon() { return ic("M8 7a3 3 0 100-6 3 3 0 000 6zM3 14a5 5 0 0110 0"); }
 function CreditCardIcon() { return ic("M1 5h14v8a1 1 0 01-1 1H2a1 1 0 01-1-1V5zM1 9h14"); }
-function GiftIcon()       { return ic("M10.833 3.5h-2.11C8.944 2.392 8.01 1.5 6.833 1.5c-1.178 0-2.11.892-2.335 2H2.5A1.5 1.5 0 0 0 1 5v2c0 .828.672 1.5 1.5 1.5h8.333c.828 0 1.5-.672 1.5-1.5V5A1.5 1.5 0 0 0 10.833 3.5ZM6.667 3.5V8.5M10.833 8.5v4.5A1.5 1.5 0 0 1 9.333 14.5H4A1.5 1.5 0 0 1 2.5 13V8.5"); }
-function LogOutIcon()     { return ic("M10 3h3a1 1 0 011 1v8a1 1 0 01-1 1h-3M7 10l3-2-3-2M1 8h9"); }
+function GiftIcon() { return ic("M10.833 3.5h-2.11C8.944 2.392 8.01 1.5 6.833 1.5c-1.178 0-2.11.892-2.335 2H2.5A1.5 1.5 0 0 0 1 5v2c0 .828.672 1.5 1.5 1.5h8.333c.828 0 1.5-.672 1.5-1.5V5A1.5 1.5 0 0 0 10.833 3.5ZM6.667 3.5V8.5M10.833 8.5v4.5A1.5 1.5 0 0 1 9.333 14.5H4A1.5 1.5 0 0 1 2.5 13V8.5"); }
+function LogOutIcon() { return ic("M10 3h3a1 1 0 011 1v8a1 1 0 01-1 1h-3M7 10l3-2-3-2M1 8h9"); }
 
 const dropdownItemCls = "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-white/70 cursor-pointer select-none outline-none hover:bg-white/[0.06] hover:text-white transition-all duration-150 ease-spatial";
 function DropdownItem({ children, onSelect }: { children: React.ReactNode; onSelect: () => void }) {
@@ -70,18 +70,18 @@ interface TagColorConfig {
   border: string;
 }
 
-const TAG_COLOR_MAP: Record<string, TagColorConfig> = { 
-  blue: { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/20" }, 
-  violet: { bg: "bg-violet-500/10", text: "text-violet-400", border: "border-violet-500/20" }, 
-  emerald: { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20" }, 
-  amber: { bg: "bg-amber-500/10", text: "text-amber-400", border: "border-amber-500/20" }, 
-  pink: { bg: "bg-pink-500/10", text: "text-pink-400", border: "border-pink-500/20" }, 
-  teal: { bg: "bg-teal-500/10", text: "text-teal-400", border: "border-teal-500/20" } 
+const TAG_COLOR_MAP: Record<string, TagColorConfig> = {
+  blue: { bg: "bg-blue-500/10", text: "text-blue-400", border: "border-blue-500/20" },
+  violet: { bg: "bg-violet-500/10", text: "text-violet-400", border: "border-violet-500/20" },
+  emerald: { bg: "bg-emerald-500/10", text: "text-emerald-400", border: "border-emerald-500/20" },
+  amber: { bg: "bg-amber-500/10", text: "text-amber-400", border: "border-amber-500/20" },
+  pink: { bg: "bg-pink-500/10", text: "text-pink-400", border: "border-pink-500/20" },
+  teal: { bg: "bg-teal-500/10", text: "text-teal-400", border: "border-teal-500/20" }
 };
 
-function resolveTagColor(color: string): TagColorConfig | null { 
-  if (color?.startsWith("#")) return null; 
-  return TAG_COLOR_MAP[color] ?? TAG_COLOR_MAP.blue; 
+function resolveTagColor(color: string): TagColorConfig | null {
+  if (color?.startsWith("#")) return null;
+  return TAG_COLOR_MAP[color] ?? TAG_COLOR_MAP.blue;
 }
 
 //  Components 
@@ -255,17 +255,17 @@ function FolderDropdown({ folder, onRename, onDelete, onShare, onDuplicate, onCr
           {(folder.effectiveRole === "VIEWER" || folder.effectiveRole === "COMMENTER") && (
             <>
               <DropdownMenu.Separator className="my-1 h-px bg-white/[0.07]" />
-              <DropdownMenu.Item 
+              <DropdownMenu.Item
                 disabled={hasPendingRequest}
                 onSelect={() => {
                   if (!hasPendingRequest) (folder as any)._onRequestAccess?.();
-                }} 
+                }}
                 className={cn(
                   "flex items-center gap-2.5 px-3 py-2 rounded-lg text-sm text-accent cursor-pointer select-none outline-none hover:bg-accent/10 focus:bg-accent/10 transition-colors duration-100",
                   hasPendingRequest && "opacity-50 cursor-not-allowed bg-accent/[0.02]"
                 )}
               >
-                <ShieldAlert className="w-4 h-4" /> 
+                <ShieldAlert className="w-4 h-4" />
                 {hasPendingRequest ? "Request Raised" : "Request Higher Access"}
               </DropdownMenu.Item>
             </>
@@ -330,19 +330,19 @@ function RecursiveFolderNode({
           <div className="flex items-center group/folder relative">
             <div className="shrink-0" style={{ width: depth * 16 }} />
             {children.length > 0 && (
-              <button 
-                onClick={() => setExpanded((v) => !v)} 
+              <button
+                onClick={() => setExpanded((v) => !v)}
                 className="w-4 h-4 flex items-center justify-center text-white/30 hover:text-white/60 shrink-0 mr-0.5 transition-colors"
                 title={expanded ? "Collapse folder" : "Expand folder"}
               >
-                <svg 
-                  width="8" 
-                  height="8" 
-                  viewBox="0 0 8 8" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="1.5" 
-                  strokeLinecap="round" 
+                <svg
+                  width="8"
+                  height="8"
+                  viewBox="0 0 8 8"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
                   className={cn("transition-transform duration-150", expanded ? "rotate-90" : "rotate-0")}
                 >
                   <path d="M2 1L6 4L2 7" />
@@ -351,9 +351,9 @@ function RecursiveFolderNode({
             )}
             {children.length === 0 && depth > 0 && <div className="w-4 shrink-0 mr-0.5" />}
             {depth > 0 && (
-              <div 
-                className="absolute top-0 bottom-0 w-[1px] bg-gradient-to-b from-white/[0.06] via-white/[0.04] to-transparent -z-1" 
-                style={{ left: (depth * 16) - 8 }} 
+              <div
+                className="absolute top-0 bottom-0 w-[1px] bg-gradient-to-b from-white/[0.06] via-white/[0.04] to-transparent -z-1"
+                style={{ left: (depth * 16) - 8 }}
               />
             )}
             <Link
@@ -429,11 +429,11 @@ interface SharedWithMeItem {
 }
 
 const NAV_ITEMS = [
-  { href: "/dashboard",           label: "All Highlights", icon: <GridIcon /> },
-  { href: "/dashboard/favorites", label: "Favorites",      icon: <StarIcon /> },
-  { href: "/dashboard/archive",   label: "Archive",        icon: <ArchiveIcon /> },
-  { href: "/dashboard/trash",     label: "Trash",          icon: <TrashNavIcon /> },
-  { href: "/dashboard/temporal-replay", label: "Temporal Replay", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> },
+  { href: "/dashboard", label: "All Highlights", icon: <GridIcon /> },
+  { href: "/dashboard/favorites", label: "Favorites", icon: <StarIcon /> },
+  { href: "/dashboard/archive", label: "Archive", icon: <ArchiveIcon /> },
+  { href: "/dashboard/trash", label: "Trash", icon: <TrashNavIcon /> },
+  { href: "/dashboard/temporal-replay", label: "Temporal Replay", icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg> },
 ] as const;
 
 export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
@@ -441,24 +441,24 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
   const router = useRouter();
   const isLoading = useDashboardStore((s) => s.isLoading);
 
-  const folders            = useDashboardStore((s) => s.folders);
-  const deleteFolder       = useDashboardStore((s) => s.deleteFolder);
-  const unshareFolder      = useDashboardStore((s) => s.unshareFolder);
-  const moveFolder         = useDashboardStore((s) => s.moveFolder);
-  const togglePinFolder    = useDashboardStore((s) => s.togglePinFolder);
-  const highlights         = useDashboardStore((s) => s.highlights);
-  const tags               = useDashboardStore((s) => s.tags);
-  const deleteTag          = useDashboardStore((s) => s.deleteTag);
-  const updateTag          = useDashboardStore((s) => s.updateTag);
-  const smartCollections   = useDashboardStore((s) => s.smartCollections);
+  const folders = useDashboardStore((s) => s.folders);
+  const deleteFolder = useDashboardStore((s) => s.deleteFolder);
+  const unshareFolder = useDashboardStore((s) => s.unshareFolder);
+  const moveFolder = useDashboardStore((s) => s.moveFolder);
+  const togglePinFolder = useDashboardStore((s) => s.togglePinFolder);
+  const highlights = useDashboardStore((s) => s.highlights);
+  const tags = useDashboardStore((s) => s.tags);
+  const deleteTag = useDashboardStore((s) => s.deleteTag);
+  const updateTag = useDashboardStore((s) => s.updateTag);
+  const smartCollections = useDashboardStore((s) => s.smartCollections);
   const deleteSmartCollection = useDashboardStore((s) => s.deleteSmartCollection);
-  const activeTagFilters   = useDashboardStore((s) => s.activeTagFilters);
-  const toggleTagFilter    = useDashboardStore((s) => s.toggleTagFilter);
+  const activeTagFilters = useDashboardStore((s) => s.activeTagFilters);
+  const toggleTagFilter = useDashboardStore((s) => s.toggleTagFilter);
   const setTagFilterExclusive = useDashboardStore((s) => s.setTagFilterExclusive);
 
   const [folderDialogOpen, setFolderDialogOpen] = React.useState(false);
   const [subfolderParentId, setSubfolderParentId] = React.useState<string | undefined>(undefined);
-  const [tagDialogOpen,    setTagDialogOpen]    = React.useState(false);
+  const [tagDialogOpen, setTagDialogOpen] = React.useState(false);
   const [deleteTarget, setDeleteTarget] = React.useState<{ id: string; name: string } | null>(null);
   const [renameTarget, setRenameTarget] = React.useState<{ id: string; name: string } | null>(null);
   const [shareTarget, setShareTarget] = React.useState<{ id: string; name: string } | null>(null);
@@ -475,7 +475,7 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
     fetch("/api/share/shared-with-me", { credentials: "include" })
       .then((r) => (r.ok ? r.json() : []))
       .then((data: SharedWithMeItem[]) => setSharedWithMe(data))
-      .catch(() => {})
+      .catch(() => { })
       .finally(() => setIsLoadingShared(false));
   }, []);
 
@@ -616,7 +616,7 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                   <div className="px-5 py-4 rounded-xl bg-white/[0.02] border border-dashed border-white/[0.08] text-center">
                     <p className="text-[10px] text-white/30 font-medium uppercase tracking-widest leading-none">Your Space</p>
                     <p className="text-xs text-white/20 mt-1.5 leading-snug">No folders created yet</p>
-                    <button 
+                    <button
                       onClick={() => setFolderDialogOpen(true)}
                       className="mt-2 text-[10px] font-semibold text-accent/60 hover:text-accent transition-colors"
                     >
@@ -627,24 +627,24 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                   <DndContext id="sidebar-folders-mine" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                     <div className="space-y-0.5">
                       {myRootFolders.map((folder) => (
-                        <RecursiveFolderNode 
-                          key={folder.id} 
-                          folder={{ 
-                            ...folder, 
-                            _onManageAccess: () => setManageAccessTarget({ id: folder.id, name: folder.name }) 
-                          }} 
-                          depth={0} 
-                          pathname={pathname} 
-                          getChildren={getChildren} 
-                          folderCountMap={folderCountMap} 
-                          onRename={(f: Folder) => setRenameTarget({ id: f.id, name: f.name })} 
-                          onDelete={(f: Folder) => setDeleteTarget({ id: f.id, name: f.name })} 
-                          onShare={(f: Folder) => setShareTarget({ id: f.id, name: f.name })} 
-                          onDuplicate={(f: Folder) => setDuplicateTarget({ id: f.id, name: f.name })} 
-                          onCreateSubfolder={handleCreateSubfolder} 
-                          onPin={(f: Folder) => togglePinFolder(f.id)} 
-                          onMove={(f: Folder, targetId: string) => moveFolder(f.id, targetId)} 
-                          isLoading={isLoading} 
+                        <RecursiveFolderNode
+                          key={folder.id}
+                          folder={{
+                            ...folder,
+                            _onManageAccess: () => setManageAccessTarget({ id: folder.id, name: folder.name })
+                          }}
+                          depth={0}
+                          pathname={pathname}
+                          getChildren={getChildren}
+                          folderCountMap={folderCountMap}
+                          onRename={(f: Folder) => setRenameTarget({ id: f.id, name: f.name })}
+                          onDelete={(f: Folder) => setDeleteTarget({ id: f.id, name: f.name })}
+                          onShare={(f: Folder) => setShareTarget({ id: f.id, name: f.name })}
+                          onDuplicate={(f: Folder) => setDuplicateTarget({ id: f.id, name: f.name })}
+                          onCreateSubfolder={handleCreateSubfolder}
+                          onPin={(f: Folder) => togglePinFolder(f.id)}
+                          onMove={(f: Folder, targetId: string) => moveFolder(f.id, targetId)}
+                          isLoading={isLoading}
                         />
                       ))}
                     </div>
@@ -665,25 +665,25 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                   <DndContext id="sidebar-folders-shared" sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                     <div className="space-y-0.5">
                       {sharedRootFolders.map((folder) => (
-                        <RecursiveFolderNode 
-                          key={folder.id} 
-                          folder={{ 
-                            ...folder, 
-                            _onRequestAccess: () => setRequestAccessTarget({ id: folder.id, name: folder.name, currentRole: folder.effectiveRole }), 
-                            _onManageAccess: () => setManageAccessTarget({ id: folder.id, name: folder.name }) 
-                          }} 
-                          depth={0} 
-                          pathname={pathname} 
-                          getChildren={getChildren} 
-                          folderCountMap={folderCountMap} 
-                          onRename={(f: Folder) => setRenameTarget({ id: f.id, name: f.name })} 
-                          onDelete={(f: Folder) => setDeleteTarget({ id: f.id, name: f.name })} 
-                          onShare={(f: Folder) => setShareTarget({ id: f.id, name: f.name })} 
-                          onDuplicate={(f: Folder) => setDuplicateTarget({ id: f.id, name: f.name })} 
-                          onCreateSubfolder={handleCreateSubfolder} 
-                          onPin={(f: Folder) => togglePinFolder(f.id)} 
-                          onMove={(f: Folder, targetId: string) => moveFolder(f.id, targetId)} 
-                          isLoading={isLoading} 
+                        <RecursiveFolderNode
+                          key={folder.id}
+                          folder={{
+                            ...folder,
+                            _onRequestAccess: () => setRequestAccessTarget({ id: folder.id, name: folder.name, currentRole: folder.effectiveRole }),
+                            _onManageAccess: () => setManageAccessTarget({ id: folder.id, name: folder.name })
+                          }}
+                          depth={0}
+                          pathname={pathname}
+                          getChildren={getChildren}
+                          folderCountMap={folderCountMap}
+                          onRename={(f: Folder) => setRenameTarget({ id: f.id, name: f.name })}
+                          onDelete={(f: Folder) => setDeleteTarget({ id: f.id, name: f.name })}
+                          onShare={(f: Folder) => setShareTarget({ id: f.id, name: f.name })}
+                          onDuplicate={(f: Folder) => setDuplicateTarget({ id: f.id, name: f.name })}
+                          onCreateSubfolder={handleCreateSubfolder}
+                          onPin={(f: Folder) => togglePinFolder(f.id)}
+                          onMove={(f: Folder, targetId: string) => moveFolder(f.id, targetId)}
+                          isLoading={isLoading}
                         />
                       ))}
                     </div>
@@ -703,8 +703,8 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                         <button onClick={() => setTagFilterExclusive(sc.tagIds)} className={cn("flex-1 flex items-center gap-2 px-3 py-1.5 rounded-xl text-sm transition-all duration-150 ease-spatial min-w-0", isActive ? "bg-white/[0.09] text-white" : "text-white/60 hover:bg-white/[0.05] hover:text-white")}>
                           <span className="text-base leading-none shrink-0">âš¡</span><span className="flex-1 truncate text-left">{sc.name}</span><span className="bg-white/10 text-white/60 text-[10px] px-1.5 rounded-full tabular-nums leading-4 shrink-0">{sc.tagIds.length}</span>
                         </button>
-                        <button 
-                          onClick={() => deleteSmartCollection(sc.id)} 
+                        <button
+                          onClick={() => deleteSmartCollection(sc.id)}
                           className="opacity-0 group-hover/sc:opacity-100 p-1.5 mr-1 rounded-lg shrink-0 text-white/40 hover:text-red-400 hover:bg-red-500/10 transition-all duration-150"
                           title="Delete collection"
                         ><XTinyIcon /></button>
@@ -778,19 +778,19 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
 
           {(sharedWithMe.length > 0 || isLoadingShared) && (
             <div className="mt-4 border-t border-white/[0.04]">
-              <button 
-                onClick={() => setSharedExpanded((v) => !v)} 
+              <button
+                onClick={() => setSharedExpanded((v) => !v)}
                 className="flex items-center gap-1.5 px-6 py-4 w-full text-left"
                 title={sharedExpanded ? "Collapse shared items" : "Expand shared items"}
               >
-                <svg 
-                  width="8" 
-                  height="8" 
-                  viewBox="0 0 8 8" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  strokeWidth="1.5" 
-                  strokeLinecap="round" 
+                <svg
+                  width="8"
+                  height="8"
+                  viewBox="0 0 8 8"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
                   className={cn("text-white/30 transition-transform duration-150", sharedExpanded ? "rotate-90" : "rotate-0")}
                 >
                   <path d="M2 1L6 4L2 7" />
@@ -818,7 +818,7 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                 <p className="text-[11px] text-white/40 leading-relaxed mb-3">
                   Unlock unlimited highlights, AI tagging, and semantic search.
                 </p>
-                <Link 
+                <Link
                   href="/pricing"
                   className="inline-flex items-center justify-center w-full h-9 rounded-xl bg-accent text-[11px] font-semibold text-white shadow-[0_0_16px_rgba(129,140,248,0.3),inset_0_1px_0_rgba(255,255,255,0.15)] hover:shadow-[0_0_24px_rgba(129,140,248,0.4),inset_0_1px_0_rgba(255,255,255,0.15)] transition-all duration-200 ease-spatial active:scale-[0.97] transform-gpu"
                 >
@@ -837,13 +837,13 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
       <NewTagDialog open={tagDialogOpen} onOpenChange={setTagDialogOpen} />
       <TagEditDialog tag={tagEditTarget} open={!!tagEditTarget} onOpenChange={(v) => !v && setTagEditTarget(null)} />
       <RenameFolderDialog open={!!renameTarget} onOpenChange={(v) => !v && setRenameTarget(null)} folderId={renameTarget?.id ?? ""} currentName={renameTarget?.name ?? ""} />
-      <DeleteAlertDialog 
-        open={!!deleteTarget} 
-        onOpenChange={(v) => !v && setDeleteTarget(null)} 
-        targetLabel={deleteTarget?.name ?? ""} 
-        targetType="folder" 
+      <DeleteAlertDialog
+        open={!!deleteTarget}
+        onOpenChange={(v) => !v && setDeleteTarget(null)}
+        targetLabel={deleteTarget?.name ?? ""}
+        targetType="folder"
         isShared={!!folders.find(f => f.id === deleteTarget?.id)?.effectiveRole && folders.find(f => f.id === deleteTarget?.id)?.effectiveRole !== "OWNER"}
-        onConfirm={async () => { 
+        onConfirm={async () => {
           if (deleteTarget) {
             const folder = folders.find(f => f.id === deleteTarget.id);
             const isShared = folder?.effectiveRole && folder?.effectiveRole !== "OWNER";
@@ -855,17 +855,17 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
             } else {
               deleteFolder(deleteTarget.id);
             }
-          } 
-          setDeleteTarget(null); 
-        }} 
+          }
+          setDeleteTarget(null);
+        }}
       />
       <ShareDialog open={!!shareTarget} onOpenChange={(v) => !v && setShareTarget(null)} type="f" id={shareTarget?.id ?? ""} title={shareTarget?.name ?? ""} />
       <DuplicateFolderModal open={!!duplicateTarget} onOpenChange={(v) => !v && setDuplicateTarget(null)} folderId={duplicateTarget?.id ?? ""} folderName={duplicateTarget?.name ?? ""} onSuccess={() => { setDuplicateTarget(null); useDashboardStore.getState().fetchFolders(); }} />
-      <RequestAccessModal 
-        open={!!requestAccessTarget} 
-        onOpenChange={(v) => !v && setRequestAccessTarget(null)} 
-        folderId={requestAccessTarget?.id ?? ""} 
-        folderName={requestAccessTarget?.name ?? ""} 
+      <RequestAccessModal
+        open={!!requestAccessTarget}
+        onOpenChange={(v) => !v && setRequestAccessTarget(null)}
+        folderId={requestAccessTarget?.id ?? ""}
+        folderName={requestAccessTarget?.name ?? ""}
         currentRole={requestAccessTarget?.currentRole}
       />
       {manageAccessTarget && (

@@ -153,6 +153,9 @@ public class HighlightController {
 
     @GetMapping("/search")
     public List<HighlightDTO> search(Authentication auth, @RequestParam String q) {
+        if (containsSuspiciousSqlInput(q)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Invalid search query");
+        }
         Long userId = Long.parseLong(auth.getName());
         List<Long> accessibleFolderIds = folderService.getFoldersByUserId(userId).stream()
                 .map(Folder::getId).toList();
@@ -553,7 +556,7 @@ public class HighlightController {
     }
 
     private void applyDTO(Highlight h, HighlightDTO dto, User user) {
-        if (dto.text != null) h.setText(dto.text);
+        if (dto.text != null) h.setText(sanitizeHighlightText(dto.text));
         if (dto.source != null) h.setSource(dto.source);
         if (dto.url != null) h.setUrl(dto.url);
         if (dto.topic != null) h.setTopic(dto.topic);
@@ -620,6 +623,24 @@ public class HighlightController {
                 h.getHiddenByUsers().add(user);
             }
         }
+    }
+
+    private static String sanitizeHighlightText(String input) {
+        // Store as plain text and strip script tags as defense-in-depth against XSS payload persistence.
+        return input.replaceAll("(?i)<\\s*/?\\s*script\\b[^>]*>", "");
+    }
+
+    private static boolean containsSuspiciousSqlInput(String q) {
+        if (q == null) return false;
+        String lower = q.toLowerCase();
+        return lower.contains(";")
+                || lower.contains("--")
+                || lower.contains("/*")
+                || lower.contains("*/")
+                || lower.contains(" drop ")
+                || lower.contains(" delete ")
+                || lower.contains(" truncate ")
+                || lower.contains(" alter ");
     }
 
     /**

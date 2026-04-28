@@ -136,7 +136,7 @@ function showYouTubeToast(title: string, timestamp: string) {
   });
 
   // YouTube red play icon + timestamp badge
-  toast.innerHTML = "";
+  toast.textContent = "";
 
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("width", "16");

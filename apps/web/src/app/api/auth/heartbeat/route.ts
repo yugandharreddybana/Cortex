@@ -2,7 +2,12 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
 
 export async function GET(request: NextRequest) {
-  const session = await getSession();
+  let session;
+  try {
+    session = await getSession();
+  } catch {
+    return NextResponse.json({ valid: false, error: "Server session configuration missing" }, { status: 503 });
+  }
   const token = session.user?.token;
 
   if (!token) {

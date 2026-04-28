@@ -65,6 +65,16 @@ export default function FolderPage() {
   const [manageAccessOpen, setManageAccessOpen] = React.useState(false);
   const [showRemoveConfirm, setShowRemoveConfirm] = React.useState(false);
 
+  // DEBUG: Log folder and modal state
+  React.useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log('[DEBUG] FolderPage folder:', folder);
+  }, [folder]);
+  React.useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log('[DEBUG] ManageAccessOpen:', manageAccessOpen);
+  }, [manageAccessOpen]);
+
   const effectiveRole = folder?.effectiveRole || "OWNER";
   const isOwner = effectiveRole === "OWNER";
   const isViewer = effectiveRole === "VIEWER";
@@ -194,7 +204,11 @@ export default function FolderPage() {
           {folder && isOwner && (
             <div className="flex items-center gap-2">
               <button
-                onClick={() => setManageAccessOpen(true)}
+                onClick={() => {
+                  // eslint-disable-next-line no-console
+                  console.log('[DEBUG] Manage Access button clicked, folder:', folder);
+                  setManageAccessOpen(true);
+                }}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium text-white/70 hover:text-white hover:bg-white/5 transition-all border border-white/[0.08]"
               >
                 <Users className="w-3.5 h-3.5" />

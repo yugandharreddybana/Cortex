@@ -48,19 +48,19 @@ interface SelectionBookmarkPluginProps {
 
 export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPluginProps) {
   // ── AUTH GATE ──────────────────────────────────────────────────────────────────
-  const user         = useAuthStore((s) => s.user);
+  const user = useAuthStore((s) => s.user);
   const addHighlight = useDashboardStore((s) => s.addHighlight);
-  const folders      = useDashboardStore((s) => s.folders);
-  const tags         = useDashboardStore((s) => s.tags);
+  const folders = useDashboardStore((s) => s.folders);
+  const tags = useDashboardStore((s) => s.tags);
 
-  const [anchor, setAnchor]                     = React.useState<SelectionAnchor | null>(null);
-  const [saving, setSaving]                     = React.useState(false);
-  const [showPicker, setShowPicker]             = React.useState(false);
-  const [selFolderId, setSelFolder]             = React.useState<string | null>(null);
-  const [selTagIds, setSelTagIds]               = React.useState<string[]>([]);
-  const [savedHighlightId, setSavedId]          = React.useState<string | null>(null);
+  const [anchor, setAnchor] = React.useState<SelectionAnchor | null>(null);
+  const [saving, setSaving] = React.useState(false);
+  const [showPicker, setShowPicker] = React.useState(false);
+  const [selFolderId, setSelFolder] = React.useState<string | null>(null);
+  const [selTagIds, setSelTagIds] = React.useState<string[]>([]);
+  const [savedHighlightId, setSavedId] = React.useState<string | null>(null);
   const [manageAccessOpen, setManageAccessOpen] = React.useState(false);
-  const toolbarRef                              = React.useRef<HTMLDivElement>(null);
+  const toolbarRef = React.useRef<HTMLDivElement>(null);
 
   // Reset picker state whenever a new selection is made
   React.useEffect(() => {
@@ -122,18 +122,18 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
       const rect = range.getBoundingClientRect();
 
       // Try to resolve an AI chat message block — falls back gracefully to null
-      const block     = resolveMessageBlock(range);
+      const block = resolveMessageBlock(range);
       const messageId = block?.dataset.messageId ?? `page-${Date.now()}`;
 
       setAnchor({
-        x:    rect.left + rect.width / 2,
-        y:    rect.top - 12,
+        x: rect.left + rect.width / 2,
+        y: rect.top - 12,
         text: selectedText,
         meta: {
           messageId,
           startOffset: range.startOffset,
-          endOffset:   range.endOffset,
-          quote:       selectedText.slice(0, 80),
+          endOffset: range.endOffset,
+          quote: selectedText.slice(0, 80),
         },
       });
     }
@@ -146,10 +146,10 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
     }
 
     document.addEventListener("mouseup", onMouseUp);
-    document.addEventListener("keyup",   onKeyUp);
+    document.addEventListener("keyup", onKeyUp);
     return () => {
       document.removeEventListener("mouseup", onMouseUp);
-      document.removeEventListener("keyup",   onKeyUp);
+      document.removeEventListener("keyup", onKeyUp);
     };
   }, [user, containerRef]);
 
@@ -171,12 +171,12 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
     setSaving(true);
     try {
       const saved = await addHighlight({
-        text:     anchor.text,
-        source:   `agent:${anchor.meta.messageId}`,
-        url:      window.location.href,
+        text: anchor.text,
+        source: `agent:${anchor.meta.messageId}`,
+        url: window.location.href,
         folderId: selFolderId ?? undefined,
-        tagIds:   selTagIds,
-        meta:     anchor.meta,
+        tagIds: selTagIds,
+        meta: anchor.meta,
       });
       if (saved) {
         const id = typeof saved === "object" && saved !== null && "id" in saved
@@ -184,7 +184,7 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
           : null;
         setSavedId(id);
         const folderName = folders.find((f) => f.id === selFolderId)?.name;
-        const tagNames   = tags.filter((t) => selTagIds.includes(t.id)).map((t) => t.name);
+        const tagNames = tags.filter((t) => selTagIds.includes(t.id)).map((t) => t.name);
         toast.success("Bookmark saved!", {
           description: [
             `"${anchor.text.slice(0, 50)}${anchor.text.length > 50 ? "…" : ""}",`,
@@ -219,15 +219,15 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
               key="bookmark-toolbar"
               initial={{ opacity: 0, y: 8, scale: 0.95 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{   opacity: 0, y: 4, scale: 0.96 }}
+              exit={{ opacity: 0, y: 4, scale: 0.96 }}
               transition={{ type: "spring", stiffness: 420, damping: 28 }}
               style={{
-                position:  "fixed",
-                left:      anchor.x,
-                top:       anchor.y,
+                position: "fixed",
+                left: anchor.x,
+                top: anchor.y,
                 transform: "translate(-50%, -100%)",
-                zIndex:    9999,
-                maxWidth:  "min(360px, 90vw)",
+                zIndex: 9999,
+                maxWidth: "min(360px, 90vw)",
               }}
               className="flex flex-col rounded-xl shadow-2xl bg-[#1c1b19]/95 backdrop-blur-xl border border-white/[0.08] select-none overflow-hidden"
             >
@@ -236,7 +236,7 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
 
                 {/* Bookmark icon */}
                 <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-blue-400/80 shrink-0" aria-hidden="true">
-                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
                 </svg>
 
                 {/* Selected text preview */}
@@ -257,14 +257,14 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
                   ].join(" ")}
                 >
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z" />
                   </svg>
                   {selFolderId || selTagIds.length > 0
                     ? [
-                        selFolderId ? "1 folder" : "",
-                        selFolderId && selTagIds.length ? " · " : "",
-                        selTagIds.length ? `${selTagIds.length} tag${selTagIds.length > 1 ? "s" : ""}` : "",
-                      ].join("")
+                      selFolderId ? "1 folder" : "",
+                      selFolderId && selTagIds.length ? " · " : "",
+                      selTagIds.length ? `${selTagIds.length} tag${selTagIds.length > 1 ? "s" : ""}` : "",
+                    ].join("")
                     : "Add to…"}
                 </button>
 
@@ -286,10 +286,10 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
                   className="flex items-center gap-1 px-2 py-1 rounded-md text-[11px] font-medium text-white/40 hover:text-violet-300 hover:bg-violet-500/[0.10] transition-colors duration-150"
                 >
                   <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
-                    <circle cx="9" cy="7" r="4"/>
-                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
-                    <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                    <circle cx="9" cy="7" r="4" />
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75" />
                   </svg>
                   Access
                 </button>
@@ -302,7 +302,7 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
                   aria-label="Dismiss"
                 >
                   <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round">
-                    <path d="M1.5 1.5l7 7M8.5 1.5l-7 7"/>
+                    <path d="M1.5 1.5l7 7M8.5 1.5l-7 7" />
                   </svg>
                 </button>
               </div>
@@ -314,7 +314,7 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
                     key="picker"
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: "auto", opacity: 1 }}
-                    exit={{   height: 0, opacity: 0 }}
+                    exit={{ height: 0, opacity: 0 }}
                     transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
                     className="overflow-hidden border-t border-white/[0.06]"
                   >
@@ -386,9 +386,9 @@ export function SelectionBookmarkPlugin({ containerRef }: SelectionBookmarkPlugi
       <ManageAccessModal
         open={manageAccessOpen}
         onOpenChange={setManageAccessOpen}
-        resourceType="highlight"
+        resourceType="HIGHLIGHT"
         resourceId={savedHighlightId ?? ""}
-        resourceTitle={anchor?.text?.slice(0, 60) ?? "Bookmark"}
+        resourceName={anchor?.text?.slice(0, 60) ?? "Bookmark"}
       />
     </>
   );
@@ -414,7 +414,7 @@ function FolderChip({
       {label}
       {selected && (
         <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M1.5 4l1.5 1.5 3-3"/>
+          <path d="M1.5 4l1.5 1.5 3-3" />
         </svg>
       )}
     </button>
@@ -439,7 +439,7 @@ function TagChip({
       {tag.name}
       {selected && (
         <svg width="8" height="8" viewBox="0 0 8 8" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-          <path d="M1.5 4l1.5 1.5 3-3"/>
+          <path d="M1.5 4l1.5 1.5 3-3" />
         </svg>
       )}
     </button>

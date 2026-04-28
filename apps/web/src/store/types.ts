@@ -170,7 +170,9 @@ export interface DashboardState {
   deleteHighlight:     (id: string) => void;
   restoreHighlight:    (id: string) => Promise<void>;
   searchHighlights:    (q: string) => Promise<void>;
+
   fetchTrash:          () => Promise<void>;
+  fetchHighlights:     () => Promise<void>;
 
   // Notification Actions
   fetchNotifications:      () => Promise<void>;

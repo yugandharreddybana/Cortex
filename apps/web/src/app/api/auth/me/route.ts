@@ -50,7 +50,12 @@ async function handleRequest(req: NextRequest) {
     }
   }
 
-  const session = await getSession();
+  let session;
+  try {
+    session = await getSession();
+  } catch {
+    return NextResponse.json({ authenticated: false, error: "Server session configuration missing" }, { status: 503 });
+  }
   const token = session.user?.token;
 
   if (!token) {

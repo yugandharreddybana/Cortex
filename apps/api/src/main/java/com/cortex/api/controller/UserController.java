@@ -55,10 +55,16 @@ public class UserController {
             user.setAvatarUrl(request.avatarUrl());
         }
         if (request.email() != null && !request.email().equals(user.getEmail())) {
-            if (userRepository.existsByEmail(request.email())) {
+            String normalizedEmail = request.email().trim().toLowerCase();
+            if (normalizedEmail.isBlank()) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email is required");
+            }
+            if (userRepository.existsByEmail(normalizedEmail)) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already in use");
             }
-            user.setEmail(request.email());
+            user.setEmail(normalizedEmail);
+            user.setEmailHash(sha256(normalizedEmail));
+            user.setEncryptedEmail(encryptionService.encrypt(normalizedEmail));
         }
 
         user = userRepository.save(user);

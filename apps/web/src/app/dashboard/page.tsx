@@ -85,8 +85,10 @@ export default function DashboardPage() {
         {/* Select all bar */}
         {!isLoading && visibleIds.length > 0 && (
           <div className="mb-4 flex items-center gap-3">
-            <div
+            <button
+              type="button"
               onClick={handleSelectAll}
+              aria-pressed={allSelected}
               className="flex items-center gap-2 cursor-pointer group"
             >
               <div
@@ -113,7 +115,7 @@ export default function DashboardPage() {
               <span className="text-[12px] text-white/50 group-hover:text-white/70 transition-colors select-none">
                 {allSelected ? "Deselect all" : "Select all"}
               </span>
-            </div>
+            </button>
             {selectedIds.length > 0 && (
               <span className="text-[11px] text-white/30">
                 {selectedIds.length} of {visibleIds.length} selected

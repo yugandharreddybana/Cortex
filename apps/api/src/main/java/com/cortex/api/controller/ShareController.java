@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/api/v1/share")
+@RequestMapping({"/api/v1/share", "/api/v1/shares"})
 public class ShareController {
 
     private final ShareService shareService;

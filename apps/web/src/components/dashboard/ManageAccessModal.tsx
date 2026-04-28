@@ -73,12 +73,12 @@ export function ManageAccessModal({
         const data = await resp.json();
         const normalized = Array.isArray(data)
           ? data.map((p: PermissionItem) => ({
-              ...p,
-              id: Number(p.id),
-              userId: Number(p.userId),
-              userEmail: p.userEmail || p.email,
-              userName: p.userName || p.email,
-            }))
+            ...p,
+            id: Number(p.id),
+            userId: Number(p.userId),
+            userEmail: p.userEmail || p.email,
+            userName: p.userName || p.email,
+          }))
           : [];
         setPermissions(normalized);
       } else {
@@ -176,6 +176,13 @@ export function ManageAccessModal({
       }
 
       await bulkManagePermissions(numericId, resourceType, permissionsPayload, removals);
+      // Always refresh highlights after permission changes to ensure correct access
+      if (resourceType === "FOLDER") {
+        // @ts-ignore: fetchHighlights may be undefined in some slices, safe to call if exists
+        if (typeof useDashboardStore.getState().fetchHighlights === "function") {
+          await useDashboardStore.getState().fetchHighlights();
+        }
+      }
       toast.success("Permissions updated successfully");
       onOpenChange(false);
     } catch {
@@ -219,9 +226,7 @@ export function ManageAccessModal({
                         <Dialog.Title className="text-lg font-semibold text-white">
                           Manage Access
                         </Dialog.Title>
-                        <Dialog.Description className="text-sm text-white/40">
-                          {resourceName}
-                        </Dialog.Description>
+                        {/* 0 */}
                       </div>
                     </div>
                     <Dialog.Close className="rounded-lg p-2 text-white/20 hover:bg-white/5 hover:text-white transition-colors">
@@ -289,10 +294,10 @@ export function ManageAccessModal({
                                   if (!q) return true;
                                   return s.email.toLowerCase().includes(q) || s.fullName.toLowerCase().includes(q);
                                 }).length === 0 && (
-                                  <div className="px-4 py-2.5 text-xs text-white/35">
-                                    No existing collaborators found. You can invite by email.
-                                  </div>
-                                )}
+                                    <div className="px-4 py-2.5 text-xs text-white/35">
+                                      No existing collaborators found. You can invite by email.
+                                    </div>
+                                  )}
                                 {inviteEmail.includes("@") && (
                                   <button
                                     onClick={() => setShowSuggestions(false)}

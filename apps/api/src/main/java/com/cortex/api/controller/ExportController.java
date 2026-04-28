@@ -52,13 +52,18 @@ public class ExportController {
 
         if ("highlight".equals(scope) && highlightId != null) {
             Highlight h = highlightRepo.findById(highlightId)
-                    .filter(hl -> hl.getUser().getId().equals(userId))
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            if (!h.getUser().getId().equals(userId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No access to export this highlight");
+            }
             highlights = List.of(h);
         } else if ("folder".equals(scope) && folderId != null) {
-            // Verify folder belongs to user
-            folderRepo.findByIdAndUserId(folderId, userId)
+            // Verify folder exists first, then ownership for proper 403 vs 404 semantics.
+            var folder = folderRepo.findById(folderId)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+            if (!folder.getUser().getId().equals(userId)) {
+                throw new ResponseStatusException(HttpStatus.FORBIDDEN, "No access to export this folder");
+            }
             // Collect the folder and ALL nested sub-folders recursively
             Set<Long> folderIds = folderRepo.findAllDescendantsInclusive(folderId)
                     .stream().map(f -> f.getId()).collect(Collectors.toSet());

@@ -96,7 +96,7 @@ function createToast(): HTMLDivElement {
 }
 
 function setToast(toast: HTMLDivElement, icon: string, message: string) {
-  toast.innerHTML = "";
+  toast.textContent = "";
   const iconEl = document.createElement("span");
   iconEl.textContent = icon;
   iconEl.style.fontSize = "15px";
