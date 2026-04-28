@@ -8,7 +8,6 @@ import com.cortex.api.entity.User;
 import com.cortex.api.repository.UserRepository;
 import com.cortex.api.repository.ReferralRepository;
 import com.cortex.api.entity.Referral;
-
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -18,13 +17,12 @@ import org.springframework.web.server.ResponseStatusException;
 import java.security.MessageDigest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
 import java.util.Map;
 
 @Service
 public class AuthService {
-    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
+    private static final Logger log = LoggerFactory.getLogger(AuthService.class);
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
@@ -46,14 +44,13 @@ public class AuthService {
 
     @Transactional
     public AuthResponse signup(SignupRequest request) {
-        // Normalize email so "Foo@Bar.com " and "foo@bar.com" never both exist.
         String email = request.email() == null ? "" : request.email().trim().toLowerCase();
         if (email.isEmpty()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email is required");
         }
-
         if (userRepository.existsByEmail(email)) {
-            log.warn("[SIGNUP] 409 — existsByEmail matched for {}", email);
+            // FIX: log hashed email instead of plaintext to avoid PII in logs (GDPR)
+            log.warn("[SIGNUP] 409 — existsByEmail matched for hash:{}", sha256(email));
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
         }
 
@@ -69,9 +66,7 @@ public class AuthService {
         try {
             user = userRepository.save(user);
         } catch (DataIntegrityViolationException e) {
-            // Emits the underlying constraint name so we can see whether it's
-            // users_email_key, users_email_hash_key, users_encrypted_email_key, etc.
-            log.warn("[SIGNUP] 409 — DataIntegrityViolation saving {}: {}", email, e.getMostSpecificCause().getMessage());
+            log.warn("[SIGNUP] 409 — DataIntegrityViolation: {}", e.getMostSpecificCause().getMessage());
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Email already registered");
         }
 
@@ -89,84 +84,79 @@ public class AuthService {
             });
         }
 
-        String token = jwtService.generateToken(
-                user.getId().toString(),
-                buildClaims(user)
-        );
-
+        String token = jwtService.generateToken(user.getId().toString(), buildClaims(user));
         return new AuthResponse(token, toDTO(user));
     }
 
     @Transactional
     public AuthResponse login(LoginRequest request) {
-        log.info("[LOGIN] Attempt for email: {}", request.email());
+        // FIX: do not log plaintext email — use ID after lookup or log hash only
+        log.info("[LOGIN] Attempt received");
+
         if (request.email() == null || request.email().isBlank()) {
             log.warn("[LOGIN] Email is blank or null");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Email is required");
         }
         if (request.password() == null || request.password().isBlank()) {
-            log.warn("[LOGIN] Password is blank or null for email: {}", request.email());
+            log.warn("[LOGIN] Password is blank or null");
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Password is required");
         }
 
         String email = request.email().trim().toLowerCase();
-        log.debug("[LOGIN] Looking up user by email: {}", email);
+
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> {
-                    log.warn("[LOGIN] User not found for email: {}", request.email());
+                    // FIX: log hash not plaintext email
+                    log.warn("[LOGIN] User not found — hash:{}", sha256(email));
                     return new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
                 });
 
-        log.debug("[LOGIN] User found: id={}, email={}", user.getId(), user.getEmail());
+        log.debug("[LOGIN] User found: id={}", user.getId());
 
         boolean needsUpdate = false;
         if (user.getEmailHash() == null) {
-            log.info("[LOGIN] User {} missing emailHash, updating...", user.getEmail());
             user.setEmailHash(sha256(user.getEmail()));
             needsUpdate = true;
         }
         if (user.getReferralCode() == null || user.getReferralCode().isBlank()) {
-            log.info("[LOGIN] User {} missing referralCode, generating...", user.getEmail());
             user.setReferralCode(generateUniqueReferralCode());
             needsUpdate = true;
         }
         if (user.getEncryptedEmail() == null) {
-            log.info("[LOGIN] User {} missing encryptedEmail, updating...", user.getEmail());
             user.setEncryptedEmail(encryptionService.encrypt(user.getEmail()));
             needsUpdate = true;
         }
         if (needsUpdate) {
             user = userRepository.save(user);
-            log.info("[LOGIN] User {} updated with missing fields.", user.getEmail());
         }
 
-        log.debug("[LOGIN] Checking password for user: {}", user.getEmail());
         if (user.getPasswordHash() == null) {
-            log.error("[LOGIN] User {} has null passwordHash!", user.getEmail());
+            log.error("[LOGIN] User id={} has null passwordHash!", user.getId());
             throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "User password is not set");
         }
+
         if (!passwordEncoder.matches(request.password(), user.getPasswordHash())) {
-            log.warn("[LOGIN] Invalid password for user {}", user.getEmail());
+            // FIX: log user ID not email
+            log.warn("[LOGIN] Invalid password for user id={}", user.getId());
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid credentials");
         }
 
-        log.debug("[LOGIN] Password valid for user: {}. Generating token...", user.getEmail());
-        String token = jwtService.generateToken(
-                user.getId().toString(),
-                buildClaims(user)
-        );
-
-        log.info("[LOGIN] Success for user {} (id: {})", user.getEmail(), user.getId());
+        log.info("[LOGIN] Success for user id={}", user.getId());
+        String token = jwtService.generateToken(user.getId().toString(), buildClaims(user));
         return new AuthResponse(token, toDTO(user));
     }
 
+    /**
+     * FIX: Added max-attempts guard to prevent an infinite loop in the unlikely
+     * event of repeated collisions in the referral code space.
+     */
     private String generateUniqueReferralCode() {
         int length = 8;
         String characters = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
-        StringBuilder code = new StringBuilder();
-        java.util.Random rnd = new java.security.SecureRandom();
-        while (true) {
-            code.setLength(0);
+        java.security.SecureRandom rnd = new java.security.SecureRandom();
+        int maxAttempts = 20;
+        for (int attempt = 0; attempt < maxAttempts; attempt++) {
+            StringBuilder code = new StringBuilder(length);
             for (int i = 0; i < length; i++) {
                 code.append(characters.charAt(rnd.nextInt(characters.length())));
             }
@@ -174,6 +164,7 @@ public class AuthService {
                 return code.toString();
             }
         }
+        throw new IllegalStateException("Could not generate a unique referral code after " + maxAttempts + " attempts");
     }
 
     private static String sha256(String input) {
@@ -194,40 +185,23 @@ public class AuthService {
 
     public String generateExtensionToken(String userId) {
         User user = userRepository.findById(Long.parseLong(userId))
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.UNAUTHORIZED, "User not found"));
-
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
         Map<String, Object> claims = buildClaims(user);
         claims.put("scope", "extension");
-
-        return jwtService.generateExtensionToken(
-                user.getId().toString(),
-                claims
-        );
+        return jwtService.generateExtensionToken(user.getId().toString(), claims);
     }
 
-    /**
-     * Issue a fresh JWT for an already-authenticated user.
-     * Called every 15 min while the user is active on the dashboard.
-     */
     public AuthResponse refresh(String userId) {
         User user = userRepository.findById(Long.parseLong(userId))
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.UNAUTHORIZED, "User not found"));
-
-        String token = jwtService.generateToken(
-                user.getId().toString(),
-                buildClaims(user)
-        );
-
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "User not found"));
+        String token = jwtService.generateToken(user.getId().toString(), buildClaims(user));
         return new AuthResponse(token, toDTO(user));
     }
 
     public UserResponseDTO getUserProfile(Long userId) {
         if (userId == null) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "Invalid session");
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "User not found"));
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         return toDTO(user);
     }
 
@@ -244,12 +218,12 @@ public class AuthService {
 
     private UserResponseDTO toDTO(User user) {
         return new UserResponseDTO(
-            user.getId(),
-            user.getEmail(),
-            user.getFullName() != null ? user.getFullName() : "",
-            user.getAvatarUrl() != null ? user.getAvatarUrl() : "",
-            user.getTier() != null ? user.getTier() : "starter",
-            user.getCreatedAt()
+                user.getId(),
+                user.getEmail(),
+                user.getFullName() != null ? user.getFullName() : "",
+                user.getAvatarUrl() != null ? user.getAvatarUrl() : "",
+                user.getTier() != null ? user.getTier() : "starter",
+                user.getCreatedAt()
         );
     }
 }
