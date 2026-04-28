@@ -22,6 +22,12 @@ const SILENT_URL_PATTERNS = [
     "/api/auth/me",
     "/api/auth/ws-token",
     "/api/auth/refresh",
+    // Initial data-sync endpoints — must not trigger the global spinner
+  "/api/highlights",
+  "/api/folders",
+  "/api/tags",
+  "/api/smart-collections",
+  "/api/api-keys",
 ];
 
 if (typeof window !== "undefined") {
