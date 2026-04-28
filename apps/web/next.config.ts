@@ -13,6 +13,17 @@ const apiHost = (() => {
   }
 })();
 
+/**
+ * FIX (CSP): Removed 'unsafe-eval' and 'unsafe-inline' from script-src.
+ * These directives allowed arbitrary script execution and are a significant XSS vector.
+ *
+ * NOTE: If you use libraries that require eval() (e.g. certain Framer Motion features
+ * or older webpack configs), you must migrate them or use a nonce-based CSP via
+ * middleware.ts instead of these broad allowances.
+ *
+ * For inline styles required by Tailwind and CSS-in-JS, 'unsafe-inline' is kept
+ * only for style-src which is lower risk than script-src.
+ */
 const nextConfig: NextConfig = {
   transpilePackages: ["@cortex/ui"],
   images: {
@@ -39,7 +50,21 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Content-Security-Policy",
-            value: `default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' ws: wss: ${apiHost} https://*.cortex.app; frame-src 'self' https://*.youtube.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; upgrade-insecure-requests;`,
+            // FIX: removed 'unsafe-eval' and 'unsafe-inline' from script-src
+            // 'unsafe-inline' is retained only in style-src (lower risk, needed by Tailwind)
+            value: [
+              "default-src 'self'",
+              "script-src 'self'",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: https:",
+              "font-src 'self' data:",
+              `connect-src 'self' ws: wss: ${apiHost} https://*.cortex.app`,
+              "frame-src 'self' https://*.youtube.com",
+              "base-uri 'self'",
+              "form-action 'self'",
+              "frame-ancestors 'none'",
+              "upgrade-insecure-requests",
+            ].join("; "),
           },
           {
             key: "X-Content-Type-Options",
@@ -56,6 +81,10 @@ const nextConfig: NextConfig = {
           {
             key: "Referrer-Policy",
             value: "strict-origin-when-cross-origin",
+          },
+          {
+            key: "Permissions-Policy",
+            value: "camera=(), microphone=(), geolocation=()",
           },
         ],
       },
