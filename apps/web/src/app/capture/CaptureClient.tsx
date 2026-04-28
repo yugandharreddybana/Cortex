@@ -24,6 +24,7 @@ export default function CaptureClient() {
   const fetchFolders = useDashboardStore((s) => s.fetchFolders);
   const fetchTags    = useDashboardStore((s) => s.fetchTags);
   const addHighlight = useDashboardStore((s) => s.addHighlight);
+  const addTag       = useDashboardStore((s) => s.addTag);
 
   const [text, setText]                 = React.useState(initialText);
   const [source, setSource]             = React.useState(initialTitle || initialUrl);
@@ -31,6 +32,7 @@ export default function CaptureClient() {
   const [selectedTags, setSelectedTags] = React.useState<string[]>([]);
   const [tagQuery, setTagQuery]         = React.useState("");
   const [tagOpen, setTagOpen]           = React.useState(false);
+  const [creatingTag, setCreatingTag]   = React.useState(false);
   const [folderOpen, setFolderOpen]     = React.useState(false);
   const [createFolderOpen, setCreateFolderOpen] = React.useState(false);
   const folderIdsAtDialogOpen = React.useRef<Set<string>>(new Set());
@@ -110,6 +112,24 @@ export default function CaptureClient() {
 
   function toggleTag(id: string) {
     setSelectedTags((p) => (p.includes(id) ? p.filter((x) => x !== id) : [...p, id]));
+  }
+
+  async function handleCreateTag() {
+    const name = tagQuery.trim();
+    if (!name || creatingTag) return;
+    setCreatingTag(true);
+    try {
+      await addTag(name, "#6366f1");
+      const newTag = useDashboardStore.getState().tags.find((t) => t.name.toLowerCase() === name.toLowerCase());
+      if (newTag) {
+        setSelectedTags((p) => [...p, newTag.id]);
+      }
+      setTagQuery("");
+    } catch (e: unknown) {
+      toast.error(e instanceof Error ? e.message : "Failed to create tag");
+    } finally {
+      setCreatingTag(false);
+    }
   }
 
   async function handleSave() {
@@ -229,7 +249,7 @@ export default function CaptureClient() {
                     className={cn(
                       "absolute z-50 top-[calc(100%+4px)] left-0 right-0",
                       "rounded-xl bg-[#1a1a2e] border border-white/[0.10] shadow-[0_8px_32px_rgba(0,0,0,0.5)]",
-                      "overflow-hidden max-h-52 overflow-y-auto",
+                      "max-h-52 overflow-y-auto overscroll-contain",
                     )}
                   >
                     {/* No folder option */}
@@ -293,7 +313,7 @@ export default function CaptureClient() {
                 )}
               />
               <AnimatePresence>
-                {tagOpen && tags.length > 0 && (
+                {tagOpen && (
                   <motion.div
                     initial={{ opacity: 0, y: -4, scale: 0.98 }}
                     animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -302,7 +322,7 @@ export default function CaptureClient() {
                     className={cn(
                       "absolute z-50 top-[calc(100%+4px)] left-0 right-0",
                       "rounded-xl bg-[#1a1a2e] border border-white/[0.10] shadow-[0_8px_32px_rgba(0,0,0,0.5)]",
-                      "overflow-hidden max-h-52 overflow-y-auto",
+                      "max-h-52 overflow-y-auto overscroll-contain",
                     )}
                   >
                     {/* Selected tags first */}
@@ -322,31 +342,31 @@ export default function CaptureClient() {
                       );
                     })}
                     {/* Unselected / filtered tags */}
-                    {filteredTags.length > 0 && (
-                      filteredTags.map((t) => (
-                        <button
-                          key={t.id}
-                          type="button"
-                          onClick={() => { toggleTag(t.id); setTagQuery(""); }}
-                          className="w-full px-3 py-2.5 text-left text-sm text-white/70 hover:bg-white/[0.06] hover:text-white transition-colors"
-                        >
-                          {t.name}
-                        </button>
-                      ))
+                    {filteredTags.map((t) => (
+                      <button
+                        key={t.id}
+                        type="button"
+                        onClick={() => { toggleTag(t.id); setTagQuery(""); }}
+                        className="w-full px-3 py-2.5 text-left text-sm text-white/70 hover:bg-white/[0.06] hover:text-white transition-colors"
+                      >
+                        {t.name}
+                      </button>
+                    ))}
+                    {/* Create new tag option */}
+                    {tagQuery.trim() && !tags.some((t) => t.name.toLowerCase() === tagQuery.trim().toLowerCase()) && (
+                      <button
+                        type="button"
+                        onClick={handleCreateTag}
+                        disabled={creatingTag}
+                        className="w-full px-3 py-2.5 text-left text-sm text-accent/80 hover:bg-white/[0.05] hover:text-accent border-t border-white/[0.06] flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                      >
+                        <span className="text-base leading-none">+</span>
+                        {creatingTag ? "Creating\u2026" : `Create \u201c${tagQuery.trim()}\u201d`}
+                      </button>
                     )}
-                    {filteredTags.length === 0 && selectedTags.length === 0 && (
-                      <p className="px-3 py-3 text-xs text-white/30 text-center">No tags found</p>
+                    {filteredTags.length === 0 && selectedTags.length === 0 && !tagQuery.trim() && (
+                      <p className="px-3 py-3 text-xs text-white/30 text-center">No tags yet \u2014 type to create one</p>
                     )}
-                  </motion.div>
-                )}
-                {tagOpen && tags.length === 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -4 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -4 }}
-                    className="absolute z-50 top-[calc(100%+4px)] left-0 right-0 rounded-xl bg-[#1a1a2e] border border-white/[0.10] shadow-[0_8px_32px_rgba(0,0,0,0.5)] px-3 py-3"
-                  >
-                    <p className="text-xs text-white/30 text-center">No tags yet \u2014 create them in the dashboard</p>
                   </motion.div>
                 )}
               </AnimatePresence>

@@ -177,6 +177,10 @@ public class HighlightController {
                                                 @RequestBody HighlightDTO dto) {
         User user = resolveUser(auth);
 
+        if (dto.text == null || dto.text.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Highlight text cannot be empty.");
+        }
+
         // ROLE ENFORCEMENT: if placing into a shared folder, caller must be at least EDITOR
         if (dto.folderId != null && dto.folderId > 0) {
             boolean isOwnerOfFolder = folderRepo.findByIdAndUserId(dto.folderId, user.getId()).isPresent();
