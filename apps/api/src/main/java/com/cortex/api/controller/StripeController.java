@@ -6,6 +6,7 @@ import com.cortex.api.service.SecurityService;
 import com.cortex.api.service.StripeService;
 import com.stripe.exception.SignatureVerificationException;
 import com.stripe.exception.StripeException;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -21,10 +22,25 @@ public class StripeController {
     private final SecurityService securityService;
     private final UserRepository userRepository;
 
-    public StripeController(StripeService stripeService, SecurityService securityService, UserRepository userRepository) {
+    @Value("${cortex.app.url:http://localhost:3000}")
+    private String appUrl;
+
+    public StripeController(StripeService stripeService,
+                            SecurityService securityService,
+                            UserRepository userRepository) {
         this.stripeService = stripeService;
         this.securityService = securityService;
         this.userRepository = userRepository;
+    }
+
+    /**
+     * Validates that a redirect URL belongs to our own application domain.
+     * Prevents open redirect attacks where an attacker could supply a malicious URL.
+     */
+    private boolean isAllowedRedirectUrl(String url) {
+        if (url == null || url.isBlank()) return false;
+        // Allow relative paths and URLs that start with the configured app URL
+        return url.startsWith(appUrl) || url.startsWith("/");
     }
 
     @PostMapping("/checkout")
@@ -40,15 +56,26 @@ public class StripeController {
         String successUrl = (String) payload.get("successUrl");
         String cancelUrl = (String) payload.get("cancelUrl");
 
-        if (planId == null || planId.isBlank() || successUrl == null || successUrl.isBlank() || cancelUrl == null || cancelUrl.isBlank()) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Missing required checkout fields"));
+        if (planId == null || planId.isBlank()
+                || successUrl == null || successUrl.isBlank()
+                || cancelUrl == null || cancelUrl.isBlank()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Missing required checkout fields"));
         }
+
+        // FIX: validate successUrl and cancelUrl to prevent open redirect attacks
+        if (!isAllowedRedirectUrl(successUrl) || !isAllowedRedirectUrl(cancelUrl)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Invalid redirect URL: must be within the application domain"));
+        }
+
         if (isAnnual == null) {
             isAnnual = Boolean.FALSE;
         }
 
         try {
-            String url = stripeService.createCheckoutSession(userOpt.get(), planId, isAnnual, successUrl, cancelUrl);
+            String url = stripeService.createCheckoutSession(
+                    userOpt.get(), planId, isAnnual, successUrl, cancelUrl);
             return ResponseEntity.ok(Map.of("url", url));
         } catch (IllegalArgumentException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
@@ -59,24 +86,31 @@ public class StripeController {
 
     @PostMapping("/portal")
     public ResponseEntity<?> createPortalSession(@RequestBody Map<String, String> payload) {
-         Long userId = securityService.getCurrentUserId();
-         Optional<User> userOpt = userRepository.findById(userId);
-         if (userOpt.isEmpty()) {
-             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-         }
+        Long userId = securityService.getCurrentUserId();
+        Optional<User> userOpt = userRepository.findById(userId);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
 
-         String returnUrl = payload.get("returnUrl");
-         if (returnUrl == null || returnUrl.isBlank()) {
-             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Missing returnUrl"));
-         }
-         try {
-             String url = stripeService.createPortalSession(userOpt.get(), returnUrl);
-             return ResponseEntity.ok(Map.of("url", url));
-         } catch (IllegalArgumentException e) {
-             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
-         } catch (Exception e) {
-             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
-         }
+        String returnUrl = payload.get("returnUrl");
+        if (returnUrl == null || returnUrl.isBlank()) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", "Missing returnUrl"));
+        }
+
+        // FIX: validate returnUrl to prevent open redirect attacks
+        if (!isAllowedRedirectUrl(returnUrl)) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("error", "Invalid returnUrl: must be within the application domain"));
+        }
+
+        try {
+            String url = stripeService.createPortalSession(userOpt.get(), returnUrl);
+            return ResponseEntity.ok(Map.of("url", url));
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("error", e.getMessage()));
+        } catch (Exception e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(Map.of("error", e.getMessage()));
+        }
     }
 
     @PostMapping("/webhook")
@@ -92,7 +126,7 @@ public class StripeController {
         } catch (SignatureVerificationException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid signature");
         } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Webhook error: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Webhook error");
         }
     }
 }
