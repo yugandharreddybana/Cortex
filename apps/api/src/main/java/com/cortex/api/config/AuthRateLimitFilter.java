@@ -6,6 +6,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -15,11 +16,16 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 import java.time.Duration;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Per-IP token bucket rate limit on auth endpoints: 5 requests per minute.
  * Applies to POST /api/v1/auth/login and POST /api/v1/auth/signup.
+ *
+ * FIX: X-Forwarded-For is only trusted when the actual remoteAddr is a known
+ * trusted proxy/load-balancer IP. Otherwise remoteAddr is used directly,
+ * preventing IP spoofing via forged X-Forwarded-For headers.
  */
 @Component
 public class AuthRateLimitFilter extends OncePerRequestFilter {
@@ -28,6 +34,26 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
     private static final Duration REFILL_PERIOD = Duration.ofMinutes(1);
 
     private final Map<String, Bucket> buckets = new ConcurrentHashMap<>();
+
+    /**
+     * Comma-separated list of trusted reverse proxy IPs.
+     * Set via TRUSTED_PROXY_IPS environment variable.
+     * Example: "10.0.0.1,172.31.0.1"
+     */
+    @Value("${cortex.trusted-proxy-ips:}")
+    private String trustedProxyIpsConfig;
+
+    private Set<String> getTrustedProxies() {
+        if (trustedProxyIpsConfig == null || trustedProxyIpsConfig.isBlank()) {
+            return Set.of();
+        }
+        Set<String> result = new java.util.HashSet<>();
+        for (String ip : trustedProxyIpsConfig.split(",")) {
+            String trimmed = ip.trim();
+            if (!trimmed.isEmpty()) result.add(trimmed);
+        }
+        return result;
+    }
 
     private Bucket resolveBucket(String key) {
         return buckets.computeIfAbsent(key, k -> Bucket.builder()
@@ -68,16 +94,29 @@ public class AuthRateLimitFilter extends OncePerRequestFilter {
         }
     }
 
+    /**
+     * FIX: Only trust X-Forwarded-For when the actual TCP connection comes from
+     * a known trusted proxy IP. This prevents attackers from spoofing their IP
+     * by setting a forged X-Forwarded-For header.
+     */
     private String clientIp(HttpServletRequest request) {
-        String xff = request.getHeader("X-Forwarded-For");
-        if (xff != null && !xff.isBlank()) {
-            int comma = xff.indexOf(',');
-            return (comma > 0 ? xff.substring(0, comma) : xff).trim();
+        String remoteAddr = request.getRemoteAddr();
+        Set<String> trustedProxies = getTrustedProxies();
+
+        if (trustedProxies.contains(remoteAddr)) {
+            // Only read X-Forwarded-For from known trusted proxies
+            String xff = request.getHeader("X-Forwarded-For");
+            if (xff != null && !xff.isBlank()) {
+                int comma = xff.indexOf(',');
+                return (comma > 0 ? xff.substring(0, comma) : xff).trim();
+            }
+            String real = request.getHeader("X-Real-IP");
+            if (real != null && !real.isBlank()) {
+                return real.trim();
+            }
         }
-        String real = request.getHeader("X-Real-IP");
-        if (real != null && !real.isBlank()) {
-            return real.trim();
-        }
-        return request.getRemoteAddr();
+
+        // For all other connections, use the actual TCP remote address
+        return remoteAddr;
     }
 }
