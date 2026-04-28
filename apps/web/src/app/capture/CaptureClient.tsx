@@ -337,7 +337,7 @@ export default function CaptureClient() {
                           className="w-full px-3 py-2.5 text-left text-sm text-white bg-accent/10 hover:bg-accent/20 flex items-center justify-between transition-colors"
                         >
                           <span>{t.name}</span>
-                          <span className="text-accent text-xs font-bold">\u2713</span>
+                          {/* Removed unicode checkmark for cleaner display */}
                         </button>
                       );
                     })}
