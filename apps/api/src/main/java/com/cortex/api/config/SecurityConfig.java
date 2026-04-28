@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -44,12 +45,12 @@ public class SecurityConfig {
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .toList();
+
         http
             .csrf(AbstractHttpConfigurer::disable)
             .cors(cors -> cors.configurationSource(request -> {
                 CorsConfiguration config = new CorsConfiguration();
                 config.setAllowedOrigins(allowedOrigins);
-                // config.addAllowedOriginPattern("chrome-extension://*"); // REMOVED: Insecure with allowCredentials
                 config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
                 config.setAllowedHeaders(List.of("*"));
                 config.setAllowCredentials(true);
@@ -60,18 +61,26 @@ public class SecurityConfig {
                 .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR, DispatcherType.FORWARD).permitAll()
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers(
-                        "/api/v1/auth/signup",
-                        "/api/v1/auth/login",
-                        "/api/v1/auth/probe",
-                        "/ws/**",
-                        "/error"
+                    "/api/v1/auth/signup",
+                    "/api/v1/auth/login",
+                    "/api/v1/auth/probe",
+                    "/ws/**",
+                    "/error"
                 ).permitAll()
                 .requestMatchers("/api/v1/stripe/webhook").permitAll()
                 .anyRequest().authenticated()
             )
             .exceptionHandling(ex -> ex
+                // FIX #81: write JSON directly instead of sendError() to avoid Spring /error dispatcher returning 500 HTML
                 .authenticationEntryPoint((request, response, authException) -> {
-                    response.sendError(HttpStatus.UNAUTHORIZED.value(), "Unauthorized");
+                    response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                    response.getWriter().write("{\"success\":false,\"error\":\"Unauthorized\"}");
+                })
+                .accessDeniedHandler((request, response, accessDeniedException) -> {
+                    response.setStatus(HttpStatus.FORBIDDEN.value());
+                    response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                    response.getWriter().write("{\"success\":false,\"error\":\"Forbidden\"}");
                 })
             )
             .addFilterBefore(authRateLimitFilter, UsernamePasswordAuthenticationFilter.class)
@@ -82,7 +91,7 @@ public class SecurityConfig {
 
     @Bean
     public PasswordEncoder passwordEncoder() {
-        // Increased from 12 to 14 for better brute-force resistance
+        // BCrypt strength 14 for better brute-force resistance
         return new BCryptPasswordEncoder(14);
     }
 
