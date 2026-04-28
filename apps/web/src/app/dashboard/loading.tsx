@@ -1,5 +1,4 @@
-import { Loader } from "@/components/ui/Loader";
-
+// Loader is handled by the root app/loading.tsx — no duplicate needed here.
 export default function DashboardLoading() {
-  return <Loader page label="Loading…" />;
+  return null;
 }
