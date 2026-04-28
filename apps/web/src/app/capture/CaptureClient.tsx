@@ -8,6 +8,7 @@ import { cn } from "@cortex/ui";
 import { useDashboardStore } from "@/store/dashboard";
 import { useAuthStore } from "@/store/authStore";
 import { Loader } from "@/components/ui/Loader";
+import { FolderCreateDialog } from "@/components/dashboard/FolderCreateDialog";
 import type { Folder } from "@/store/types";
 
 export default function CaptureClient() {
@@ -31,6 +32,10 @@ export default function CaptureClient() {
   const [tagQuery, setTagQuery]         = React.useState("");
   const [tagOpen, setTagOpen]           = React.useState(false);
   const [folderOpen, setFolderOpen]     = React.useState(false);
+  const [createFolderOpen, setCreateFolderOpen] = React.useState(false);
+  const folderIdsAtDialogOpen = React.useRef<Set<string>>(new Set());
+  const foldersRef = React.useRef(folders);
+  React.useEffect(() => { foldersRef.current = folders; }, [folders]);
   const [saving, setSaving]             = React.useState(false);
   const [done, setDone]                 = React.useState(false);
 
@@ -253,6 +258,18 @@ export default function CaptureClient() {
                         {f.prefix}{f.emoji ? `${f.emoji} ` : ""}{f.name}
                       </button>
                     ))}
+                    {/* Create new folder */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        folderIdsAtDialogOpen.current = new Set(folders.map((f) => f.id));
+                        setFolderOpen(false);
+                        setCreateFolderOpen(true);
+                      }}
+                      className="w-full px-3 py-2.5 text-left text-sm text-accent/80 hover:bg-white/[0.05] hover:text-accent border-t border-white/[0.06] flex items-center gap-1.5 transition-colors"
+                    >
+                      <span className="text-base leading-none">+</span> New folder
+                    </button>
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -356,6 +373,19 @@ export default function CaptureClient() {
             })}
           </div>
         )}
+
+        {/* Create folder dialog — rendered outside folderRef to avoid outside-click conflicts */}
+        <FolderCreateDialog
+          open={createFolderOpen}
+          onOpenChange={(isOpen) => {
+            setCreateFolderOpen(isOpen);
+            if (!isOpen) {
+              // Auto-select the newly created folder by diffing against folder IDs at dialog open time
+              const newFolder = foldersRef.current.find((f) => !folderIdsAtDialogOpen.current.has(f.id));
+              if (newFolder) setFolderId(newFolder.id);
+            }
+          }}
+        />
 
         {/* Actions */}
         <div className="mt-6 flex items-center justify-end gap-3">
