@@ -13,17 +13,13 @@ const apiHost = (() => {
   }
 })();
 
-/**
- * FIX (CSP): Removed 'unsafe-eval' and 'unsafe-inline' from script-src.
- * These directives allowed arbitrary script execution and are a significant XSS vector.
- *
- * NOTE: If you use libraries that require eval() (e.g. certain Framer Motion features
- * or older webpack configs), you must migrate them or use a nonce-based CSP via
- * middleware.ts instead of these broad allowances.
- *
- * For inline styles required by Tailwind and CSS-in-JS, 'unsafe-inline' is kept
- * only for style-src which is lower risk than script-src.
- */
+// ✅ Hashes for inline scripts that Next.js injects internally (from browser CSP errors)
+const inlineScriptHashes = [
+  "'sha256-fd2WB97AOCLChfEViYY1QHq41SiFkyQjy31NRZ70Poo='",
+  "'sha256-4TSPcnGQxIkk2XQGxtJGBF9EjLperRyTFeWiy91S4VA='",
+  "'sha256-TNnNpGMuVqftQvhPBdLFNrvko886rtQ/qNwKE+ifY7Q='",
+].join(" ");
+
 const nextConfig: NextConfig = {
   transpilePackages: ["@cortex/ui"],
   images: {
@@ -39,10 +35,6 @@ const nextConfig: NextConfig = {
       dynamic: 30,
     },
   },
-  // NOTE: no /api/:path* rewrite. All /api/* requests are handled by Next.js
-  // route handlers under apps/web/src/app/api (including the catch-all
-  // [...path]/route.ts), which proxy to the Java backend with a Bearer token
-  // derived from the iron-session cookie. A plain rewrite can't do that.
   async headers() {
     return [
       {
@@ -50,11 +42,10 @@ const nextConfig: NextConfig = {
         headers: [
           {
             key: "Content-Security-Policy",
-            // FIX: removed 'unsafe-eval' and 'unsafe-inline' from script-src
-            // 'unsafe-inline' is retained only in style-src (lower risk, needed by Tailwind)
             value: [
               "default-src 'self'",
-              "script-src 'self'",
+              // ✅ CHANGED: Added the 3 inline script hashes on this line
+              `script-src 'self' ${inlineScriptHashes}`,
               "style-src 'self' 'unsafe-inline'",
               "img-src 'self' data: https:",
               "font-src 'self' data:",
