@@ -289,11 +289,12 @@ interface RecursiveFolderNodeProps {
   onCreateSubfolder: (parentId: string) => void;
   onPin: (f: Folder) => void;
   onMove: (f: Folder, targetId: string) => void;
+  onManageAccess: (f: Folder) => void;
   isLoading: boolean;
 }
 
 function RecursiveFolderNode({
-  folder, depth, pathname, getChildren, folderCountMap, onRename, onDelete, onShare, onDuplicate, onCreateSubfolder, onPin, onMove, isLoading
+  folder, depth, pathname, getChildren, folderCountMap, onRename, onDelete, onShare, onDuplicate, onCreateSubfolder, onPin, onMove, onManageAccess, isLoading
 }: RecursiveFolderNodeProps) {
   // Check if this folder or any of its children are active
   const children = getChildren(folder.id);
@@ -377,7 +378,7 @@ function RecursiveFolderNode({
                 {isLoading ? "" : (folderCountMap[folder.id] || 0)}
               </span>
             </Link>
-            <FolderDropdown folder={folder} onRename={() => onRename(folder)} onDelete={() => onDelete(folder)} onShare={() => onShare(folder)} onDuplicate={() => onDuplicate(folder)} onCreateSubfolder={() => onCreateSubfolder(folder.id)} onPin={() => onPin(folder)} onMove={(targetId: string) => onMove(folder, targetId)} onManageAccess={() => folder._onManageAccess?.()} />
+            <FolderDropdown folder={folder} onRename={() => onRename(folder)} onDelete={() => onDelete(folder)} onShare={() => onShare(folder)} onDuplicate={() => onDuplicate(folder)} onCreateSubfolder={() => onCreateSubfolder(folder.id)} onPin={() => onPin(folder)} onMove={(targetId: string) => onMove(folder, targetId)} onManageAccess={() => onManageAccess(folder)} />
           </div>
         </ContextMenu.Trigger>
         <ContextMenu.Portal>
@@ -410,7 +411,7 @@ function RecursiveFolderNode({
       {expanded && children.length > 0 && (
         <div className="space-y-0.5">
           {children.map((child: FolderWithActions) => (
-            <RecursiveFolderNode key={child.id} folder={child} depth={depth + 1} pathname={pathname} getChildren={getChildren} folderCountMap={folderCountMap} onRename={onRename} onDelete={onDelete} onShare={onShare} onDuplicate={onDuplicate} onCreateSubfolder={onCreateSubfolder} onPin={onPin} onMove={onMove} isLoading={isLoading} />
+            <RecursiveFolderNode key={child.id} folder={child} depth={depth + 1} pathname={pathname} getChildren={getChildren} folderCountMap={folderCountMap} onRename={onRename} onDelete={onDelete} onShare={onShare} onDuplicate={onDuplicate} onCreateSubfolder={onCreateSubfolder} onPin={onPin} onMove={onMove} onManageAccess={onManageAccess} isLoading={isLoading} />
           ))}
         </div>
       )}
@@ -629,10 +630,7 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                       {myRootFolders.map((folder) => (
                         <RecursiveFolderNode
                           key={folder.id}
-                          folder={{
-                            ...folder,
-                            _onManageAccess: () => setManageAccessTarget({ id: folder.id, name: folder.name })
-                          }}
+                          folder={folder}
                           depth={0}
                           pathname={pathname}
                           getChildren={getChildren}
@@ -644,6 +642,7 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                           onCreateSubfolder={handleCreateSubfolder}
                           onPin={(f: Folder) => togglePinFolder(f.id)}
                           onMove={(f: Folder, targetId: string) => moveFolder(f.id, targetId)}
+                          onManageAccess={(f: Folder) => setManageAccessTarget({ id: f.id, name: f.name })}
                           isLoading={isLoading}
                         />
                       ))}
@@ -670,7 +669,6 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                           folder={{
                             ...folder,
                             _onRequestAccess: () => setRequestAccessTarget({ id: folder.id, name: folder.name, currentRole: folder.effectiveRole }),
-                            _onManageAccess: () => setManageAccessTarget({ id: folder.id, name: folder.name })
                           }}
                           depth={0}
                           pathname={pathname}
@@ -683,6 +681,7 @@ export function Sidebar({ onCmdK }: { onCmdK?: () => void }) {
                           onCreateSubfolder={handleCreateSubfolder}
                           onPin={(f: Folder) => togglePinFolder(f.id)}
                           onMove={(f: Folder, targetId: string) => moveFolder(f.id, targetId)}
+                          onManageAccess={(f: Folder) => setManageAccessTarget({ id: f.id, name: f.name })}
                           isLoading={isLoading}
                         />
                       ))}
