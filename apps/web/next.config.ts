@@ -1,27 +1,8 @@
 import type { NextConfig } from "next";
 
-const javaApiUrl = process.env.JAVA_API_URL ?? "http://localhost:8080";
-
-// Build CSP connect-src to include the real API host
-const apiHost = (() => {
-  try {
-    const u = new URL(javaApiUrl);
-    const ws = u.protocol === "https:" ? `wss://${u.host}` : `ws://${u.host}`;
-    return `${javaApiUrl} ${ws}`;
-  } catch {
-    return javaApiUrl;
-  }
-})();
-
-// ✅ Hashes for inline scripts that Next.js injects internally (from browser CSP errors)
-const inlineScriptHashes = [
-  "'sha256-fd2WB97AOCLChfEViYY1QHq41SiFkyQjy31NRZ70Poo='",
-  "'sha256-4TSPcnGQxIkk2XQGxtJGBF9EjLperRyTFeWiy91S4VA='",
-  "'sha256-TNnNpGMuVqftQvhPBdLFNrvko886rtQ/qNwKE+ifY7Q='",
-].join(" ");
-
 const nextConfig: NextConfig = {
   transpilePackages: ["@cortex/ui"],
+
   images: {
     formats: ["image/avif", "image/webp"],
     remotePatterns: [
@@ -29,58 +10,18 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "images.unsplash.com" },
     ],
   },
+
   experimental: {
     optimizePackageImports: ["framer-motion", "@cortex/ui"],
     staleTimes: {
       dynamic: 30,
     },
   },
-  async headers() {
-    return [
-      {
-        source: "/(.*)",
-        headers: [
-          {
-            key: "Content-Security-Policy",
-            value: [
-              "default-src 'self'",
-              // ✅ CHANGED: Added the 3 inline script hashes on this line
-              `script-src 'self' ${inlineScriptHashes}`,
-              "style-src 'self' 'unsafe-inline'",
-              "img-src 'self' data: https:",
-              "font-src 'self' data:",
-              `connect-src 'self' ws: wss: ${apiHost} https://*.cortex.app`,
-              "frame-src 'self' https://*.youtube.com",
-              "base-uri 'self'",
-              "form-action 'self'",
-              "frame-ancestors 'none'",
-              "upgrade-insecure-requests",
-            ].join("; "),
-          },
-          {
-            key: "X-Content-Type-Options",
-            value: "nosniff",
-          },
-          {
-            key: "X-Frame-Options",
-            value: "DENY",
-          },
-          {
-            key: "X-XSS-Protection",
-            value: "1; mode=block",
-          },
-          {
-            key: "Referrer-Policy",
-            value: "strict-origin-when-cross-origin",
-          },
-          {
-            key: "Permissions-Policy",
-            value: "camera=(), microphone=(), geolocation=()",
-          },
-        ],
-      },
-    ];
-  },
+
+  // ── Security headers are now handled entirely in src/middleware.ts ──
+  // The middleware generates a per-request nonce and writes the full
+  // CSP there. Keeping headers() here too would create duplicate/
+  // conflicting headers.
 };
 
 export default nextConfig;
