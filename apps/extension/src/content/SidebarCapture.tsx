@@ -873,6 +873,7 @@ export function SidebarCapture({ selectedText, onClose }: SidebarCaptureProps) {
                 </svg>
                 <span style={{ flex: 1 }}>{error}</span>
                 <button
+                  aria-label="Error details, click to dismiss"
                   onClick={() => setError(null)}
                   style={{ all: "unset", cursor: "pointer", opacity: 0.6, padding: "2px" }}
                 >
@@ -1006,6 +1007,7 @@ export function SidebarCapture({ selectedText, onClose }: SidebarCaptureProps) {
                                 Create
                               </button>
                               <button
+                                aria-label="Cancel creating folder"
                                 onClick={() => setShowNewFolder(false)}
                                 style={{
                                   all: "unset",
@@ -1204,6 +1206,7 @@ export function SidebarCapture({ selectedText, onClose }: SidebarCaptureProps) {
                     <span style={{ fontSize: "10px", color: "rgba(255,255,255,0.4)", marginRight: "4px" }}>Color:</span>
                     {TAG_COLORS.map((c) => (
                       <button
+                        aria-label="Select Tag Colour"
                         key={c}
                         onClick={() => setSelectedTagColor(c)}
                         style={{

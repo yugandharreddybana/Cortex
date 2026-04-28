@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { API_BASE } from "@/lib/auth";
+import { extractCookieValue } from "@/lib/cookies";
 import { getSession } from "@/lib/session";
 
 export async function POST(request: NextRequest) {
@@ -36,16 +37,21 @@ export async function POST(request: NextRequest) {
   }
 
   const data = (await upstream.json()) as {
-    token: string;
-    user: { id: string; email: string; tier: string };
+    token?: string;
+    user?: { id: string; email: string; tier: string };
   };
+  const tokenFromCookie = extractCookieValue(upstream.headers.get("set-cookie"), "cortex_session");
+  const resolvedToken = data.token ?? tokenFromCookie;
+  if (!resolvedToken) {
+    return NextResponse.json({ success: false, error: "Token refresh response missing token" }, { status: 502 });
+  }
 
   // Store new token inside iron-session (consistent with login/signup)
-  session.user = { token: data.token };
+  session.user = { token: resolvedToken };
   await session.save();
 
   return NextResponse.json({
     success: true,
-    user: { email: data.user.email, tier: data.user.tier },
+    user: data.user ? { email: data.user.email, tier: data.user.tier } : undefined,
   });
 }

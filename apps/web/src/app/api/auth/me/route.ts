@@ -62,23 +62,6 @@ async function handleRequest(req: NextRequest) {
     return NextResponse.json({ authenticated: false }, { status: 401 });
   }
 
-  // First check JWT expiry locally (fast path)
-  try {
-    const payloadB64 = token.split(".")[1];
-    if (!payloadB64) throw new Error("malformed");
-
-    const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf-8")) as {
-      sub: string;
-      exp: number;
-    };
-
-    if (payload.exp * 1000 < Date.now()) {
-      return NextResponse.json({ authenticated: false }, { status: 401 });
-    }
-  } catch {
-    return NextResponse.json({ authenticated: false }, { status: 401 });
-  }
-
   // Try to fetch full profile from backend
   try {
     const upstream = await fetch(`${API_BASE}/api/v1/user/profile`, {
@@ -96,7 +79,11 @@ async function handleRequest(req: NextRequest) {
       };
       return NextResponse.json({ authenticated: true, user });
     }
-    // Backend returned non-200 (e.g., 401, 503) — fall through to JWT claims fallback
+    // Backend explicitly rejected token.
+    if (upstream.status === 401 || upstream.status === 403) {
+      return NextResponse.json({ authenticated: false }, { status: 401 });
+    }
+    // For backend transient failures, fall through to JWT claims fallback.
   } catch {
     // Network error — fall through to JWT claims fallback
   }
@@ -107,10 +94,16 @@ async function handleRequest(req: NextRequest) {
     const payload = JSON.parse(Buffer.from(payloadB64, "base64url").toString("utf-8")) as {
       sub: string;
       email: string;
-      tier: string;
+      tier?: string;
+      exp?: number;
       fullName?: string;
       avatarUrl?: string;
     };
+
+    // If token carries exp and it is expired, treat as unauthenticated.
+    if (typeof payload.exp === "number" && payload.exp * 1000 <= Date.now()) {
+      return NextResponse.json({ authenticated: false }, { status: 401 });
+    }
 
     return NextResponse.json({
       authenticated: true,
@@ -119,7 +112,7 @@ async function handleRequest(req: NextRequest) {
         email: payload.email,
         fullName: payload.fullName || null,
         avatarUrl: payload.avatarUrl || null,
-        tier: payload.tier,
+        tier: payload.tier ?? "starter",
         createdAt: null,
       },
     });

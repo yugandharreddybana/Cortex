@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { signupSchema, API_BASE } from "@/lib/auth";
+import { extractCookieValue } from "@/lib/cookies";
 import { getSession } from "@/lib/session";
 
 export async function POST(request: NextRequest) {
@@ -53,13 +54,21 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: false, error: message, code: status === 409 ? "EMAIL_EXISTS" : undefined }, { status });
   }
 
-  const data = await upstream.json() as { token: string; user: { id: string; email: string; tier: string } };
+  const data = await upstream.json() as { token?: string; user: { id: string; email: string; tier: string } };
+  const tokenFromCookie = extractCookieValue(upstream.headers.get("set-cookie"), "cortex_session");
+  const resolvedToken = data.token ?? tokenFromCookie;
+  if (!resolvedToken) {
+    return NextResponse.json(
+      { success: false, error: "Signup succeeded but session token was missing." },
+      { status: 502 },
+    );
+  }
 
   // Store the JWT inside the iron-session encrypted cookie (consistent with login)
   let session;
   try {
     session = await getSession();
-    session.user = { token: data.token };
+    session.user = { token: resolvedToken };
     await session.save();
   } catch {
     return NextResponse.json(

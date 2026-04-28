@@ -1,4 +1,5 @@
 import { loginSchema, API_BASE } from "@/lib/auth";
+import { extractCookieValue } from "@/lib/cookies";
 import { getSession } from "@/lib/session";
 import { NextRequest, NextResponse } from "next/server";
 
@@ -39,10 +40,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ success: false, error: message }, { status });
     }
 
-    const data = (await upstream.json()) as { token: string; user: { id: string; email: string; tier: string } };
+    const data = (await upstream.json()) as { token?: string; user: { id: string; email: string; tier: string } };
+    const tokenFromCookie = extractCookieValue(upstream.headers.get("set-cookie"), "cortex_session");
+    const resolvedToken = data.token ?? tokenFromCookie;
+    if (!resolvedToken) {
+      console.error("[API][LOGIN] Missing token in upstream response body and Set-Cookie header");
+      return NextResponse.json({ success: false, error: "Login succeeded but session token was missing." }, { status: 502 });
+    }
 
     session.user = {
-      token: data.token,
+      token: resolvedToken,
     };
     await session.save();
 

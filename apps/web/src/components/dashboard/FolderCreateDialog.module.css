@@ -1,0 +1,26 @@
+/* Custom styles for FolderCreateDialog dropdown */
+.folder-dropdown {
+  /* appearance: none; */
+  width: 100%;
+  height: 2.5rem; /* 40px, matches h-10 */
+  padding: 0 0.875rem; /* px-3.5 */
+  background-color: rgba(30, 32, 40, 0.95);
+  border: 1px solid rgba(255,255,255,0.12);
+  color: #fff;
+  border-radius: 0.75rem;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+  box-shadow: 0 2px 16px 0 rgba(0,0,0,0.12);
+  outline: none;
+  transition: border 0.2s, box-shadow 0.2s;
+}
+.folder-dropdown:focus {
+  border-color: #7c3aed;
+  box-shadow: 0 0 0 2px #7c3aed33;
+}
+.folder-dropdown option {
+  background: #23243a;
+  color: #fff;
+  font-size: 1rem;
+  padding: 0.5rem 1rem;
+}

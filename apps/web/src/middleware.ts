@@ -35,7 +35,9 @@ export function middleware(request: NextRequest) {
     // script run without needing individual hashes.
     // In dev we also add 'unsafe-eval' so Turbopack HMR works.
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${isDev ? " 'unsafe-eval'" : ""}`,
-    `style-src 'self' 'nonce-${nonce}' 'unsafe-inline'`,
+    isDev
+      ? "style-src 'self' 'unsafe-inline'"
+      : `style-src 'self' 'nonce-${nonce}'`,
     "img-src 'self' data: https:",
     // Allow Google Fonts (next/font/google) + any other self-hosted font CDNs
     "font-src 'self' data: https://fonts.gstatic.com https://frontend-cdn.perplexity.ai",
